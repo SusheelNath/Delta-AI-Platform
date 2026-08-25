@@ -1,0 +1,244 @@
+.chat-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #0a0e17;
+}
+
+/* ── Header ── */
+.chat-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  min-height: 48px;
+  padding: 0 16px;
+  border-bottom: 1px solid #2d3548;
+  background: #0d1117;
+}
+
+.chat-panel__header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-panel__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #e2e8f0;
+  letter-spacing: 0.3px;
+}
+
+.chat-panel__status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4a5268;
+  transition: background 0.3s ease;
+}
+
+.chat-panel__status-dot--ready {
+  background: #4aba78;
+  box-shadow: 0 0 6px rgba(74, 186, 120, 0.4);
+}
+
+.chat-panel__header-sub {
+  font-size: 11px;
+  color: #8892a5;
+}
+
+/* ── Context indicator ── */
+.chat-panel__context {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  background: rgba(231, 113, 51, 0.08);
+  border-bottom: 1px solid #2d3548;
+  font-size: 11px;
+  min-height: 28px;
+}
+
+.chat-panel__context-label {
+  color: #8892a5;
+}
+
+.chat-panel__context-value {
+  color: #E77133;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Messages ── */
+.chat-panel__messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chat-panel__message {
+  display: flex;
+  max-width: 88%;
+}
+
+.chat-panel__message--delta {
+  align-self: flex-start;
+}
+
+.chat-panel__message--user {
+  align-self: flex-end;
+}
+
+.chat-panel__bubble {
+  padding: 10px 14px;
+  border-radius: 12px;
+  max-width: 100%;
+}
+
+.chat-panel__message--delta .chat-panel__bubble {
+  background: #161b26;
+  border: 1px solid #2d3548;
+  border-bottom-left-radius: 4px;
+}
+
+.chat-panel__message--user .chat-panel__bubble {
+  background: #6e3a1e;
+  border: 1px solid #8e4d2a;
+  border-bottom-right-radius: 4px;
+}
+
+.chat-panel__bubble-text {
+  font-size: 13px;
+  line-height: 1.55;
+  color: #e2e8f0;
+  word-wrap: break-word;
+}
+
+.chat-panel__bubble-time {
+  display: block;
+  font-size: 10px;
+  color: #5a6478;
+  margin-top: 6px;
+  text-align: right;
+}
+
+.chat-panel__message--user .chat-panel__bubble-time {
+  color: #bf8b6e;
+}
+
+/* ── Input area ── */
+.chat-panel__input-area {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 12px;
+  border-top: 1px solid #2d3548;
+  background: #0d1117;
+}
+
+.chat-panel__input {
+  flex: 1;
+  height: 38px;
+  padding: 0 14px;
+  background: #161b26;
+  border: 1px solid #2d3548;
+  border-radius: 8px;
+  color: #e2e8f0;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.chat-panel__input::placeholder {
+  color: #5a6478;
+}
+
+.chat-panel__input:focus {
+  border-color: #E77133;
+}
+
+.chat-panel__mic-btn,
+.chat-panel__send-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #2d3548;
+  border-radius: 6px;
+  background: #161b26;
+  color: #8892a5;
+  transition: all 0.12s ease;
+  flex-shrink: 0;
+}
+
+.chat-panel__mic-btn {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.chat-panel__send-btn:hover {
+  background: #1e2636;
+  color: #E77133;
+  border-color: #E77133;
+}
+
+/* ── Stop button ── */
+.chat-panel__stop-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #e74c3c;
+  border-radius: 6px;
+  background: rgba(231, 76, 60, 0.12);
+  color: #e74c3c;
+  transition: all 0.12s ease;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.chat-panel__stop-btn:hover {
+  background: rgba(231, 76, 60, 0.25);
+}
+
+/* ── Typing indicator ── */
+.chat-panel__typing {
+  display: flex;
+  gap: 4px;
+  padding: 4px 0 0 4px;
+}
+
+.chat-panel__typing span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #5a6478;
+  animation: typing-bounce 1.2s infinite ease-in-out;
+}
+
+.chat-panel__typing span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.chat-panel__typing span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
+/* ── Disabled input state ── */
+.chat-panel__input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

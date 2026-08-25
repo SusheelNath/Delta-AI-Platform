@@ -1,0 +1,141 @@
+.xeokit-viewer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #0a1628;
+  overflow: hidden;
+}
+
+.xeokit-viewer__canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* NavCube */
+.xeokit-viewer__navcube {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 120px;
+  height: 120px;
+  pointer-events: all;
+  border-radius: 8px;
+  opacity: 0.85;
+}
+
+/* Loading / Error overlay */
+.xeokit-viewer__overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(13, 17, 23, 0.92);
+  z-index: 5;
+  gap: 12px;
+  color: #8892a5;
+  font-size: 14px;
+}
+
+.xeokit-viewer__spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #2d3548;
+  border-top-color: #E77133;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.xeokit-viewer__error-icon {
+  font-size: 36px;
+  color: #E77133;
+  margin-bottom: 4px;
+}
+
+.xeokit-viewer__error-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.xeokit-viewer__error-sub {
+  color: #8892a5;
+  font-size: 13px;
+  max-width: 320px;
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* ── Bottom bar ── */
+.xeokit-viewer__bottom-bar {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.xeokit-viewer__hint {
+  font-size: 10px;
+  color: #5a6478;
+  background: rgba(13, 17, 23, 0.7);
+  padding: 3px 8px;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+/* Reset button */
+.xeokit-viewer__reset-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: rgba(22, 27, 38, 0.9);
+  color: #8892a5;
+  border: 1px solid #2d3548;
+  border-radius: 6px;
+  font-size: 12px;
+  transition: all 0.15s ease;
+  pointer-events: all;
+  cursor: pointer;
+}
+
+.xeokit-viewer__reset-btn:hover {
+  background: rgba(30, 38, 54, 0.95);
+  color: #e2e8f0;
+  border-color: #E77133;
+}
+
+/* ── Polygon hover tooltip ── */
+.xeokit-viewer__polygon-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(13, 17, 23, 0.92);
+  border: 1px solid #E77133;
+  border-radius: 6px;
+  padding: 5px 9px;
+  z-index: 20;
+  white-space: nowrap;
+}
+
+.xeokit-viewer__polygon-tooltip-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: #f5b57b;
+}
+
+.xeokit-viewer__polygon-tooltip-area {
+  font-size: 10px;
+  color: #8892a5;
+  margin-top: 1px;
+}

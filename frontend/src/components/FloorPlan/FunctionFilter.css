@@ -1,0 +1,45 @@
+.function-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #2d3548;
+}
+
+.function-filter__pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border: 1px solid #2d3548;
+  border-radius: 12px;
+  background: #0d1117;
+  color: #5a6478;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.function-filter__pill--active {
+  background: #161b26;
+  color: #c5cdd9;
+  border-color: #3d4860;
+}
+
+.function-filter__pill:hover {
+  border-color: #E77133;
+}
+
+.function-filter__pill--all {
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.function-filter__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}

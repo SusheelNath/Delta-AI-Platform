@@ -1,0 +1,66 @@
+.map-view {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.map-view--no-token {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #0a0e17;
+  color: #8892a5;
+  font-size: 14px;
+  gap: 6px;
+}
+
+.map-view__hint {
+  font-size: 12px;
+  color: #5a6478;
+}
+
+.map-view__hint code {
+  background: #161b26;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  color: #c5cdd9;
+}
+
+/* Hospital marker */
+.map-view__marker {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #E77133;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+}
+
+/* Override Mapbox popup styling */
+.mapboxgl-popup-content {
+  background: #161b26 !important;
+  color: #e2e8f0 !important;
+  border: 1px solid #2d3548 !important;
+  border-radius: 8px !important;
+  padding: 10px 14px !important;
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
+}
+
+.mapboxgl-popup-content strong {
+  color: #E77133;
+  font-size: 13px;
+}
+
+.mapboxgl-popup-tip {
+  border-top-color: #161b26 !important;
+}

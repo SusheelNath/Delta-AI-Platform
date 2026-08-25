@@ -1,0 +1,98 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: #0a0e17;
+}
+
+/* ── Header ── */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 42px;
+  min-height: 42px;
+  padding: 0 16px;
+  background: #0d1117;
+  border-bottom: 1px solid #2d3548;
+  z-index: 10;
+}
+
+.app-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.app-header__icon {
+  font-size: 16px;
+  color: #E77133;
+}
+
+.app-header__title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #e2e8f0;
+  letter-spacing: 0.5px;
+}
+
+.app-header__meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-header__version {
+  font-size: 11px;
+  color: #8892a5;
+}
+
+
+/* ── Body (three-panel split) ── */
+.app-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.app-floorplan-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 240px;
+  border-right: 1px solid #2d3548;
+}
+
+.app-viewer-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 2;
+  min-width: 0;
+  border-right: 1px solid #2d3548;
+  overflow: hidden;
+}
+
+.app-viewer-container {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.app-chat-panel {
+  flex: 0.95;
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Expanded panel mode ── */
+.app-body--panel-expanded .app-floorplan-panel {
+  flex: 1;
+  max-width: none;
+}
+
+.app-body--panel-expanded .app-viewer-panel {
+  display: none;
+}

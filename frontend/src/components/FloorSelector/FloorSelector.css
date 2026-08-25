@@ -1,0 +1,85 @@
+.floor-selector {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  min-height: 40px;
+  padding: 0 12px;
+  gap: 4px;
+  background: #0d1117;
+  border-bottom: 1px solid #2d3548;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.floor-selector__label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #8892a5;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-right: 8px;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.floor-selector__divider {
+  width: 1px;
+  height: 20px;
+  background: #2d3548;
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+.floor-selector__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid #2d3548;
+  border-radius: 4px;
+  background: #161b26;
+  color: #8892a5;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.12s ease;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.floor-selector__btn:hover {
+  background: #1e2636;
+  color: #c5cdd9;
+  border-color: #3d4a63;
+}
+
+.floor-selector__btn--active {
+  background: #40251a;
+  color: #e2e8f0;
+  border-color: #E77133;
+}
+
+.floor-selector__btn--dimmed {
+  background: #0d1117;
+  color: #4a5268;
+  border-color: #1e2636;
+}
+
+.floor-selector__btn--dimmed:hover {
+  color: #8892a5;
+  border-color: #2d3548;
+  background: #131822;
+}
+
+.floor-selector__btn--solo {
+  background: #6e3a1e;
+  color: #f5b57b;
+  border-color: #E77133;
+  box-shadow: 0 0 6px rgba(231, 113, 51, 0.25);
+}
+
+.floor-selector__btn--all {
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}

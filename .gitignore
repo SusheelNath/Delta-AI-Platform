@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+.env
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Database
+*.db
+*.sqlite3
+
+# Data
+data/*.xkt
+data/*.json
+data/*.xlsx
+
+# Large model files
+*.xkt
+*.ifc
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Package lock (root level, from optional xeokit-convert)
+/package-lock.json
+/package.json
