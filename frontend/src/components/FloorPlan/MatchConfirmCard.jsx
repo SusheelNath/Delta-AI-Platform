@@ -79,7 +79,7 @@ export default function MatchConfirmCard() {
     const areaM2 = metrics ? Math.round(metrics.area_m2 * 100) / 100 : (spaceData?.area_m2 ?? null);
     const perimeterCm = metrics ? Math.round(metrics.perimeter_m * 100) : null;
 
-    // Add polygon locally FIRST so it appears immediately on 2D + 3D
+    // Add polygon to store (immediately persisted to localStorage)
     const localPolygon = {
       ifc_guid: candidate.id,
       floor_id: floorId,
@@ -93,7 +93,7 @@ export default function MatchConfirmCard() {
     // Close card and let user draw next room immediately
     clearPendingPolygon();
 
-    // Save to backend in background (non-blocking)
+    // Also save to backend (non-blocking, localStorage is the source of truth)
     savePolygon(candidate.id, verts, floorId, metrics?.area_m2 ?? null, perimeterCm).catch((err) => {
       console.error('[Delta] Failed to save polygon to server:', err);
     });

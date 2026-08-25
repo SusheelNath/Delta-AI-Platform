@@ -92,12 +92,24 @@ export default function FloorPlanPanel() {
       .catch((err) => console.error('[Delta] Failed to fetch floors:', err));
   }, []);
 
-  // Load saved polygons when active floor changes
+  // Sync polygons with backend when active floor changes (localStorage is source of truth)
   useEffect(() => {
     if (!activeFloorId) return;
     fetchFloorPolygons(activeFloorId)
-      .then((polygons) => setFloorPolygons(activeFloorId, polygons))
-      .catch((err) => console.warn('[Delta] Failed to load polygons:', err));
+      .then((serverPolygons) => {
+        // Merge: keep any localStorage polygons not on the server
+        const local = useStore.getState().floorPolygons[activeFloorId] || [];
+        const serverGuids = new Set(serverPolygons.map((p) => p.ifc_guid));
+        const localOnly = local.filter((p) => !serverGuids.has(p.ifc_guid));
+        if (localOnly.length > 0) {
+          setFloorPolygons(activeFloorId, [...serverPolygons, ...localOnly]);
+        } else {
+          setFloorPolygons(activeFloorId, serverPolygons);
+        }
+      })
+      .catch(() => {
+        // Backend unavailable — localStorage polygons are already in the store
+      });
   }, [activeFloorId, setFloorPolygons]);
 
   const handleFloorClick = (floorId) => {

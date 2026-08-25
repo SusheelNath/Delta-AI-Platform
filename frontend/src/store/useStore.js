@@ -1,5 +1,22 @@
 import { create } from 'zustand';
 
+const POLYGONS_KEY = 'delta_floorPolygons';
+
+function loadPolygonsFromStorage() {
+  try {
+    const raw = localStorage.getItem(POLYGONS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+function savePolygonsToStorage(floorPolygons) {
+  try {
+    localStorage.setItem(POLYGONS_KEY, JSON.stringify(floorPolygons));
+  } catch (err) {
+    console.warn('[Delta] Failed to save polygons to localStorage:', err);
+  }
+}
+
 const useStore = create((set, get) => ({
   // Floor state
   floors: [],
@@ -41,7 +58,7 @@ const useStore = create((set, get) => ({
 
   // Polygon mapping mode
   mappingMode: false,
-  floorPolygons: {},              // { [floorId]: [{ ifc_guid, floor_id, vertices, space_name, primary_function }, ...] }
+  floorPolygons: loadPolygonsFromStorage(),  // persisted to localStorage
   pendingPolygonVertices: [],     // [[leftPct, topPct], ...]
   matchCandidateList: [],         // [{ id, name, leftPct, topPct, distance, inside }, ...]
   matchCandidateIndex: 0,
@@ -147,23 +164,25 @@ const useStore = create((set, get) => ({
     matchCandidateIndex: 0,
   })),
 
-  setFloorPolygons: (floorId, polygons) => set((s) => ({
-    floorPolygons: { ...s.floorPolygons, [floorId]: polygons },
-  })),
+  setFloorPolygons: (floorId, polygons) => {
+    const updated = { ...get().floorPolygons, [floorId]: polygons };
+    savePolygonsToStorage(updated);
+    set({ floorPolygons: updated });
+  },
 
-  addPolygonToFloor: (floorId, polygon) => set((s) => ({
-    floorPolygons: {
-      ...s.floorPolygons,
-      [floorId]: [...(s.floorPolygons[floorId] || []), polygon],
-    },
-  })),
+  addPolygonToFloor: (floorId, polygon) => {
+    const prev = get().floorPolygons;
+    const updated = { ...prev, [floorId]: [...(prev[floorId] || []), polygon] };
+    savePolygonsToStorage(updated);
+    set({ floorPolygons: updated });
+  },
 
-  removePolygonFromFloor: (floorId, ifcGuid) => set((s) => ({
-    floorPolygons: {
-      ...s.floorPolygons,
-      [floorId]: (s.floorPolygons[floorId] || []).filter((p) => p.ifc_guid !== ifcGuid),
-    },
-  })),
+  removePolygonFromFloor: (floorId, ifcGuid) => {
+    const prev = get().floorPolygons;
+    const updated = { ...prev, [floorId]: (prev[floorId] || []).filter((p) => p.ifc_guid !== ifcGuid) };
+    savePolygonsToStorage(updated);
+    set({ floorPolygons: updated });
+  },
 
   setPendingPolygonVertices: (verts) => set({ pendingPolygonVertices: verts }),
 
