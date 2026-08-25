@@ -714,9 +714,11 @@ export default function XeokitViewer() {
     const spaces = geometry[floorId] || [];
     const spacePositions = projectSpaces(viewer, spaces);
 
-    // Store camera matrices for Phase D (3D polygon unprojection)
-    const viewMatrix = [...viewer.camera.viewMatrix];
-    const projMatrix = [...viewer.camera.projMatrix];
+    // Preserve original matrices from first capture so polygon unprojection stays stable.
+    // Re-capturing with slightly different camera state would shift existing polygons.
+    const existing = useStore.getState().floorSnapshots[floorId];
+    const viewMatrix = existing?.viewMatrix || [...viewer.camera.viewMatrix];
+    const projMatrix = existing?.projMatrix || [...viewer.camera.projMatrix];
 
     // Tier 1: fast 2x capture for immediate display
     captureAtScale(viewer, 2, (imageUrl, w, h) => {
@@ -965,7 +967,9 @@ export default function XeokitViewer() {
     if (!XMesh || !XReadableGeometry || !XPhongMaterial) return null;
     if (!vertices2D || vertices2D.length < 3) return null;
 
-    const worldVerts = unprojectPolygon(vertices2D, viewMatrix, projMatrix, planeY + 0.05);
+    // Use pre-computed world vertices if available (stable across floor transitions),
+    // otherwise fall back to unprojection from current snapshot matrices
+    const worldVerts = opts.worldVertices || unprojectPolygon(vertices2D, viewMatrix, projMatrix, planeY + 0.05);
     if (!worldVerts) {
       console.warn('[Delta] unprojectPolygon returned null');
       return null;
@@ -1045,19 +1049,17 @@ export default function XeokitViewer() {
       const planeY = maxYTop;
       const isHovered = hoveredPolygonGuid === poly.ifc_guid;
 
-      console.log(`[Delta] 3D polygon: ${poly.ifc_guid}, ${poly.vertices.length} verts, planeY=${planeY.toFixed(2)}`);
-
       const mesh = createPolygonMesh(viewer, poly.vertices, snapshot.viewMatrix, snapshot.projMatrix, planeY, {
         id: `polygon-${poly.ifc_guid}`,
         pickable: true,
         alpha: isHovered ? 0.7 : 0.55,
         diffuse: isHovered ? [0.95, 0.45, 0.15] : [0.7, 0.28, 0.08],
         emissive: isHovered ? [0.4, 0.15, 0.0] : [0.25, 0.08, 0.0],
+        worldVertices: poly.worldVertices || null,
       });
 
       if (mesh) {
         savedMeshesRef.current.set(poly.ifc_guid, mesh);
-        console.log(`[Delta] 3D polygon mesh created: polygon-${poly.ifc_guid}, aabb:`, mesh.aabb?.map(v => v.toFixed(1)));
       } else {
         console.warn(`[Delta] 3D polygon mesh FAILED for ${poly.ifc_guid}`);
       }

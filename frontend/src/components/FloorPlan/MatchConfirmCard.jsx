@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import useStore from '../../store/useStore';
 import { savePolygon, updateSpace, fetchSpaceByGuid } from '../../api/client';
-import { computePolygonMetrics } from '../../utils/unprojectPolygon';
+import { computePolygonMetrics, unprojectPolygon } from '../../utils/unprojectPolygon';
 
 export default function MatchConfirmCard() {
   const activeFloorId = useStore((s) => s.activeFloorId);
@@ -68,12 +68,15 @@ export default function MatchConfirmCard() {
     // Compute real-world metrics from polygon geometry using snapshot matrices
     const snapshot = useStore.getState().floorSnapshots[floorId];
     let metrics = null;
+    let worldVertices = null;
     if (snapshot?.viewMatrix && snapshot?.projMatrix) {
       const geom = useStore.getState().floorSpaceGeometry?.[floorId] || [];
-      const avgY = geom.length > 0
-        ? geom.reduce((sum, s) => sum + (s.y || 0), 0) / geom.length
+      const maxYTop = geom.length > 0
+        ? Math.max(...geom.map(s => s.yTop || s.y || 0))
         : 0;
-      metrics = computePolygonMetrics(verts, snapshot.viewMatrix, snapshot.projMatrix, avgY);
+      metrics = computePolygonMetrics(verts, snapshot.viewMatrix, snapshot.projMatrix, maxYTop);
+      // Store 3D world coordinates for stable rendering across floor transitions
+      worldVertices = unprojectPolygon(verts, snapshot.viewMatrix, snapshot.projMatrix, maxYTop + 0.05);
     }
 
     const areaM2 = metrics ? Math.round(metrics.area_m2 * 100) / 100 : (spaceData?.area_m2 ?? null);
@@ -84,6 +87,7 @@ export default function MatchConfirmCard() {
       ifc_guid: candidate.id,
       floor_id: floorId,
       vertices: verts,
+      worldVertices, // 3D world coords — stable across floor transitions
       space_name: editName.trim() || candidate.name,
       primary_function: editFunction.trim() || null,
       area_m2: areaM2,
@@ -94,7 +98,9 @@ export default function MatchConfirmCard() {
     clearPendingPolygon();
 
     // Also save to backend (non-blocking, localStorage is the source of truth)
-    savePolygon(candidate.id, verts, floorId, metrics?.area_m2 ?? null, perimeterCm).catch((err) => {
+    const finalName = editName.trim() || candidate.name || null;
+    const finalFn = editFunction.trim() || null;
+    savePolygon(candidate.id, verts, floorId, metrics?.area_m2 ?? null, perimeterCm, finalName, finalFn).catch((err) => {
       console.error('[Delta] Failed to save polygon to server:', err);
     });
 

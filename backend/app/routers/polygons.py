@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.config import DATA_DIR
 from app.database import get_db
 from app.models import Space
-from app.schemas import PolygonSaveRequest, SpacePolygonResponse
+from app.schemas import PolygonSaveRequest, PolygonSyncItem, SpacePolygonResponse
 
 router = APIRouter(tags=["polygons"])
 
@@ -40,12 +40,11 @@ def upsert_polygon(
     body: PolygonSaveRequest,
     db: Session = Depends(get_db),
 ):
-    space = db.query(Space).filter(Space.ifc_guid == ifc_guid).first()
-    if not space:
-        raise HTTPException(status_code=404, detail=f"Space with GUID {ifc_guid} not found")
-
     if len(body.vertices) < 3:
         raise HTTPException(status_code=422, detail="Polygon must have at least 3 vertices")
+
+    # Look up space in DB for enrichment, but don't fail if missing
+    space = db.query(Space).filter(Space.ifc_guid == ifc_guid).first()
 
     now = datetime.utcnow().isoformat()
     polygons = _read_all()
@@ -55,8 +54,8 @@ def upsert_polygon(
         "ifc_guid": ifc_guid,
         "floor_id": body.floor_id,
         "vertices": body.vertices,
-        "space_name": space.space_name,
-        "primary_function": space.primary_function,
+        "space_name": (space.space_name if space else None) or body.space_name,
+        "primary_function": (space.primary_function if space else None) or body.primary_function,
         "area_m2": body.computed_area_m2,
         "perimeter_cm": body.computed_perimeter_cm,
         "created_at": now,
@@ -75,6 +74,35 @@ def upsert_polygon(
     _write_all(polygons)
 
     return SpacePolygonResponse(**entry)
+
+
+@router.post("/polygons/sync")
+def sync_polygons(body: list[PolygonSyncItem]):
+    """Bulk upsert: accept an array of polygons from localStorage and merge into polygons.json.
+    Only adds polygons not already on the server (by ifc_guid)."""
+    polygons = _read_all()
+    existing_guids = {p["ifc_guid"] for p in polygons}
+    now = datetime.utcnow().isoformat()
+    added = 0
+    for item in body:
+        if item.ifc_guid in existing_guids:
+            continue
+        if len(item.vertices) < 3:
+            continue
+        polygons.append({
+            "ifc_guid": item.ifc_guid,
+            "floor_id": item.floor_id,
+            "vertices": item.vertices,
+            "space_name": item.space_name,
+            "primary_function": item.primary_function,
+            "area_m2": item.area_m2,
+            "created_at": now,
+        })
+        existing_guids.add(item.ifc_guid)
+        added += 1
+    if added > 0:
+        _write_all(polygons)
+    return {"synced": added, "total": len(polygons)}
 
 
 @router.get("/floors/{floor_id}/polygons", response_model=list[SpacePolygonResponse])

@@ -102,10 +102,12 @@ export async function updateSpace(ifcGuid, { space_name, primary_function }) {
  * Save or update a polygon for a space.
  * PUT /api/spaces/{ifcGuid}/polygon
  */
-export async function savePolygon(ifcGuid, vertices, floorId, computedAreaM2 = null, computedPerimeterCm = null) {
+export async function savePolygon(ifcGuid, vertices, floorId, computedAreaM2 = null, computedPerimeterCm = null, spaceName = null, primaryFunction = null) {
   const payload = { vertices, floor_id: floorId };
   if (computedAreaM2 != null) payload.computed_area_m2 = computedAreaM2;
   if (computedPerimeterCm != null) payload.computed_perimeter_cm = computedPerimeterCm;
+  if (spaceName) payload.space_name = spaceName;
+  if (primaryFunction) payload.primary_function = primaryFunction;
   const res = await fetch(`${BASE}/spaces/${encodeURIComponent(ifcGuid)}/polygon`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -124,6 +126,20 @@ export async function savePolygon(ifcGuid, vertices, floorId, computedAreaM2 = n
  */
 export async function fetchFloorPolygons(floorId) {
   return request(`${BASE}/floors/${encodeURIComponent(floorId)}/polygons`);
+}
+
+/**
+ * Bulk sync localStorage polygons to server (push any the server doesn't have).
+ * POST /api/polygons/sync
+ */
+export async function syncPolygons(polygons) {
+  const res = await fetch(`${BASE}/polygons/sync`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(polygons),
+  });
+  if (!res.ok) return null;
+  return res.json();
 }
 
 /**

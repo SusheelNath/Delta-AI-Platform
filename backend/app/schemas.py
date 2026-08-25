@@ -137,6 +137,8 @@ class SpaceUpdateRequest(BaseModel):
 class PolygonSaveRequest(BaseModel):
     vertices: list[list[float]]
     floor_id: str
+    space_name: str | None = None
+    primary_function: str | None = None
     computed_area_m2: float | None = None
     computed_perimeter_cm: float | None = None
 
@@ -151,6 +153,15 @@ class SpacePolygonResponse(BaseModel):
     created_at: str | None = None
 
     model_config = {"from_attributes": True}
+
+
+class PolygonSyncItem(BaseModel):
+    ifc_guid: str
+    floor_id: str
+    vertices: list[list[float]]
+    space_name: str | None = None
+    primary_function: str | None = None
+    area_m2: float | None = None
 
 
 class SearchParams(BaseModel):

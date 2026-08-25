@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useCallback } from 'react';
 import useStore from '../../store/useStore';
-import { fetchFloors, fetchFloorPolygons, deletePolygon } from '../../api/client';
+import { fetchFloors, fetchFloorPolygons, syncPolygons, deletePolygon } from '../../api/client';
 import FunctionFilter from './FunctionFilter';
 import RoomDirectory from './RoomDirectory';
 import FloorPlanImage from './FloorPlanImage';
@@ -95,17 +95,39 @@ export default function FloorPlanPanel() {
   // Sync polygons with backend when active floor changes (localStorage is source of truth)
   useEffect(() => {
     if (!activeFloorId) return;
+
+    // 1. Push any localStorage polygons the server doesn't have
+    const allLocal = useStore.getState().floorPolygons;
+    const localForFloor = allLocal[activeFloorId] || [];
+    if (localForFloor.length > 0) {
+      const syncPayload = localForFloor
+        .filter((p) => p.vertices?.length >= 3)
+        .map((p) => ({
+          ifc_guid: p.ifc_guid,
+          floor_id: p.floor_id || activeFloorId,
+          vertices: p.vertices,
+          space_name: p.space_name || null,
+          primary_function: p.primary_function || null,
+          area_m2: p.area_m2 ?? null,
+        }));
+      if (syncPayload.length > 0) {
+        syncPolygons(syncPayload).catch(() => {});
+      }
+    }
+
+    // 2. Fetch server polygons and merge with local (preserving worldVertices)
     fetchFloorPolygons(activeFloorId)
       .then((serverPolygons) => {
-        // Merge: keep any localStorage polygons not on the server
         const local = useStore.getState().floorPolygons[activeFloorId] || [];
+        const localByGuid = new Map(local.map((p) => [p.ifc_guid, p]));
         const serverGuids = new Set(serverPolygons.map((p) => p.ifc_guid));
         const localOnly = local.filter((p) => !serverGuids.has(p.ifc_guid));
-        if (localOnly.length > 0) {
-          setFloorPolygons(activeFloorId, [...serverPolygons, ...localOnly]);
-        } else {
-          setFloorPolygons(activeFloorId, serverPolygons);
-        }
+        // Merge server data with locally stored worldVertices
+        const merged = serverPolygons.map((sp) => {
+          const lp = localByGuid.get(sp.ifc_guid);
+          return lp?.worldVertices ? { ...sp, worldVertices: lp.worldVertices } : sp;
+        });
+        setFloorPolygons(activeFloorId, [...merged, ...localOnly]);
       })
       .catch(() => {
         // Backend unavailable — localStorage polygons are already in the store
