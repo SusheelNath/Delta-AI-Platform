@@ -17,6 +17,7 @@ dist/
 # Data
 data/*.xkt
 data/*.json
+!data/polygons.json
 data/*.xlsx
 
 # Large model files
