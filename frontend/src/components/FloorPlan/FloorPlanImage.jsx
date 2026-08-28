@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import useStore from '../../store/useStore';
 import { getCategoryIndex } from '../../utils/colorScheme';
+import { searchSpaces } from '../../api/client';
 import PolygonDrawingOverlay from './PolygonDrawingOverlay';
 import SavedPolygonsOverlay from './SavedPolygonsOverlay';
 import MatchConfirmCard from './MatchConfirmCard';
@@ -139,7 +140,7 @@ export default function FloorPlanImage({ floorIdOverride }) {
     const existingPolygons = useStore.getState().floorPolygons[activeFloorId] || [];
     const mappedGuids = new Set(existingPolygons.map((p) => p.ifc_guid));
 
-    // Find candidate matches
+    // Find candidate matches from IFC space positions
     const candidates = spacePositions
       .filter((sp) => sp.isActive && !mappedGuids.has(sp.id))
       .map((sp) => {
@@ -157,7 +158,48 @@ export default function FloorPlanImage({ floorIdOverride }) {
     if (candidates.length > 0) {
       setMatchCandidates(candidates);
     } else {
-      clearPendingPolygon();
+      // No IFC-based candidates — fall back to API lookup
+      searchSpaces({ floor_id: activeFloorId, limit: 500 })
+        .then((apiSpaces) => {
+          const unmapped = apiSpaces.filter((sp) => sp.ifc_guid && !mappedGuids.has(sp.ifc_guid));
+          if (unmapped.length > 0) {
+            // Show unmapped spaces as candidates
+            const apiCandidates = unmapped
+              .map((sp) => ({
+                id: sp.ifc_guid,
+                name: sp.space_name || sp.ifc_guid,
+                leftPct: 50,
+                topPct: 50,
+                inside: false,
+                distance: 0,
+              }))
+              .slice(0, 30);
+            setMatchCandidates(apiCandidates);
+          } else {
+            // All spaces already mapped — generate a fresh GUID so existing polygons are not replaced
+            const newGuid = `polygon-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+            setMatchCandidates([{
+              id: newGuid,
+              name: 'New Room',
+              leftPct: cx,
+              topPct: cy,
+              inside: false,
+              distance: 0,
+            }]);
+          }
+        })
+        .catch(() => {
+          // API unavailable — still allow polygon creation with a fresh GUID
+          const newGuid = `polygon-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+          setMatchCandidates([{
+            id: newGuid,
+            name: 'New Room',
+            leftPct: cx,
+            topPct: cy,
+            inside: false,
+            distance: 0,
+          }]);
+        });
     }
   }, [activeFloorId, spacePositions, clearPendingPolygon, setPendingPolygonVertices, setMatchCandidates]);
 

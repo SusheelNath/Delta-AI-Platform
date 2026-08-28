@@ -108,7 +108,7 @@ const useStore = create((set, get) => ({
   },
 
   selectSpace: (spaceId, spaceData) => {
-    set({ selectedSpaceId: spaceId, selectedSpace: spaceData });
+    set({ selectedSpaceId: spaceId, selectedSpace: spaceData, drawerOpen: true });
   },
 
   clearSelection: () => {
@@ -172,7 +172,9 @@ const useStore = create((set, get) => ({
 
   addPolygonToFloor: (floorId, polygon) => {
     const prev = get().floorPolygons;
-    const updated = { ...prev, [floorId]: [...(prev[floorId] || []), polygon] };
+    // Replace existing polygon with same GUID, or append if new
+    const existing = (prev[floorId] || []).filter((p) => p.ifc_guid !== polygon.ifc_guid);
+    const updated = { ...prev, [floorId]: [...existing, polygon] };
     savePolygonsToStorage(updated);
     set({ floorPolygons: updated });
   },

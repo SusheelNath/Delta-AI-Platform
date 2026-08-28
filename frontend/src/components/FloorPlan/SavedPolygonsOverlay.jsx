@@ -33,10 +33,16 @@ export default function SavedPolygonsOverlay({ floorId, onTooltipChange }) {
   const hoveredPolygonGuid = useStore((s) => s.hoveredPolygonGuid);
   const setHoveredPolygonGuid = useStore((s) => s.setHoveredPolygonGuid);
   const selectSpace = useStore((s) => s.selectSpace);
+  const isDrawing = useStore((s) => s.mappingMode && s.pendingPolygonVertices.length > 0);
 
   const handleClick = useCallback(async (e, polygon) => {
     e.stopPropagation();
-    const overrides = getPolygonOverrides(polygon, floorId);
+    let overrides = {};
+    try {
+      overrides = getPolygonOverrides(polygon, floorId);
+    } catch (err) {
+      console.warn('[Delta] getPolygonOverrides failed:', err);
+    }
     try {
       const spaceData = await fetchSpaceByGuid(polygon.ifc_guid);
       selectSpace(polygon.ifc_guid, { ...spaceData, ...overrides });
@@ -48,6 +54,10 @@ export default function SavedPolygonsOverlay({ floorId, onTooltipChange }) {
       });
     }
   }, [selectSpace, floorId]);
+
+  const handleDoubleClick = useCallback((e) => {
+    e.stopPropagation();
+  }, []);
 
   const handleMouseEnter = useCallback((e, polygon) => {
     setHoveredPolygonGuid(polygon.ifc_guid);
@@ -95,8 +105,9 @@ export default function SavedPolygonsOverlay({ floorId, onTooltipChange }) {
             stroke={isSelected ? '#E77133' : isHovered ? '#E77133' : 'rgba(231, 113, 51, 0.5)'}
             strokeWidth={isSelected ? '0.4' : '0.25'}
             vectorEffect="non-scaling-stroke"
-            style={{ cursor: 'pointer', pointerEvents: 'visiblePainted' }}
+            style={{ cursor: isDrawing ? 'crosshair' : 'pointer', pointerEvents: isDrawing ? 'none' : 'visiblePainted' }}
             onClick={(e) => handleClick(e, poly)}
+            onDoubleClick={handleDoubleClick}
             onMouseEnter={(e) => handleMouseEnter(e, poly)}
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
