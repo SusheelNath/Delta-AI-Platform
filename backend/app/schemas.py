@@ -150,6 +150,15 @@ class SpacePolygonResponse(BaseModel):
     space_name: str | None = None
     primary_function: str | None = None
     area_m2: float | None = None
+    perimeter_m: float | None = None
+    normal_occupancy: int = 0
+    max_occupancy: int = 0
+    absolute_occupancy: int = 0
+    occupancy_class: str | None = None
+    occupiable: bool = False
+    used_area_m2: float | None = None
+    free_area_m2: float | None = None
+    furnishing_source: str | None = None
     created_at: str | None = None
 
     model_config = {"from_attributes": True}
@@ -162,6 +171,72 @@ class PolygonSyncItem(BaseModel):
     space_name: str | None = None
     primary_function: str | None = None
     area_m2: float | None = None
+    perimeter_cm: float | None = None
+
+
+class SpaceMetricsResponse(BaseModel):
+    ifc_guid: str
+    floor_id: str
+    area_m2: float | None = None
+    perimeter_m: float | None = None
+    normal_occupancy: int = 0
+    max_occupancy: int = 0
+    absolute_occupancy: int = 0
+    occupancy_class: str | None = None
+    occupiable: bool = False
+    used_area_m2: float | None = None
+    free_area_m2: float | None = None
+    furnishing_source: str | None = None
+    computed_at: str | None = None
+
+    model_config = {"from_attributes": True}
+
+
+# ── Furnishing schemas ──
+
+class FurnishingTypeResponse(BaseModel):
+    item_type: str
+    category: str
+    label: str
+    footprint_m2: float
+    normal_occ: int
+    max_occ: int
+
+    model_config = {"from_attributes": True}
+
+
+class SpaceFurnishingCreate(BaseModel):
+    ifc_guid: str
+    floor_id: str
+    item_type: str
+    quantity: int = 1
+    item_label: str | None = None
+    notes: str | None = None
+
+
+class SpaceFurnishingUpdate(BaseModel):
+    quantity: int | None = None
+    item_label: str | None = None
+    notes: str | None = None
+
+
+class SpaceFurnishingResponse(BaseModel):
+    id: int
+    ifc_guid: str
+    floor_id: str
+    item_type: str
+    quantity: int
+    item_label: str | None = None
+    notes: str | None = None
+    created_at: str | None = None
+    # Joined from furnishing_types
+    category: str | None = None
+    label: str | None = None
+    footprint_m2: float | None = None
+    normal_occ: int | None = None
+    max_occ: int | None = None
+
+    model_config = {"from_attributes": True}
 
 
 class SearchParams(BaseModel):

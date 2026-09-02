@@ -12,20 +12,21 @@ MODEL = "qwen2.5:32b"
 
 SYSTEM_PROMPT = """You are Delta AI, the intelligent assistant for the CHIREC Delta Hospital in Brussels, Belgium.
 
-You have access to a comprehensive Building Information Model (BIM) containing 2,913 spaces across 9 floors (Basement 3 to Floor 5). The hospital is a modern facility with surgical suites, patient rooms, diagnostic labs, administrative offices, and public areas.
+You have access to a comprehensive spatial model with over 2,900 mapped and labelled spaces across 9 floors (Basement 3 to Floor 5). Each space is a polygon with a name, function, area, perimeter, and computed intelligence including: occupancy, accessibility, privacy, nearest lifts/stairs, adjacent spaces, bookability, and more. All data is derived from polygon geometry and function classification — no external metadata sources.
 
 Your role:
 - Answer questions about the hospital's spaces, layout, and facilities
 - Help staff and visitors with wayfinding (lifts, stairs, routes between spaces)
 - Provide information about room functions, capacity, accessibility, and equipment
 - Assist with space planning and utilisation queries
+- Compare floors, departments, and spatial distributions
 - Be concise, precise, and helpful
 
 Formatting rules:
 - Keep responses concise unless the user asks for detail
 - Use short paragraphs, not walls of text
 - When listing spaces, show the most relevant ones (not exhaustive lists)
-- Reference rooms by name and ID when available
+- Reference rooms by name when available
 - Mention floor names (e.g. "Ground Floor") rather than codes (e.g. "H000")
 
 Floor reference:
@@ -44,7 +45,8 @@ def _format_space_context(space: dict) -> str:
     """Format a selected space's metadata into context for the LLM."""
     lines = [f"\n[Currently selected space in the 3D viewer]"]
     lines.append(f"Name: {space.get('space_name', 'Unknown')}")
-    lines.append(f"ID: {space.get('id', '?')}")
+    if space.get('ifc_guid'):
+        lines.append(f"GUID: {space['ifc_guid']}")
     lines.append(f"Floor: {space.get('floor_name', space.get('floor_id', '?'))}")
 
     if space.get('primary_function'):
@@ -55,6 +57,8 @@ def _format_space_context(space: dict) -> str:
         lines.append(f"Functional zone: {space['functional_zone']}")
     if space.get('area_m2'):
         lines.append(f"Area: {space['area_m2']} m\u00b2")
+    if space.get('perimeter_cm'):
+        lines.append(f"Perimeter: {space['perimeter_cm']} cm")
     if space.get('normal_occupancy'):
         lines.append(f"Normal occupancy: {space['normal_occupancy']}")
     if space.get('max_occupancy'):
@@ -103,15 +107,16 @@ def _format_search_context(spaces: list[dict]) -> str:
     """Format search results into context for the LLM."""
     if not spaces:
         return ""
-    lines = [f"\n[Database query returned {len(spaces)} matching spaces]"]
+    lines = [f"\n[Search returned {len(spaces)} matching spaces]"]
     for s in spaces[:20]:
         name = s.get('space_name', 'Unknown')
-        sid = s.get('id', '?')
         floor = s.get('floor_name', s.get('floor_id', '?'))
         func = s.get('primary_function', '')
         area = s.get('area_m2', '')
         area_str = f", {area} m\u00b2" if area else ""
-        lines.append(f"- {name} ({sid}) \u2014 {floor}, {func}{area_str}")
+        perim = s.get('perimeter_cm', '')
+        perim_str = f", perim {perim} cm" if perim else ""
+        lines.append(f"- {name} \u2014 {floor}, {func}{area_str}{perim_str}")
     if len(spaces) > 20:
         lines.append(f"  ... and {len(spaces) - 20} more")
     return "\n".join(lines)
@@ -121,9 +126,12 @@ def build_messages(
     conversation: list[dict],
     selected_space: dict | None = None,
     search_results: list[dict] | None = None,
+    floor_summaries: str | None = None,
 ) -> list[dict]:
     """Build the message list for the Ollama API call."""
     system = SYSTEM_PROMPT
+    if floor_summaries:
+        system += "\n" + floor_summaries
     if selected_space:
         system += "\n" + _format_space_context(selected_space)
     if search_results:
@@ -142,9 +150,10 @@ async def stream_chat(
     conversation: list[dict],
     selected_space: dict | None = None,
     search_results: list[dict] | None = None,
+    floor_summaries: str | None = None,
 ) -> AsyncGenerator[str, None]:
     """Stream tokens from Ollama's chat API."""
-    messages = build_messages(conversation, selected_space, search_results)
+    messages = build_messages(conversation, selected_space, search_results, floor_summaries)
 
     async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=10.0)) as client:
         async with client.stream(

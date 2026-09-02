@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import init_db
-from app.routers import floors, spaces, chat, exclusions, export, polygons
+from app.routers import floors, spaces, chat, exclusions, export, polygons, metrics, furnishings
 
 app = FastAPI(
     title="Delta Intelligence Platform",
@@ -24,11 +24,21 @@ app.include_router(chat.router, prefix="/api")
 app.include_router(exclusions.router, prefix="/api")
 app.include_router(export.router)
 app.include_router(polygons.router, prefix="/api")
+app.include_router(metrics.router, prefix="/api")
+app.include_router(furnishings.router, prefix="/api")
 
 
 @app.on_event("startup")
 def startup():
     init_db()
+    # Auto-seed furnishing types catalog on startup
+    from app.database import SessionLocal
+    from app.services.furnishings import seed_furnishing_types
+    db = SessionLocal()
+    try:
+        seed_furnishing_types(db)
+    finally:
+        db.close()
 
 
 @app.get("/api/health")

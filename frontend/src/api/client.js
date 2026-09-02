@@ -143,6 +143,23 @@ export async function syncPolygons(polygons) {
 }
 
 /**
+ * Save all polygons for a floor (replaces existing).
+ * PUT /api/floors/{floorId}/polygons
+ */
+export async function saveFloorPolygons(floorId, polygons) {
+  const res = await fetch(`${BASE}/floors/${encodeURIComponent(floorId)}/polygons`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(polygons),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`API ${res.status}: ${text}`);
+  }
+  return res.json();
+}
+
+/**
  * Delete a saved polygon for a space.
  * DELETE /api/spaces/{ifcGuid}/polygon
  */
@@ -155,6 +172,14 @@ export async function deletePolygon(ifcGuid) {
     throw new Error(`API ${res.status}: ${text}`);
   }
   return res.json();
+}
+
+/**
+ * Fetch furnishings for a specific space polygon.
+ * GET /api/furnishings/{ifcGuid}
+ */
+export async function fetchSpaceFurnishings(ifcGuid) {
+  return request(`${BASE}/furnishings/${encodeURIComponent(ifcGuid)}`);
 }
 
 /**

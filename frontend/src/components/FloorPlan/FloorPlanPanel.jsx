@@ -1,23 +1,16 @@
 import React, { useEffect, useRef, useCallback } from 'react';
 import useStore from '../../store/useStore';
-import { fetchFloors, fetchFloorPolygons, syncPolygons, deletePolygon } from '../../api/client';
-import FunctionFilter from './FunctionFilter';
+import { fetchFloors, fetchFloorPolygons, syncPolygons, savePolygon, deletePolygon } from '../../api/client';
+import { computePolygonMetrics } from '../../utils/unprojectPolygon';
 import RoomDirectory from './RoomDirectory';
 import FloorPlanImage from './FloorPlanImage';
+import PolygonEditCard from './PolygonEditCard';
 import './FloorPlanPanel.css';
 
 const FLOOR_LABELS = {
   H003: 'B3', H002: 'B2', H001: 'B1', H000: 'GF',
   H010: '+1', H020: '+2', H030: '+3', H040: '+4', H050: '+5',
 };
-
-const HEATMAP_MODES = [
-  { key: 'function', label: 'Function' },
-  { key: 'status', label: 'Status' },
-  { key: 'area', label: 'Area' },
-  { key: 'area_per_bed', label: 'Area/Bed' },
-  { key: 'utilization', label: 'Utilization' },
-];
 
 export default function FloorPlanPanel() {
   const floors = useStore((s) => s.floors);
@@ -26,22 +19,16 @@ export default function FloorPlanPanel() {
   const setActiveFloor = useStore((s) => s.setActiveFloor);
   const showAllFloors = useStore((s) => s.showAllFloors);
   const clearSelection = useStore((s) => s.clearSelection);
+  const editingPolygon = useStore((s) => s.editingPolygon);
   const panelMode = useStore((s) => s.panelMode);
   const setPanelMode = useStore((s) => s.setPanelMode);
-  const panelExpanded = useStore((s) => s.panelExpanded);
-  const togglePanelExpanded = useStore((s) => s.togglePanelExpanded);
+
   const searchQuery = useStore((s) => s.searchQuery);
   const setSearchQuery = useStore((s) => s.setSearchQuery);
-  const heatmapMode = useStore((s) => s.heatmapMode);
-  const setHeatmapMode = useStore((s) => s.setHeatmapMode);
   const compareMode = useStore((s) => s.compareMode);
   const toggleCompareMode = useStore((s) => s.toggleCompareMode);
   const compareFloorId = useStore((s) => s.compareFloorId);
   const setCompareFloorId = useStore((s) => s.setCompareFloorId);
-  const mepVisible = useStore((s) => s.mepVisible);
-  const toggleMepVisible = useStore((s) => s.toggleMepVisible);
-  const mappingMode = useStore((s) => s.mappingMode);
-  const toggleMappingMode = useStore((s) => s.toggleMappingMode);
   const setFloorPolygons = useStore((s) => s.setFloorPolygons);
   const removePolygonFromFloor = useStore((s) => s.removePolygonFromFloor);
 
@@ -55,6 +42,45 @@ export default function FloorPlanPanel() {
     const stopWheel = (e) => e.stopPropagation();
     el.addEventListener('wheel', stopWheel);
     return () => el.removeEventListener('wheel', stopWheel);
+  }, []);
+
+  // P key — push all edited polygons on current floor to backend with fresh metrics
+  useEffect(() => {
+    const handlePush = (e) => {
+      if (e.key !== 'p' && e.key !== 'P') return;
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+      const floorId = useStore.getState().activeFloorId;
+      if (!floorId) return;
+      const polygons = useStore.getState().floorPolygons[floorId] || [];
+      const edited = polygons.filter((p) => p.edited && p.vertices?.length >= 3);
+      if (edited.length === 0) return;
+
+      // Get snapshot matrices for fresh metric computation
+      const snapshot = useStore.getState().floorSnapshots[floorId];
+      const geom = useStore.getState().floorSpaceGeometry?.[floorId] || [];
+      const avgY = geom.length > 0 ? geom.reduce((sum, s) => sum + (s.y || 0), 0) / geom.length : 0;
+
+      let saved = 0;
+      for (const p of edited) {
+        let area = p.area_m2 ?? null;
+        let perimCm = p.perimeter_cm ?? null;
+
+        // Compute fresh area + perimeter from polygon vertices
+        if (snapshot?.viewMatrix && snapshot?.projMatrix && p.vertices?.length >= 3) {
+          const metrics = computePolygonMetrics(p.vertices, snapshot.viewMatrix, snapshot.projMatrix, avgY);
+          if (metrics) {
+            area = Math.round(metrics.area_m2 * 100) / 100;
+            perimCm = Math.round(metrics.perimeter_m * 100);
+          }
+        }
+
+        savePolygon(p.ifc_guid, p.vertices, p.floor_id || floorId, area, perimCm, p.space_name || null, p.primary_function || null)
+          .then(() => { saved++; if (saved === edited.length) console.log(`[Delta] Saved ${saved} edited polygons to backend (with metrics)`); })
+          .catch((err) => console.error('[Delta] Failed to save polygon:', err));
+      }
+    };
+    window.addEventListener('keydown', handlePush);
+    return () => window.removeEventListener('keydown', handlePush);
   }, []);
 
   // Delete key — remove selected polygon with confirmation (works from any view)
@@ -96,7 +122,8 @@ export default function FloorPlanPanel() {
   useEffect(() => {
     if (!activeFloorId) return;
 
-    // 1. Push any localStorage polygons the server doesn't have
+    // 1. Push any localStorage polygons the server doesn't have,
+    //    and re-save any locally edited polygons to update the backend
     const allLocal = useStore.getState().floorPolygons;
     const localForFloor = allLocal[activeFloorId] || [];
     if (localForFloor.length > 0) {
@@ -109,9 +136,17 @@ export default function FloorPlanPanel() {
           space_name: p.space_name || null,
           primary_function: p.primary_function || null,
           area_m2: p.area_m2 ?? null,
+          perimeter_cm: p.perimeter_cm ?? null,
         }));
       if (syncPayload.length > 0) {
         syncPolygons(syncPayload).catch(() => {});
+      }
+      // Re-save edited polygons individually to update backend
+      for (const p of localForFloor) {
+        if (p.edited && p.vertices?.length >= 3) {
+          savePolygon(p.ifc_guid, p.vertices, p.floor_id || activeFloorId, p.area_m2 ?? null, p.perimeter_cm ?? null, p.space_name || null, p.primary_function || null)
+            .catch(() => {});
+        }
       }
     }
 
@@ -122,10 +157,17 @@ export default function FloorPlanPanel() {
         const localByGuid = new Map(local.map((p) => [p.ifc_guid, p]));
         const serverGuids = new Set(serverPolygons.map((p) => p.ifc_guid));
         const localOnly = local.filter((p) => !serverGuids.has(p.ifc_guid));
-        // Merge server data with locally stored worldVertices
+        // Merge server data with local edits (local wins when edited)
         const merged = serverPolygons.map((sp) => {
           const lp = localByGuid.get(sp.ifc_guid);
-          return lp?.worldVertices ? { ...sp, worldVertices: lp.worldVertices } : sp;
+          if (!lp) return sp;
+          if (lp.edited) {
+            // Local edits take priority — overlay local fields onto server base
+            return { ...sp, ...lp };
+          }
+          const extras = {};
+          if (lp.worldVertices) extras.worldVertices = lp.worldVertices;
+          return Object.keys(extras).length > 0 ? { ...sp, ...extras } : sp;
         });
         setFloorPolygons(activeFloorId, [...merged, ...localOnly]);
       })
@@ -155,148 +197,86 @@ export default function FloorPlanPanel() {
     if (input) input.value = '';
   }, [setSearchQuery]);
 
+  const activeFloor = floors.find((f) => f.id === activeFloorId);
+  const floorPolygons = useStore.getState().floorPolygons;
+  const polyCount = activeFloorId ? (floorPolygons[activeFloorId] || []).length : 0;
+
   return (
     <div ref={panelRef} className="floorplan-panel">
-      {/* Header */}
-      <div className="floorplan-panel__header">
-        <span className="floorplan-panel__title">Floor Plan</span>
-        <div className="floorplan-panel__header-actions">
-          {panelMode === 'plan' && (
-            <button
-              className={`floorplan-panel__compare-btn ${compareMode ? 'floorplan-panel__compare-btn--active' : ''}`}
-              onClick={toggleCompareMode}
-              title={compareMode ? 'Exit compare' : 'Compare floors'}
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <rect x="1" y="2" width="5" height="10" rx="1" stroke="currentColor" strokeWidth="1.2"/>
-                <rect x="8" y="2" width="5" height="10" rx="1" stroke="currentColor" strokeWidth="1.2"/>
-              </svg>
-            </button>
-          )}
-          <button
-            className={`floorplan-panel__expand-btn ${panelExpanded ? 'floorplan-panel__expand-btn--active' : ''}`}
-            onClick={togglePanelExpanded}
-            title={panelExpanded ? 'Collapse panel' : 'Expand panel'}
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              {panelExpanded ? (
-                <>
-                  <path d="M9 1v4h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M5 13V9H1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M13 1L9 5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-                  <path d="M1 13L5 9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-                </>
-              ) : (
-                <>
-                  <path d="M10 1h3v3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M4 13H1v-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M13 1L9 5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-                  <path d="M1 13l4-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-                </>
-              )}
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      {/* Search bar */}
-      <div className="floorplan-panel__search">
-        <svg className="floorplan-panel__search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="11" cy="11" r="8"/>
-          <path d="M21 21l-4.35-4.35" strokeLinecap="round"/>
-        </svg>
-        <input
-          type="text"
-          className="floorplan-panel__search-input"
-          placeholder="Search rooms, functions..."
-          defaultValue={searchQuery}
-          onChange={handleSearchChange}
-        />
-        {searchQuery && (
-          <button className="floorplan-panel__search-clear" onClick={handleSearchClear}>
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-              <path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-            </svg>
-          </button>
+      {/* ── Hero floor selector ── */}
+      <div className="floorplan-panel__hero">
+        <select
+          className="floorplan-panel__hero-select"
+          value={activeFloorId || ''}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (val) { handleFloorClick(val); } else { showAllFloors(); clearSelection(); }
+          }}
+        >
+          <option value="">All floors</option>
+          {floors.map((floor) => (
+            <option key={floor.id} value={floor.id}>{floor.name}</option>
+          ))}
+        </select>
+        {activeFloor && (
+          <div className="floorplan-panel__hero-stats">
+            <span>{polyCount} spaces</span>
+            <span className="floorplan-panel__hero-dot">&middot;</span>
+            <span>{activeFloor.total_area_m2 != null ? `${Number(activeFloor.total_area_m2).toLocaleString(undefined, { maximumFractionDigits: 0 })} m\u00B2` : '--'}</span>
+          </div>
         )}
       </div>
 
-      {/* Floor tabs */}
-      <div className="floorplan-panel__floor-tabs">
-        {floors.map((floor) => {
-          const isActive = activeFloorId === floor.id;
-          return (
-            <button
-              key={floor.id}
-              className={`floorplan-panel__floor-tab ${isActive ? 'floorplan-panel__floor-tab--active' : ''}`}
-              onClick={() => handleFloorClick(floor.id)}
-              title={floor.name}
-            >
-              {FLOOR_LABELS[floor.id] || floor.id}
+      {/* ── Search (only when floor selected) ── */}
+      {activeFloorId && (
+        <div className="floorplan-panel__search">
+          <svg className="floorplan-panel__search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="M21 21l-4.35-4.35" strokeLinecap="round"/>
+          </svg>
+          <input
+            type="text"
+            className="floorplan-panel__search-input"
+            placeholder="Search rooms, functions..."
+            defaultValue={searchQuery}
+            onChange={handleSearchChange}
+          />
+          {searchQuery && (
+            <button className="floorplan-panel__search-clear" onClick={handleSearchClear}>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+              </svg>
             </button>
-          );
-        })}
-      </div>
-
-      {/* View toggle + Heatmap selector + Function filters */}
-      <div className="floorplan-panel__controls">
-        <div className="floorplan-panel__controls-row">
-          <div className="floorplan-panel__view-toggle">
-            <button
-              className={`floorplan-panel__toggle-btn ${panelMode === 'list' ? 'floorplan-panel__toggle-btn--active' : ''}`}
-              onClick={() => setPanelMode('list')}
-            >
-              List
-            </button>
-            <button
-              className={`floorplan-panel__toggle-btn ${panelMode === 'plan' ? 'floorplan-panel__toggle-btn--active' : ''}`}
-              onClick={() => setPanelMode('plan')}
-            >
-              Plan
-            </button>
-          </div>
-
-          {panelMode === 'plan' && (
-            <>
-              <div className="floorplan-panel__heatmap-select">
-                <select
-                  value={heatmapMode}
-                  onChange={(e) => setHeatmapMode(e.target.value)}
-                  className="floorplan-panel__heatmap-dropdown"
-                >
-                  {HEATMAP_MODES.map((m) => (
-                    <option key={m.key} value={m.key}>{m.label}</option>
-                  ))}
-                </select>
-              </div>
-              <button
-                className={`floorplan-panel__mep-btn ${mepVisible ? 'floorplan-panel__mep-btn--active' : ''}`}
-                onClick={toggleMepVisible}
-                title={mepVisible ? 'Hide MEP / infrastructure' : 'Show MEP / infrastructure'}
-              >
-                MEP
-              </button>
-            </>
           )}
+        </div>
+      )}
+
+      {/* ── View toggle (segmented, full width) ── */}
+      {activeFloorId && (
+        <div className="floorplan-panel__mode-bar">
           <button
-            className={`floorplan-panel__map-btn ${mappingMode ? 'floorplan-panel__map-btn--active' : ''}`}
-            onClick={() => { if (panelMode !== 'plan') setPanelMode('plan'); toggleMappingMode(); }}
-            title={mappingMode ? 'Exit room mapping mode' : 'Draw room polygons'}
+            className={`floorplan-panel__seg-btn ${panelMode === 'list' ? 'floorplan-panel__seg-btn--active' : ''}`}
+            onClick={() => setPanelMode('list')}
           >
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-              <path d="M2 2L10 2L10 10L2 10Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" fill="none"/>
-              <circle cx="2" cy="2" r="1" fill="currentColor"/>
-              <circle cx="10" cy="2" r="1" fill="currentColor"/>
-              <circle cx="10" cy="10" r="1" fill="currentColor"/>
-              <circle cx="2" cy="10" r="1" fill="currentColor"/>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round">
+              <line x1="3" y1="3" x2="11" y2="3"/><line x1="3" y1="7" x2="11" y2="7"/><line x1="3" y1="11" x2="9" y2="11"/>
             </svg>
-            Map
+            List
+          </button>
+          <button
+            className={`floorplan-panel__seg-btn ${panelMode === 'plan' ? 'floorplan-panel__seg-btn--active' : ''}`}
+            onClick={() => setPanelMode('plan')}
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="2" width="10" height="10" rx="1.5"/>
+              <line x1="2" y1="6" x2="12" y2="6"/><line x1="7" y1="6" x2="7" y2="12"/>
+            </svg>
+            Plan
           </button>
         </div>
-        {panelMode === 'list' && <FunctionFilter />}
-      </div>
+      )}
 
-      {/* Content */}
+      {/* ── Content ── */}
       <div className="floorplan-panel__content">
         {panelMode === 'list' ? (
           <RoomDirectory />
@@ -327,9 +307,27 @@ export default function FloorPlanPanel() {
             </div>
           </div>
         ) : (
-          <FloorPlanImage />
+          <>
+            <FloorPlanImage />
+            {/* Compare button below plan */}
+            <button
+              className={`floorplan-panel__compare-text-btn ${compareMode ? 'floorplan-panel__compare-text-btn--active' : ''}`}
+              onClick={toggleCompareMode}
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <rect x="1" y="2" width="5" height="10" rx="1" stroke="currentColor" strokeWidth="1.2"/>
+                <rect x="8" y="2" width="5" height="10" rx="1" stroke="currentColor" strokeWidth="1.2"/>
+              </svg>
+              {compareMode ? 'Exit compare' : 'Compare floors'}
+            </button>
+          </>
         )}
       </div>
+
+      {/* Polygon edit card (double-click from list or plan) */}
+      {editingPolygon && editingPolygon.floor_id === activeFloorId && panelMode === 'list' && (
+        <PolygonEditCard />
+      )}
     </div>
   );
 }

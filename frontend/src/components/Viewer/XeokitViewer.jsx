@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback, useState } from 'react';
+import React, { useRef, useEffect, useCallback, useState, useMemo } from 'react';
 import useStore from '../../store/useStore';
 import { fetchSpaceByGuid, searchSpaces } from '../../api/client';
 import { getColorForFunction, getCategoryIndex } from '../../utils/colorScheme';
@@ -64,11 +64,14 @@ export default function XeokitViewer() {
   const setStoreyPluginRef = useStore((s) => s.setStoreyPluginRef);
   const mepVisible = useStore((s) => s.mepVisible);
   const setFloorSnapshot = useStore((s) => s.setFloorSnapshot);
+  const floorTransitioning = useStore((s) => s.floorTransitioning);
+  const setFloorTransitioning = useStore((s) => s.setFloorTransitioning);
 
   const [modelError, setModelError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadStatus, setLoadStatus] = useState('Initialising viewer...');
   const [polygonTooltip, setPolygonTooltip] = useState(null); // { name, area, x, y }
+  const [transitionLabel, setTransitionLabel] = useState('');
 
   const storeyObjectsRef = useRef({});
   const mepIdsRef = useRef(new Set());
@@ -76,6 +79,7 @@ export default function XeokitViewer() {
   const sectionPlaneRef = useRef(null);
   const xrayedIdsRef = useRef([]);
   const hiddenSlabsRef = useRef([]);
+  const prevFloorRef = useRef(undefined); // track previous floor for transition guard
 
   // ── Initialize xeokit viewer ──
   useEffect(() => {
@@ -108,6 +112,27 @@ export default function XeokitViewer() {
       viewer.scene.canvas.backgroundColor = [10/255, 22/255, 40/255];
       viewer.camera.projection = 'perspective';
       viewer.camera.perspective.near = 1.0;
+
+      // ── SAO (Scalable Ambient Occlusion) — adds depth shadows ──
+      viewer.scene.sao.enabled = true;
+      viewer.scene.sao.intensity = 0.2;
+      viewer.scene.sao.bias = 0.5;
+      viewer.scene.sao.scale = 800;
+      viewer.scene.sao.minResolution = 0.0;
+      viewer.scene.sao.kernelRadius = 100;
+      viewer.scene.sao.blendFactor = 1.0;
+
+      // ── Reduce ambient light ──
+      for (const light of Object.values(viewer.scene.lights)) {
+        if (light.type === 'AmbientLight') {
+          light.intensity = 0.65;
+        }
+      }
+
+      // ── Edge material — black outlines on geometry boundaries ──
+      viewer.scene.edgeMaterial.edgeColor = [0, 0, 0];
+      viewer.scene.edgeMaterial.edgeAlpha = 0.4;
+      viewer.scene.edgeMaterial.edgeWidth = 1;
 
       // Highlight material (primary selection)
       viewer.scene.highlightMaterial.fill = true;
@@ -202,7 +227,7 @@ export default function XeokitViewer() {
       setLoadStatus('Parsing geometry...');
 
       try {
-        const model = xktLoader.load({ id: 'hospital', xkt: xktData, edges: false });
+        const model = xktLoader.load({ id: 'hospital', xkt: xktData, edges: true });
         modelRef.current = model;
 
         model.on('loaded', () => {
@@ -278,60 +303,50 @@ export default function XeokitViewer() {
         return;
       }
 
-      // ── Click handler (IfcSpace + polygon meshes) ──
-      viewer.cameraControl.on('picked', async (e) => {
-        if (!e || !e.entity) return;
+      // ── Click handler — select whichever polygon is currently hovered ──
+      viewer.cameraControl.on('picked', async () => {
+        const ifcGuid = useStore.getState().hoveredPolygonGuid;
+        if (!ifcGuid) return;
 
-        const entityId = e.entity.id;
+        // Clear any previously highlighted IfcSpace
+        if (highlightedRef.current) {
+          const prev = viewer.scene.objects[highlightedRef.current];
+          if (prev) prev.highlighted = false;
+          highlightedRef.current = null;
+        }
 
-        // Check if a polygon mesh was clicked
-        if (entityId.startsWith('polygon-')) {
-          const ifcGuid = entityId.slice('polygon-'.length);
-
-          // Highlight the underlying IfcSpace entity
-          if (highlightedRef.current) {
-            const prev = viewer.scene.objects[highlightedRef.current];
-            if (prev) prev.highlighted = false;
-          }
-          const spaceEntity = viewer.scene.objects[ifcGuid];
-          if (spaceEntity) {
-            spaceEntity.highlighted = true;
-            highlightedRef.current = ifcGuid;
-          }
-
-          // Set hovered polygon for visual feedback (same as 2D hover)
-          useStore.getState().setHoveredPolygonGuid(ifcGuid);
-
-          // Build polygon-derived overrides for Space Toolkit
-          const floorId = useStore.getState().activeFloorId;
-          const floorPolys = floorId ? (useStore.getState().floorPolygons[floorId] || []) : [];
-          const polyData = floorPolys.find((p) => p.ifc_guid === ifcGuid);
-          const overrides = {};
-          if (polyData) {
-            // Use stored area (same value the tooltip shows)
-            if (polyData.area_m2 != null) overrides.area_m2 = polyData.area_m2;
-            // Compute perimeter from vertices
-            if (floorId) {
-              const snapshot = useStore.getState().floorSnapshots[floorId];
-              if (snapshot?.viewMatrix && snapshot?.projMatrix && polyData.vertices?.length >= 3) {
-                const geom = useStore.getState().floorSpaceGeometry?.[floorId] || [];
-                const avgY = geom.length > 0 ? geom.reduce((sum, sp) => sum + (sp.y || 0), 0) / geom.length : 0;
-                const metrics = computePolygonMetrics(polyData.vertices, snapshot.viewMatrix, snapshot.projMatrix, avgY);
-                if (metrics) {
-                  overrides.perimeter_cm = Math.round(metrics.perimeter_m * 100);
-                  if (overrides.area_m2 == null) overrides.area_m2 = Math.round(metrics.area_m2 * 100) / 100;
-                }
+        // Build polygon-derived overrides for Space Toolkit
+        const floorId = useStore.getState().activeFloorId;
+        const floorPolys = floorId ? (useStore.getState().floorPolygons[floorId] || []) : [];
+        const polyData = floorPolys.find((p) => p.ifc_guid === ifcGuid);
+        const overrides = {};
+        if (polyData) {
+          if (polyData.area_m2 != null) overrides.area_m2 = polyData.area_m2;
+          if (floorId) {
+            const snapshot = useStore.getState().floorSnapshots[floorId];
+            if (snapshot?.viewMatrix && snapshot?.projMatrix && polyData.vertices?.length >= 3) {
+              const geom = useStore.getState().floorSpaceGeometry?.[floorId] || [];
+              const avgY = geom.length > 0 ? geom.reduce((sum, sp) => sum + (sp.y || 0), 0) / geom.length : 0;
+              const metrics = computePolygonMetrics(polyData.vertices, snapshot.viewMatrix, snapshot.projMatrix, avgY);
+              if (metrics) {
+                overrides.perimeter_cm = Math.round(metrics.perimeter_m * 100);
+                if (overrides.area_m2 == null) overrides.area_m2 = Math.round(metrics.area_m2 * 100) / 100;
               }
             }
           }
+        }
 
-          try {
-            const spaceData = await fetchSpaceByGuid(ifcGuid);
-            selectSpace(ifcGuid, { ...spaceData, ...overrides });
-          } catch (err) {
-            selectSpace(ifcGuid, { ifc_guid: ifcGuid, ...overrides });
-          }
-          return;
+        try {
+          const spaceData = await fetchSpaceByGuid(ifcGuid);
+          selectSpace(ifcGuid, { ...spaceData, ...overrides });
+        } catch (err) {
+          selectSpace(ifcGuid, {
+            ifc_guid: ifcGuid,
+            space_name: polyData?.space_name,
+            primary_function: polyData?.primary_function,
+            floor_id: floorId,
+            ...overrides,
+          });
         }
       });
 
@@ -353,6 +368,7 @@ export default function XeokitViewer() {
         if (id.startsWith('polygon-')) {
           canvasEl.style.cursor = 'pointer';
           const ifcGuid = id.slice('polygon-'.length);
+          useStore.getState().setHoveredPolygonGuid(ifcGuid);
           const floorId = useStore.getState().activeFloorId;
           const polygons = floorId ? (useStore.getState().floorPolygons[floorId] || []) : [];
           const poly = polygons.find((p) => p.ifc_guid === ifcGuid);
@@ -365,12 +381,14 @@ export default function XeokitViewer() {
             });
           }
         } else {
+          useStore.getState().setHoveredPolygonGuid(null);
           setPolygonTooltip(null);
         }
       });
 
       viewer.cameraControl.on('hoverOut', () => {
         canvasEl.style.cursor = '';
+        useStore.getState().setHoveredPolygonGuid(null);
         setPolygonTooltip(null);
       });
     }
@@ -540,6 +558,25 @@ export default function XeokitViewer() {
       }
       console.log(`[Delta] Applied ${nameOverrides} name-based color overrides`);
     }
+
+    // Tint white/whitish materials on +2 floor (H020) to a warm cream
+    const h020Ids = storeyObjectsRef.current['H020'] || [];
+    if (h020Ids.length > 0 && metaObjects) {
+      const CREAM = [0.96, 0.92, 0.84];
+      let tinted = 0;
+      for (const id of h020Ids) {
+        const meta = metaObjects[id];
+        if (meta && meta.type === 'IfcSpace') continue; // skip — colored by function
+        const obj = viewer.scene.objects[id];
+        if (!obj) continue;
+        const c = obj.colorize;
+        if (c && c[0] > 0.85 && c[1] > 0.85 && c[2] > 0.85) {
+          obj.colorize = CREAM;
+          tinted++;
+        }
+      }
+      console.log(`[Delta] Tinted ${tinted} white elements on H020 to cream`);
+    }
   }
 
   // ── Extract floor geometry for 2D plan ──
@@ -674,6 +711,9 @@ export default function XeokitViewer() {
     return positions;
   }
 
+  // Track pending hi-res capture so we can cancel on floor switch
+  const pendingHiResRef = useRef(null); // { cancelled: boolean, origW, origH, origStyleW, origStyleH }
+
   // ── Capture snapshot at a given scale, return Blob URL via callback ──
   function captureAtScale(viewer, scaleFactor, callback) {
     const canvas = viewer.scene.canvas.canvas;
@@ -692,43 +732,64 @@ export default function XeokitViewer() {
     const resW = canvas.width;
     const resH = canvas.height;
 
+    const handle = { cancelled: false, origW, origH, origStyleW, origStyleH };
+
     // Use toBlob for async, memory-efficient encoding
     canvas.toBlob((blob) => {
-      // Restore original size
+      // Restore original size (even if cancelled, always restore canvas)
       canvas.width = origW;
       canvas.height = origH;
       canvas.style.width = origStyleW;
       canvas.style.height = origStyleH;
       viewer.scene.glRedraw();
 
-      if (blob) {
+      if (blob && !handle.cancelled) {
         const url = URL.createObjectURL(blob);
         callback(url, resW, resH);
       }
     }, 'image/jpeg', 0.92);
+
+    return handle;
   }
 
   // ── Two-tier floor snapshot: fast 2x immediately, then 6x hi-res ──
   const captureFloorSnapshot = useCallback((viewer, floorId) => {
+    // Cancel any pending hi-res capture from a previous floor to prevent
+    // the canvas being at 6x size when we read matrices below
+    if (pendingHiResRef.current && !pendingHiResRef.current.cancelled) {
+      pendingHiResRef.current.cancelled = true;
+      // Force-restore canvas if it's currently at an enlarged size
+      const h = pendingHiResRef.current;
+      const canvas = viewer.scene.canvas.canvas;
+      if (canvas.width !== h.origW || canvas.height !== h.origH) {
+        canvas.width = h.origW;
+        canvas.height = h.origH;
+        canvas.style.width = h.origStyleW;
+        canvas.style.height = h.origStyleH;
+        viewer.scene.glRedraw();
+        viewer.scene.render(true);
+      }
+    }
+    pendingHiResRef.current = null;
+
     const geometry = useStore.getState().floorSpaceGeometry;
     const spaces = geometry[floorId] || [];
     const spacePositions = projectSpaces(viewer, spaces);
 
-    // Preserve original matrices from first capture so polygon unprojection stays stable.
-    // Re-capturing with slightly different camera state would shift existing polygons.
-    const existing = useStore.getState().floorSnapshots[floorId];
-    const viewMatrix = existing?.viewMatrix || [...viewer.camera.viewMatrix];
-    const projMatrix = existing?.projMatrix || [...viewer.camera.projMatrix];
+    // Always capture fresh matrices from the deterministic flyToFloorPlan camera position
+    const viewMatrix = [...viewer.camera.viewMatrix];
+    const projMatrix = [...viewer.camera.projMatrix];
 
     // Tier 1: fast 2x capture for immediate display
     captureAtScale(viewer, 2, (imageUrl, w, h) => {
       setFloorSnapshot(floorId, { imageUrl, spacePositions, viewMatrix, projMatrix });
       console.log(`[Delta] Fast snapshot for ${floorId}: ${w}x${h}px, ${spacePositions.length} spaces`);
 
-      // Tier 2: hi-res 6x capture in background
+      // Tier 2: hi-res 6x capture in background — only if still on the same floor
       requestAnimationFrame(() => {
         if (!viewerRef.current) return;
-        captureAtScale(viewerRef.current, 6, (hiResUrl, hw, hh) => {
+        if (useStore.getState().activeFloorId !== floorId) return; // floor changed, skip hi-res
+        const handle = captureAtScale(viewerRef.current, 6, (hiResUrl, hw, hh) => {
           // Revoke the old fast URL
           const prev = useStore.getState().floorSnapshots[floorId];
           if (prev?.imageUrl && prev.imageUrl !== hiResUrl) {
@@ -737,6 +798,7 @@ export default function XeokitViewer() {
           setFloorSnapshot(floorId, { imageUrl: hiResUrl });
           console.log(`[Delta] Hi-res snapshot for ${floorId}: ${hw}x${hh}px`);
         });
+        pendingHiResRef.current = handle;
       });
     });
   }, [setFloorSnapshot]);
@@ -758,18 +820,15 @@ export default function XeokitViewer() {
     const maxRange = Math.max(xMax - xMin, zMax - zMin);
 
     // Height above floor to see everything; slight tilt offset (~80° angle)
-    const heightMul = floorId === 'H050' ? 3.0
+    const heightMul = floorId === 'H050' ? 3.4
       : new Set(['H010', 'H020', 'H030', 'H040']).has(floorId) ? 1.8
       : 1.3;
     const height = maxRange * heightMul;
     const tiltOffset = height * 0.18; // tan(10°) ≈ 0.176
 
-    // Shift camera right for +5 floor
-    const xOffset = floorId === 'H050' ? maxRange * 0.15 : 0;
-
     viewer.cameraFlight.flyTo({
-      eye: [cx + xOffset, yAvg + height, cz + tiltOffset],
-      look: [cx + xOffset, yAvg, cz],
+      eye: [cx, yAvg + height, cz + tiltOffset],
+      look: [cx, yAvg, cz],
       up: [0, 0, -1],
       duration: 1.0,
     });
@@ -779,6 +838,30 @@ export default function XeokitViewer() {
   useEffect(() => {
     const viewer = viewerRef.current;
     if (!viewer || loading) return;
+
+    // ── Begin floor transition ──
+    // Destroy old polygon meshes immediately to prevent stale 3D overlays
+    for (const mesh of savedMeshesRef.current.values()) {
+      try { mesh.destroy(); } catch {}
+    }
+    savedMeshesRef.current.clear();
+
+    // Only show transition overlay when actively switching floors (not on initial load)
+    const isInitial = prevFloorRef.current === undefined;
+    const floorChanged = prevFloorRef.current !== activeFloorId;
+    prevFloorRef.current = activeFloorId;
+
+    if (!isInitial && floorChanged) {
+      const floors = useStore.getState().floors;
+      const targetFloor = activeFloorId
+        ? floors.find((f) => f.id === activeFloorId)
+        : null;
+      const label = targetFloor
+        ? (targetFloor.name || targetFloor.shortLabel || activeFloorId)
+        : 'All floors';
+      setTransitionLabel(label);
+      setFloorTransitioning(true);
+    }
 
     // Clean up previous state
     if (sectionPlaneRef.current) {
@@ -802,6 +885,8 @@ export default function XeokitViewer() {
     const metaObjects = viewer.metaScene?.metaObjects;
 
     if (activeFloorId) {
+      // Cancel any in-progress flight before starting new one
+      try { viewer.cameraFlight.cancel(); } catch {}
       flyToFloorPlan(viewer, activeFloorId);
 
       const mapping = storeyObjectsRef.current;
@@ -848,7 +933,7 @@ export default function XeokitViewer() {
       }
       console.log(`[Delta] Floor plan: x-rayed ${xrayed.length} spaces, hidden ${hiddenSlabs.length} slabs/coverings, section plane active`);
 
-      // Capture snapshot when camera flight arrives
+      // Capture snapshot when camera flight arrives, then end transition
       let cancelled = false;
       let settleTimer = null;
       const subId = viewer.cameraFlight.on('stopped', () => {
@@ -857,6 +942,8 @@ export default function XeokitViewer() {
         settleTimer = setTimeout(() => {
           if (!cancelled && viewerRef.current) {
             captureFloorSnapshot(viewerRef.current, activeFloorId);
+            // Small delay for snapshot to propagate and polygon meshes to rebuild
+            setTimeout(() => { if (!cancelled) setFloorTransitioning(false); }, 200);
           }
         }, 100);
       });
@@ -869,8 +956,11 @@ export default function XeokitViewer() {
       // All floors — fly back to full model perspective
       const aabb = modelAABBRef.current || viewer.scene.aabb;
       viewer.cameraFlight.flyTo({ aabb, duration: 1.0 });
+      // End transition after flight duration
+      const flightTimer = setTimeout(() => setFloorTransitioning(false), 1200);
+      return () => clearTimeout(flightTimer);
     }
-  }, [activeFloorId, loading, flyToFloorPlan, captureFloorSnapshot]);
+  }, [activeFloorId, loading, flyToFloorPlan, captureFloorSnapshot, setFloorTransitioning]);
 
   // ── Watch floor visibility ──
   useEffect(() => {
@@ -924,18 +1014,14 @@ export default function XeokitViewer() {
       return;
     }
 
-    if (highlightedRef.current && highlightedRef.current !== selectedSpaceId) {
+    if (highlightedRef.current) {
       const prev = viewer.scene.objects[highlightedRef.current];
       if (prev) prev.highlighted = false;
-    }
-
-    const spaceObj = viewer.scene.objects[selectedSpaceId];
-    if (spaceObj) {
-      spaceObj.highlighted = true;
-      highlightedRef.current = selectedSpaceId;
+      highlightedRef.current = null;
     }
 
     // Only fly camera when in free 3D mode (no active floor plan)
+    const spaceObj = viewer.scene.objects[selectedSpaceId];
     if (!useStore.getState().activeFloorId && spaceObj) {
       viewer.cameraFlight.flyTo({ aabb: spaceObj.aabb, duration: 1.0, fitFOV: 45 });
     }
@@ -975,8 +1061,6 @@ export default function XeokitViewer() {
       return null;
     }
 
-    console.log('[Delta] 3D polygon world verts:', worldVerts.map(v => v.map(c => c.toFixed(1))));
-
     const positions = [];
     for (const [x, y, z] of worldVerts) positions.push(x, y, z);
     const indices = earClipTriangulate(vertices2D);
@@ -1010,58 +1094,51 @@ export default function XeokitViewer() {
   const floorPolygons = useStore((s) => s.floorPolygons);
   const hoveredPolygonGuid = useStore((s) => s.hoveredPolygonGuid);
   const floorSnapshots = useStore((s) => s.floorSnapshots);
+  const activeRoute = useStore((s) => s.activeRoute);
 
+  // Derive a stable key from snapshot matrices so mesh effect only re-runs when matrices change,
+  // not when the image URL updates (Tier 2 hi-res capture)
+  const snapshotMatrixKey = useMemo(() => {
+    const snap = activeFloorId ? floorSnapshots[activeFloorId] : null;
+    if (!snap?.viewMatrix) return null;
+    return snap.viewMatrix[12].toFixed(4) + '|' + snap.viewMatrix[14].toFixed(4) + '|' + snap.projMatrix[0].toFixed(4);
+  }, [activeFloorId, floorSnapshots]);
+
+  // Create meshes once per floor (invisible by default)
   useEffect(() => {
     const viewer = viewerRef.current;
-    // Destroy all existing saved meshes
     for (const mesh of savedMeshesRef.current.values()) {
       try { mesh.destroy(); } catch {}
     }
     savedMeshesRef.current.clear();
 
-    if (!viewer || !activeFloorId) {
-      console.log('[Delta] 3D polygons: skip — no viewer or activeFloorId');
-      return;
-    }
+    if (!viewer || !activeFloorId || !snapshotMatrixKey) return;
 
     const polygons = floorPolygons[activeFloorId] || [];
-    if (polygons.length === 0) {
-      console.log('[Delta] 3D polygons: no polygons for floor', activeFloorId);
-      return;
-    }
+    if (polygons.length === 0) return;
 
-    const snapshot = floorSnapshots[activeFloorId];
-    if (!snapshot?.viewMatrix || !snapshot?.projMatrix) {
-      console.log('[Delta] 3D polygons: no snapshot matrices for floor', activeFloorId);
-      return;
-    }
+    const snapshot = useStore.getState().floorSnapshots[activeFloorId];
+    if (!snapshot?.viewMatrix || !snapshot?.projMatrix) return;
 
     const geometry = useStore.getState().floorSpaceGeometry;
     const spaces = geometry[activeFloorId] || [];
-    console.log(`[Delta] 3D polygons: rendering ${polygons.length} polygons for ${activeFloorId}, ${spaces.length} spaces available`);
-
     const maxYTop = spaces.length > 0
       ? Math.max(...spaces.map(s => s.yTop || s.y || 0))
       : 0;
 
     for (const poly of polygons) {
       if (!poly.vertices || poly.vertices.length < 3) continue;
-      const planeY = maxYTop;
-      const isHovered = hoveredPolygonGuid === poly.ifc_guid;
-
-      const mesh = createPolygonMesh(viewer, poly.vertices, snapshot.viewMatrix, snapshot.projMatrix, planeY, {
+      // Always compute fresh world vertices from current snapshot matrices
+      // to ensure 3D meshes stay aligned with the current camera/snapshot state
+      const mesh = createPolygonMesh(viewer, poly.vertices, snapshot.viewMatrix, snapshot.projMatrix, maxYTop, {
         id: `polygon-${poly.ifc_guid}`,
         pickable: true,
-        alpha: isHovered ? 0.7 : 0.55,
-        diffuse: isHovered ? [0.95, 0.45, 0.15] : [0.7, 0.28, 0.08],
-        emissive: isHovered ? [0.4, 0.15, 0.0] : [0.25, 0.08, 0.0],
-        worldVertices: poly.worldVertices || null,
+        alpha: 0.01,
+        diffuse: [0, 0, 0],
+        emissive: [0, 0, 0],
       });
-
       if (mesh) {
         savedMeshesRef.current.set(poly.ifc_guid, mesh);
-      } else {
-        console.warn(`[Delta] 3D polygon mesh FAILED for ${poly.ifc_guid}`);
       }
     }
 
@@ -1071,21 +1148,37 @@ export default function XeokitViewer() {
       }
       savedMeshesRef.current.clear();
     };
-  }, [activeFloorId, floorPolygons, floorSnapshots, hoveredPolygonGuid, loading]);
+  }, [activeFloorId, floorPolygons, snapshotMatrixKey, loading]);
 
-
-  // ── Reset view ──
-  const handleResetView = useCallback(() => {
-    const viewer = viewerRef.current;
-    if (!viewer) return;
-    if (highlightedRef.current) {
-      const prev = viewer.scene.objects[highlightedRef.current];
-      if (prev) prev.highlighted = false;
-      highlightedRef.current = null;
+  // Show orange fill on hover/selection, blue for route target/path, near-invisible otherwise
+  useEffect(() => {
+    const routePathGuids = activeRoute?.path ? new Set(activeRoute.path.map((p) => p.ifc_guid)) : null;
+    for (const [guid, mesh] of savedMeshesRef.current) {
+      const isHoverOrSelect = hoveredPolygonGuid === guid || selectedSpaceId === guid;
+      const isRouteTarget = activeRoute?.targetGuid === guid;
+      const isRoutePath = routePathGuids?.has(guid);
+      try {
+        if (isRouteTarget) {
+          mesh.material.alpha = 0.45;
+          mesh.material.diffuse = [0.22, 0.55, 0.99];
+          mesh.material.emissive = [0.05, 0.15, 0.4];
+        } else if (isRoutePath) {
+          mesh.material.alpha = 0.2;
+          mesh.material.diffuse = [0.22, 0.55, 0.99];
+          mesh.material.emissive = [0.02, 0.08, 0.2];
+        } else if (isHoverOrSelect) {
+          mesh.material.alpha = 0.45;
+          mesh.material.diffuse = [1.0, 0.55, 0.2];
+          mesh.material.emissive = [0.4, 0.15, 0.0];
+        } else {
+          mesh.material.alpha = 0.01;
+          mesh.material.diffuse = [0, 0, 0];
+          mesh.material.emissive = [0, 0, 0];
+        }
+      } catch {}
     }
-    const aabb = modelAABBRef.current || viewer.scene.aabb;
-    viewer.cameraFlight.flyTo({ aabb, duration: 1.2 });
-  }, []);
+  }, [hoveredPolygonGuid, selectedSpaceId, activeRoute]);
+
 
   return (
     <div className="xeokit-viewer">
@@ -1099,6 +1192,18 @@ export default function XeokitViewer() {
         </div>
       )}
 
+      {floorTransitioning && !loading && (
+        <div className="xeokit-viewer__transition-overlay">
+          <div className="xeokit-viewer__transition-ring">
+            <svg viewBox="0 0 50 50">
+              <circle className="xeokit-viewer__transition-track" cx="25" cy="25" r="22" />
+              <circle className="xeokit-viewer__transition-arc" cx="25" cy="25" r="22" />
+            </svg>
+          </div>
+          <p className="xeokit-viewer__transition-label">{transitionLabel}</p>
+        </div>
+      )}
+
       {modelError && !loading && (
         <div className="xeokit-viewer__overlay">
           <div className="xeokit-viewer__error-icon">&#9651;</div>
@@ -1107,15 +1212,6 @@ export default function XeokitViewer() {
         </div>
       )}
 
-      <div className="xeokit-viewer__bottom-bar">
-        <span className="xeokit-viewer__hint">Click a room to view details</span>
-        <button className="xeokit-viewer__reset-btn" onClick={handleResetView} title="Reset view">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M8 2L2 8l6 6M2 8h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          Reset
-        </button>
-      </div>
 
       {/* Polygon hover tooltip */}
       {polygonTooltip && (

@@ -1,4 +1,5 @@
 import json
+import re
 from datetime import datetime
 from pathlib import Path
 
@@ -7,8 +8,9 @@ from sqlalchemy.orm import Session
 
 from app.config import DATA_DIR
 from app.database import get_db
-from app.models import Space
+from app.models import SpaceMetrics
 from app.schemas import PolygonSaveRequest, PolygonSyncItem, SpacePolygonResponse
+from app.services.occupancy import compute_occupancy
 
 router = APIRouter(tags=["polygons"])
 
@@ -17,11 +19,25 @@ BACKUP_FILE = Path.home() / "Documents" / "delta-polygons-backup" / "polygons.js
 
 
 def _read_all() -> list[dict]:
-    """Read all polygons from the JSON file."""
+    """Read all polygons from the JSON file.
+    Strips trailing commas and handles extra data appended after the array."""
     if not POLYGONS_FILE.exists():
         return []
     with open(POLYGONS_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
+        content = f.read()
+    if not content.strip():
+        return []
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError:
+        # Strip trailing commas before ] or } (common JSON corruption)
+        cleaned = re.sub(r',\s*([}\]])', r'\1', content)
+        try:
+            return json.loads(cleaned)
+        except json.JSONDecodeError:
+            decoder = json.JSONDecoder()
+            result, _ = decoder.raw_decode(cleaned.lstrip())
+            return result if isinstance(result, list) else []
 
 
 def _write_all(polygons: list[dict]):
@@ -34,6 +50,65 @@ def _write_all(polygons: list[dict]):
         tmp.replace(target)
 
 
+def _upsert_metrics(db: Session, ifc_guid: str, floor_id: str,
+                    area_m2: float | None, perimeter_m: float | None,
+                    primary_function: str | None,
+                    space_name: str | None = None) -> SpaceMetrics:
+    """Compute occupancy and upsert into space_metrics table.
+
+    If the space has furnishings, recompute from furnishings (source of truth).
+    Otherwise fall back to the density model."""
+    from app.models import SpaceFurnishing, FurnishingType
+    from app.services.furnishings import compute_furnishing_occupancy
+
+    now = datetime.utcnow().isoformat()
+
+    # Check if this space has furnishings
+    furnishings = db.query(SpaceFurnishing).filter(
+        SpaceFurnishing.ifc_guid == ifc_guid
+    ).all()
+
+    metrics = db.query(SpaceMetrics).filter(SpaceMetrics.ifc_guid == ifc_guid).first()
+    if not metrics:
+        metrics = SpaceMetrics(ifc_guid=ifc_guid, floor_id=floor_id)
+        db.add(metrics)
+
+    # Always update geometry fields
+    metrics.floor_id = floor_id
+    metrics.area_m2 = area_m2
+    metrics.perimeter_m = perimeter_m
+    metrics.computed_at = now
+
+    if furnishings:
+        # Furnishings are source of truth — recompute from them
+        ft_map = {ft.item_type: ft for ft in db.query(FurnishingType).all()}
+        occ = compute_furnishing_occupancy(furnishings, ft_map, area_m2 or 0)
+        density_occ = compute_occupancy(primary_function, area_m2, space_name)
+        metrics.normal_occupancy = occ["normal_occupancy"]
+        metrics.max_occupancy = occ["max_occupancy"]
+        metrics.absolute_occupancy = occ["absolute_occupancy"]
+        metrics.used_area_m2 = occ["used_area_m2"]
+        metrics.free_area_m2 = occ["free_area_m2"]
+        metrics.occupancy_class = density_occ["occupancy_class"]
+        metrics.occupiable = occ["normal_occupancy"] > 0
+        metrics.furnishing_source = "furnishings"
+    else:
+        # Density model fallback
+        occ = compute_occupancy(primary_function, area_m2, space_name)
+        metrics.normal_occupancy = occ["normal_occupancy"]
+        metrics.max_occupancy = occ["max_occupancy"]
+        metrics.absolute_occupancy = 0
+        metrics.occupancy_class = occ["occupancy_class"]
+        metrics.occupiable = occ["occupiable"]
+        metrics.used_area_m2 = None
+        metrics.free_area_m2 = None
+        metrics.furnishing_source = "density_model"
+
+    db.commit()
+    db.refresh(metrics)
+    return metrics
+
+
 @router.put("/spaces/{ifc_guid}/polygon", response_model=SpacePolygonResponse)
 def upsert_polygon(
     ifc_guid: str,
@@ -43,21 +118,38 @@ def upsert_polygon(
     if len(body.vertices) < 3:
         raise HTTPException(status_code=422, detail="Polygon must have at least 3 vertices")
 
-    # Look up space in DB for enrichment, but don't fail if missing
-    space = db.query(Space).filter(Space.ifc_guid == ifc_guid).first()
-
     now = datetime.utcnow().isoformat()
     polygons = _read_all()
+
+    # Convert perimeter: frontend sends cm, we store cm in JSON but m in metrics
+    perimeter_cm = body.computed_perimeter_cm
+    perimeter_m = round(perimeter_cm / 100, 2) if perimeter_cm is not None else None
+    area_m2 = body.computed_area_m2
+
+    # ── Polygon metadata hard lock ──
+    # For EXISTING polygons, always preserve server-side space_name,
+    # primary_function, area_m2, and perimeter_cm.  These fields can only
+    # be changed via PATCH /spaces/by-guid/{guid}.
+    # For NEW polygons, accept whatever the request provides.
+    existing = next((p for p in polygons if p["ifc_guid"] == ifc_guid), None)
+    if existing:
+        space_name = existing.get("space_name")
+        primary_function = existing.get("primary_function")
+        area_m2 = existing.get("area_m2") if existing.get("area_m2") is not None else area_m2
+        perimeter_cm = existing.get("perimeter_cm") if existing.get("perimeter_cm") is not None else perimeter_cm
+    else:
+        space_name = body.space_name
+        primary_function = body.primary_function
 
     # Upsert: replace existing or append
     entry = {
         "ifc_guid": ifc_guid,
         "floor_id": body.floor_id,
         "vertices": body.vertices,
-        "space_name": (space.space_name if space else None) or body.space_name,
-        "primary_function": (space.primary_function if space else None) or body.primary_function,
-        "area_m2": body.computed_area_m2,
-        "perimeter_cm": body.computed_perimeter_cm,
+        "space_name": space_name,
+        "primary_function": primary_function,
+        "area_m2": area_m2,
+        "perimeter_cm": perimeter_cm,
         "created_at": now,
     }
 
@@ -73,13 +165,33 @@ def upsert_polygon(
 
     _write_all(polygons)
 
-    return SpacePolygonResponse(**entry)
+    # Compute and store metrics
+    metrics = _upsert_metrics(db, ifc_guid, body.floor_id, area_m2, perimeter_m, primary_function, space_name)
+
+    return SpacePolygonResponse(
+        ifc_guid=ifc_guid,
+        floor_id=body.floor_id,
+        vertices=body.vertices,
+        space_name=space_name,
+        primary_function=primary_function,
+        area_m2=area_m2,
+        perimeter_m=perimeter_m,
+        normal_occupancy=metrics.normal_occupancy,
+        max_occupancy=metrics.max_occupancy,
+        occupancy_class=metrics.occupancy_class,
+        occupiable=metrics.occupiable,
+        created_at=entry["created_at"],
+    )
 
 
 @router.post("/polygons/sync")
-def sync_polygons(body: list[PolygonSyncItem]):
-    """Bulk upsert: accept an array of polygons from localStorage and merge into polygons.json.
-    Only adds polygons not already on the server (by ifc_guid)."""
+def sync_polygons(body: list[PolygonSyncItem], db: Session = Depends(get_db)):
+    """Bulk sync: push localStorage polygons the server doesn't have.
+
+    ── Polygon metadata hard lock ──
+    Existing polygons are NEVER modified by this endpoint.
+    Only new polygons (by ifc_guid) are appended.
+    """
     polygons = _read_all()
     existing_guids = {p["ifc_guid"] for p in polygons}
     now = datetime.utcnow().isoformat()
@@ -89,6 +201,8 @@ def sync_polygons(body: list[PolygonSyncItem]):
             continue
         if len(item.vertices) < 3:
             continue
+        perimeter_cm = item.perimeter_cm
+        perimeter_m = round(perimeter_cm / 100, 2) if perimeter_cm is not None else None
         polygons.append({
             "ifc_guid": item.ifc_guid,
             "floor_id": item.floor_id,
@@ -96,44 +210,122 @@ def sync_polygons(body: list[PolygonSyncItem]):
             "space_name": item.space_name,
             "primary_function": item.primary_function,
             "area_m2": item.area_m2,
+            "perimeter_cm": perimeter_cm,
             "created_at": now,
         })
         existing_guids.add(item.ifc_guid)
         added += 1
+
+        # Compute metrics for new polygon
+        _upsert_metrics(db, item.ifc_guid, item.floor_id, item.area_m2, perimeter_m, item.primary_function, item.space_name)
+
     if added > 0:
         _write_all(polygons)
     return {"synced": added, "total": len(polygons)}
 
 
+@router.put("/floors/{floor_id}/polygons")
+def save_floor_polygons(floor_id: str, body: list[PolygonSyncItem], db: Session = Depends(get_db)):
+    """Replace all polygons for a floor with the provided set (used by nudge/position save).
+
+    ── Polygon metadata hard lock ──
+    For polygons that already exist on the server, space_name, primary_function,
+    area_m2, and perimeter_cm are preserved from the server copy.  Only vertices
+    may be updated through this endpoint (for nudge / repositioning).
+    Metadata changes go through PATCH /spaces/by-guid/{guid}.
+    """
+    polygons = _read_all()
+    now = datetime.utcnow().isoformat()
+
+    # Build lookup of existing server-side polygons for this floor
+    existing_map = {p["ifc_guid"]: p for p in polygons if p["floor_id"].upper() == floor_id.upper()}
+
+    # Keep polygons from other floors
+    other = [p for p in polygons if p["floor_id"].upper() != floor_id.upper()]
+    incoming = []
+    for item in body:
+        if len(item.vertices) < 3:
+            continue
+
+        existing = existing_map.get(item.ifc_guid)
+        if existing:
+            # Preserve locked metadata from server
+            space_name = existing.get("space_name") or item.space_name
+            primary_function = existing.get("primary_function") or item.primary_function
+            area_m2 = existing.get("area_m2") if existing.get("area_m2") is not None else item.area_m2
+            perimeter_cm = existing.get("perimeter_cm") if existing.get("perimeter_cm") is not None else item.perimeter_cm
+            created_at = existing.get("created_at", now)
+        else:
+            space_name = item.space_name
+            primary_function = item.primary_function
+            area_m2 = item.area_m2
+            perimeter_cm = item.perimeter_cm
+            created_at = now
+
+        perimeter_m = round(perimeter_cm / 100, 2) if perimeter_cm is not None else None
+        incoming.append({
+            "ifc_guid": item.ifc_guid,
+            "floor_id": floor_id,
+            "vertices": item.vertices,
+            "space_name": space_name,
+            "primary_function": primary_function,
+            "area_m2": area_m2,
+            "perimeter_cm": perimeter_cm,
+            "created_at": created_at,
+        })
+        _upsert_metrics(db, item.ifc_guid, floor_id, area_m2, perimeter_m, primary_function, space_name)
+
+    _write_all(other + incoming)
+    return {"saved": len(incoming), "total": len(other) + len(incoming)}
+
+
 @router.get("/floors/{floor_id}/polygons", response_model=list[SpacePolygonResponse])
 def list_floor_polygons(floor_id: str, db: Session = Depends(get_db)):
     polygons = _read_all()
-    # Look up latest space data from DB for each polygon on this floor
     results = []
     for p in polygons:
         if p["floor_id"].upper() != floor_id.upper():
             continue
-        space = db.query(Space).filter(Space.ifc_guid == p["ifc_guid"]).first()
-        # Prefer polygon-computed area (reflects drawn geometry), fall back to IFC area
-        area = p.get("area_m2") if p.get("area_m2") is not None else (space.area_m2 if space else None)
+        perimeter_cm = p.get("perimeter_cm")
+        perimeter_m = round(perimeter_cm / 100, 2) if perimeter_cm is not None else None
+
+        # Get metrics if available
+        metrics = db.query(SpaceMetrics).filter(SpaceMetrics.ifc_guid == p["ifc_guid"]).first()
+
         results.append(SpacePolygonResponse(
             ifc_guid=p["ifc_guid"],
             floor_id=p["floor_id"],
             vertices=p["vertices"],
-            space_name=space.space_name if space else p.get("space_name"),
-            primary_function=space.primary_function if space else p.get("primary_function"),
-            area_m2=area,
+            space_name=p.get("space_name"),
+            primary_function=p.get("primary_function"),
+            area_m2=p.get("area_m2"),
+            perimeter_m=perimeter_m,
+            normal_occupancy=metrics.normal_occupancy if metrics else 0,
+            max_occupancy=metrics.max_occupancy if metrics else 0,
+            absolute_occupancy=metrics.absolute_occupancy if metrics else 0,
+            occupancy_class=metrics.occupancy_class if metrics else None,
+            occupiable=metrics.occupiable if metrics else False,
+            used_area_m2=metrics.used_area_m2 if metrics else None,
+            free_area_m2=metrics.free_area_m2 if metrics else None,
+            furnishing_source=metrics.furnishing_source if metrics else None,
             created_at=p.get("created_at"),
         ))
     return results
 
 
 @router.delete("/spaces/{ifc_guid}/polygon")
-def delete_polygon(ifc_guid: str):
+def delete_polygon(ifc_guid: str, db: Session = Depends(get_db)):
     polygons = _read_all()
     before = len(polygons)
     polygons = [p for p in polygons if p["ifc_guid"] != ifc_guid]
     if len(polygons) == before:
         raise HTTPException(status_code=404, detail=f"No polygon for GUID {ifc_guid}")
     _write_all(polygons)
+
+    # Remove metrics
+    metrics = db.query(SpaceMetrics).filter(SpaceMetrics.ifc_guid == ifc_guid).first()
+    if metrics:
+        db.delete(metrics)
+        db.commit()
+
     return {"deleted": True}

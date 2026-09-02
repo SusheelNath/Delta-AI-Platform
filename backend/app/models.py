@@ -126,6 +126,48 @@ class SpacePolygon(Base):
     updated_at = Column(String, nullable=True)
 
 
+class SpaceMetrics(Base):
+    __tablename__ = "space_metrics"
+
+    ifc_guid = Column(String, primary_key=True)
+    floor_id = Column(String, nullable=False, index=True)
+    area_m2 = Column(Float, nullable=True)
+    perimeter_m = Column(Float, nullable=True)
+    normal_occupancy = Column(Integer, nullable=False, default=0)
+    max_occupancy = Column(Integer, nullable=False, default=0)
+    absolute_occupancy = Column(Integer, nullable=False, default=0)
+    occupancy_class = Column(String, nullable=True)  # clinical, office, zero, assembly, etc.
+    occupiable = Column(Boolean, nullable=False, default=False)
+    used_area_m2 = Column(Float, nullable=True)
+    free_area_m2 = Column(Float, nullable=True)
+    furnishing_source = Column(String, nullable=True)  # "density_model" or "furnishings"
+    computed_at = Column(String, nullable=True)
+
+
+class FurnishingType(Base):
+    __tablename__ = "furnishing_types"
+
+    item_type = Column(String, primary_key=True)
+    category = Column(String, nullable=False, index=True)
+    label = Column(String, nullable=False)
+    footprint_m2 = Column(Float, nullable=False, default=0.0)
+    normal_occ = Column(Integer, nullable=False, default=0)
+    max_occ = Column(Integer, nullable=False, default=0)
+
+
+class SpaceFurnishing(Base):
+    __tablename__ = "space_furnishings"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    ifc_guid = Column(String, nullable=False, index=True)
+    floor_id = Column(String, nullable=False, index=True)
+    item_type = Column(String, ForeignKey("furnishing_types.item_type"), nullable=False)
+    quantity = Column(Integer, nullable=False, default=1)
+    item_label = Column(String, nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(String, nullable=True)
+
+
 class Translation(Base):
     __tablename__ = "translations"
 

@@ -1,104 +1,175 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import useStore from '../../store/useStore';
-import { searchSpaces } from '../../api/client';
-import { getCategoryIndex, getCssColorForFunction } from '../../utils/colorScheme';
+import { fetchSpaceByGuid } from '../../api/client';
+import { computePolygonMetrics } from '../../utils/unprojectPolygon';
 import './RoomDirectory.css';
 
-const FLOOR_LABELS = {
-  H003: 'B3', H002: 'B2', H001: 'B1', H000: 'GF',
-  H010: '+1', H020: '+2', H030: '+3', H040: '+4', H050: '+5',
+// Accent colours by occupancy class for group left-bar
+const CLASS_COLOURS = {
+  clinical: '#e05555',
+  surgical: '#d44040',
+  patient_bed: '#e87070',
+  patient_bed_double: '#e87070',
+  office: '#5b8def',
+  waiting: '#e0a030',
+  assembly: '#c78f2e',
+  commercial: '#55c490',
+  storage: '#7a8599',
+  laboratory: '#9b6de3',
+  sanitary: '#6ab4c8',
+  changing: '#6ab4c8',
+  general: '#94a3b8',
+  zero: '#5e7088',
 };
+
+function getAccentForGroup(polygons) {
+  // Use the most common occupancy_class in the group
+  const counts = {};
+  for (const p of polygons) {
+    const cls = p.occupancy_class || 'zero';
+    counts[cls] = (counts[cls] || 0) + 1;
+  }
+  let best = 'zero';
+  let bestCount = 0;
+  for (const [cls, count] of Object.entries(counts)) {
+    if (count > bestCount) { best = cls; bestCount = count; }
+  }
+  return CLASS_COLOURS[best] || CLASS_COLOURS.general;
+}
+
+function isZeroGroup(polygons) {
+  return polygons.every((p) => !p.occupiable || p.occupancy_class === 'zero');
+}
+
+function getPolygonOverrides(polygon, floorId) {
+  const overrides = {};
+  if (polygon.area_m2 != null) {
+    overrides.area_m2 = polygon.area_m2;
+  }
+  if (polygon.normal_occupancy != null) overrides.normal_occupancy = polygon.normal_occupancy;
+  if (polygon.max_occupancy != null) overrides.max_occupancy = polygon.max_occupancy;
+  if (polygon.absolute_occupancy != null) overrides.absolute_occupancy = polygon.absolute_occupancy;
+  if (polygon.occupancy_class) overrides.occupancy_class = polygon.occupancy_class;
+  if (polygon.occupiable != null) overrides.occupiable = polygon.occupiable;
+  if (polygon.used_area_m2 != null) overrides.used_area_m2 = polygon.used_area_m2;
+  if (polygon.free_area_m2 != null) overrides.free_area_m2 = polygon.free_area_m2;
+  if (polygon.furnishing_source) overrides.furnishing_source = polygon.furnishing_source;
+
+  const snapshot = useStore.getState().floorSnapshots[floorId];
+  if (snapshot?.viewMatrix && snapshot?.projMatrix && polygon.vertices?.length >= 3) {
+    const geom = useStore.getState().floorSpaceGeometry?.[floorId] || [];
+    const avgY = geom.length > 0 ? geom.reduce((sum, s) => sum + (s.y || 0), 0) / geom.length : 0;
+    const metrics = computePolygonMetrics(polygon.vertices, snapshot.viewMatrix, snapshot.projMatrix, avgY);
+    if (metrics) {
+      overrides.perimeter_cm = Math.round(metrics.perimeter_m * 100);
+      if (overrides.area_m2 == null) {
+        overrides.area_m2 = Math.round(metrics.area_m2 * 100) / 100;
+      }
+    }
+  }
+  if (overrides.perimeter_cm == null && polygon.perimeter_m != null) {
+    overrides.perimeter_cm = Math.round(polygon.perimeter_m * 100);
+  }
+  return overrides;
+}
 
 export default function RoomDirectory() {
   const activeFloorId = useStore((s) => s.activeFloorId);
   const searchQuery = useStore((s) => s.searchQuery);
-  const activeFunctionFilters = useStore((s) => s.activeFunctionFilters);
   const selectedSpaceId = useStore((s) => s.selectedSpaceId);
   const selectSpace = useStore((s) => s.selectSpace);
+  const floorPolygons = useStore((s) => s.floorPolygons);
 
-  const [rooms, setRooms] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState(new Set());
+  const initializedFloorRef = useRef(null);
   const selectedRef = useRef(null);
 
-  // Fetch rooms when floor or search changes
-  useEffect(() => {
-    let cancelled = false;
+  const polygons = useMemo(() => {
+    if (!activeFloorId) return [];
+    return floorPolygons[activeFloorId] || [];
+  }, [activeFloorId, floorPolygons]);
 
-    const isSearching = searchQuery.trim().length > 0;
-    if (!isSearching && !activeFloorId) {
-      setRooms([]);
-      return;
+  const filtered = useMemo(() => {
+    if (!searchQuery || searchQuery.trim().length === 0) return polygons;
+    const q = searchQuery.toLowerCase().trim();
+    return polygons.filter((p) => {
+      const name = (p.space_name || '').toLowerCase();
+      const fn = (p.primary_function || '').toLowerCase();
+      return name.includes(q) || fn.includes(q);
+    });
+  }, [polygons, searchQuery]);
+
+  const groups = useMemo(() => {
+    const map = {};
+    for (const poly of filtered) {
+      const fn = poly.primary_function || 'Unassigned';
+      if (!map[fn]) map[fn] = [];
+      map[fn].push(poly);
     }
-
-    setLoading(true);
-    const params = {};
-    if (isSearching) {
-      params.q = searchQuery.trim();
-    } else {
-      params.floor_id = activeFloorId;
+    for (const polys of Object.values(map)) {
+      polys.sort((a, b) => (a.space_name || '').localeCompare(b.space_name || ''));
     }
-    params.limit = 500;
+    return Object.entries(map).sort(([a], [b]) => {
+      if (a === 'Unassigned') return 1;
+      if (b === 'Unassigned') return -1;
+      return a.localeCompare(b);
+    });
+  }, [filtered]);
 
-    searchSpaces(params)
-      .then((data) => {
-        if (!cancelled) {
-          setRooms(data);
-          setLoading(false);
-        }
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          console.error('[Delta] Room fetch error:', err);
-          setRooms([]);
-          setLoading(false);
-        }
-      });
+  // Start all groups collapsed; reset when floor changes
+  React.useEffect(() => {
+    if (groups.length > 0 && initializedFloorRef.current !== activeFloorId) {
+      setCollapsedGroups(new Set(groups.map(([fn]) => fn)));
+      initializedFloorRef.current = activeFloorId;
+    }
+  }, [groups, activeFloorId]);
 
-    return () => { cancelled = true; };
-  }, [activeFloorId, searchQuery]);
-
-  // Scroll selected card into view
-  useEffect(() => {
+  React.useEffect(() => {
     if (selectedRef.current) {
       selectedRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   }, [selectedSpaceId]);
 
-  const handleCardClick = useCallback((room) => {
-    const guid = room.ifc_guid;
-    if (guid) {
-      selectSpace(guid, room);
-    }
-  }, [selectSpace]);
+  const setEditingPolygon = useStore((s) => s.setEditingPolygon);
 
-  const toggleGroup = useCallback((zone) => {
+  const handleCardDoubleClick = useCallback((polygon) => {
+    setEditingPolygon({ ifc_guid: polygon.ifc_guid, floor_id: activeFloorId });
+  }, [setEditingPolygon, activeFloorId]);
+
+  const handleCardClick = useCallback(async (polygon) => {
+    let overrides = {};
+    try {
+      overrides = getPolygonOverrides(polygon, activeFloorId);
+    } catch {}
+    try {
+      const spaceData = await fetchSpaceByGuid(polygon.ifc_guid);
+      selectSpace(polygon.ifc_guid, { ...spaceData, ...overrides });
+    } catch {
+      selectSpace(polygon.ifc_guid, {
+        ifc_guid: polygon.ifc_guid,
+        space_name: polygon.space_name,
+        primary_function: polygon.primary_function,
+        floor_id: activeFloorId,
+        ...overrides,
+      });
+    }
+  }, [selectSpace, activeFloorId]);
+
+  const toggleGroup = useCallback((fn) => {
     setCollapsedGroups((prev) => {
       const next = new Set(prev);
-      if (next.has(zone)) next.delete(zone);
-      else next.add(zone);
+      if (next.has(fn)) next.delete(fn);
+      else next.add(fn);
       return next;
     });
   }, []);
 
-  // Filter by active function categories
-  const filteredRooms = rooms.filter((room) => {
-    const catIdx = getCategoryIndex(room.primary_function || '');
-    return catIdx < 0 || activeFunctionFilters[catIdx];
-  });
-
   const isSearching = searchQuery.trim().length > 0;
 
-  // Group by functional_zone (only in browse mode)
-  const groups = !isSearching
-    ? groupByZone(filteredRooms)
-    : null;
-
-  // Empty states
   if (!activeFloorId && !isSearching) {
     return (
       <div className="room-directory__empty">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#5a6478" strokeWidth="1.5">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#7b8ca1" strokeWidth="1.2">
           <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" strokeLinecap="round" strokeLinejoin="round"/>
           <polyline points="9 22 9 12 15 12 15 22" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
@@ -107,109 +178,78 @@ export default function RoomDirectory() {
     );
   }
 
-  if (loading) {
+  if (filtered.length === 0) {
     return (
       <div className="room-directory__empty">
-        <div className="room-directory__spinner" />
-        <p>Loading rooms...</p>
-      </div>
-    );
-  }
-
-  if (filteredRooms.length === 0) {
-    return (
-      <div className="room-directory__empty">
-        <p>{isSearching ? `No rooms matching "${searchQuery}"` : 'No rooms on this floor match the active filters'}</p>
+        <p>{isSearching ? `No rooms matching "${searchQuery}"` : 'No spaces on this floor'}</p>
       </div>
     );
   }
 
   return (
     <div className="room-directory">
-      {isSearching ? (
-        // Flat list for search results
-        filteredRooms.map((room) => (
-          <RoomCard
-            key={room.id}
-            room={room}
-            isSelected={room.ifc_guid === selectedSpaceId}
-            showFloor={true}
-            onClick={handleCardClick}
-            selectedRef={room.ifc_guid === selectedSpaceId ? selectedRef : null}
-          />
-        ))
-      ) : (
-        // Grouped by department
-        groups.map(([zone, zoneRooms]) => (
-          <div key={zone} className="room-directory__group">
+      {groups.map(([fn, fnPolygons]) => {
+        const accent = getAccentForGroup(fnPolygons);
+        const zero = isZeroGroup(fnPolygons);
+        const collapsed = collapsedGroups.has(fn);
+        const totalOcc = fnPolygons.reduce((s, p) => s + (p.max_occupancy || 0), 0);
+
+        return (
+          <div key={fn} className={`room-directory__group ${zero ? 'room-directory__group--zero' : ''}`}>
             <button
               className="room-directory__group-header"
-              onClick={() => toggleGroup(zone)}
+              onClick={() => toggleGroup(fn)}
             >
-              <span className={`room-directory__chevron ${collapsedGroups.has(zone) ? '' : 'room-directory__chevron--open'}`}>
+              <span className="room-directory__accent-bar" style={{ backgroundColor: accent }} />
+              <span className={`room-directory__chevron ${collapsed ? '' : 'room-directory__chevron--open'}`}>
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                   <path d="M3 2l4 3-4 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </span>
-              <span className="room-directory__group-name">{zone}</span>
-              <span className="room-directory__group-count">{zoneRooms.length}</span>
+              <span className="room-directory__group-name">{fn}</span>
+              <span className="room-directory__group-meta">
+                <span className="room-directory__group-count">{fnPolygons.length}</span>
+                {totalOcc > 0 && (
+                  <span className="room-directory__group-occ">{totalOcc} occ</span>
+                )}
+              </span>
             </button>
-            {!collapsedGroups.has(zone) && zoneRooms.map((room) => (
-              <RoomCard
-                key={room.id}
-                room={room}
-                isSelected={room.ifc_guid === selectedSpaceId}
-                showFloor={false}
+            {!collapsed && fnPolygons.map((poly) => (
+              <PolygonCard
+                key={poly.ifc_guid}
+                polygon={poly}
+                isSelected={poly.ifc_guid === selectedSpaceId}
                 onClick={handleCardClick}
-                selectedRef={room.ifc_guid === selectedSpaceId ? selectedRef : null}
+                onDoubleClick={handleCardDoubleClick}
+                selectedRef={poly.ifc_guid === selectedSpaceId ? selectedRef : null}
               />
             ))}
           </div>
-        ))
-      )}
+        );
+      })}
     </div>
   );
 }
 
-function RoomCard({ room, isSelected, showFloor, onClick, selectedRef }) {
-  const area = room.area_m2 ? `${Number(room.area_m2).toFixed(0)} m\u00b2` : null;
-  const capacity = room.normal_occupancy && room.normal_occupancy !== 'Not recorded in IFC Spaces'
-    ? room.normal_occupancy
-    : null;
-  const dotColor = getCssColorForFunction(room.primary_function || '');
+function PolygonCard({ polygon, isSelected, onClick, onDoubleClick, selectedRef }) {
+  const area = polygon.area_m2 != null ? `${Number(polygon.area_m2).toFixed(1)} m\u00b2` : null;
+  const occ = polygon.max_occupancy > 0 ? polygon.max_occupancy : null;
 
   return (
     <div
       ref={selectedRef}
       className={`room-card ${isSelected ? 'room-card--selected' : ''}`}
-      onClick={() => onClick(room)}
+      onClick={() => onClick(polygon)}
+      onDoubleClick={() => onDoubleClick(polygon)}
     >
-      <span className="room-card__dot" style={{ background: dotColor }} />
       <div className="room-card__info">
-        <span className="room-card__name">{room.space_name || room.id}</span>
-        <span className="room-card__function">{room.primary_function || 'Unknown function'}</span>
-      </div>
-      <div className="room-card__metrics">
-        {area && <span className="room-card__area">{area}</span>}
-        {capacity && <span className="room-card__capacity">Cap: {capacity}</span>}
-        {showFloor && (
-          <span className="room-card__floor-badge">{FLOOR_LABELS[room.floor_id] || room.floor_name || room.floor_id}</span>
-        )}
+        <span className="room-card__name">{polygon.space_name || polygon.ifc_guid}</span>
+        <span className="room-card__sub">
+          {area && <span>{area}</span>}
+          {area && occ ? <span className="room-card__sub-dot">&middot;</span> : null}
+          {occ && <span>{occ} occ</span>}
+        </span>
       </div>
     </div>
   );
-}
-
-function groupByZone(rooms) {
-  const map = {};
-  for (const room of rooms) {
-    const zone = room.functional_zone || 'Unassigned';
-    if (!map[zone]) map[zone] = [];
-    map[zone].push(room);
-  }
-  return Object.entries(map).sort(([a], [b]) => {
-    if (a === 'Unassigned') return 1;
-    if (b === 'Unassigned') return -1;
-    return a.localeCompare(b);
-  });
 }

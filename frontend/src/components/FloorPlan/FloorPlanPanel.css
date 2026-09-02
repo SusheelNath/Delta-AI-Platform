@@ -2,118 +2,92 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #0a0e17;
+  background: #0c1528;
 }
 
-/* ── Header ── */
-.floorplan-panel__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 48px;
-  min-height: 48px;
-  padding: 0 16px;
-  border-bottom: 1px solid #2d3548;
-  background: #0d1117;
+/* ══════════════════════════════════════
+   Hero floor selector
+   ══════════════════════════════════════ */
+.floorplan-panel__hero {
+  padding: 16px 16px 12px;
+  background: #101d32;
+  border-bottom: 1px solid #243a58;
 }
 
-.floorplan-panel__title {
-  font-size: 15px;
+.floorplan-panel__hero-select {
+  width: 100%;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid #2e4a6e;
+  border-radius: 8px;
+  background: #152640;
+  color: #ffffff;
+  font-size: 14px;
   font-weight: 600;
-  color: #e2e8f0;
-  letter-spacing: 0.3px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='7' viewBox='0 0 12 7' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2394a3b8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
 }
 
-.floorplan-panel__header-actions {
+.floorplan-panel__hero-select:hover,
+.floorplan-panel__hero-select:focus {
+  border-color: #E77133;
+}
+
+.floorplan-panel__hero-stats {
   display: flex;
   align-items: center;
   gap: 6px;
+  margin-top: 6px;
+  font-size: 11px;
+  color: #94a3b8;
 }
 
-.floorplan-panel__compare-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: 1px solid #2d3548;
-  border-radius: 6px;
-  background: #161b26;
-  color: #8892a5;
-  cursor: pointer;
-  transition: all 0.15s ease;
+.floorplan-panel__hero-dot {
+  color: #5e7088;
 }
 
-.floorplan-panel__compare-btn:hover {
-  border-color: #E77133;
-  color: #e2e8f0;
-}
-
-.floorplan-panel__compare-btn--active {
-  background: #40251a;
-  border-color: #E77133;
-  color: #f5b57b;
-}
-
-.floorplan-panel__expand-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: 1px solid #2d3548;
-  border-radius: 6px;
-  background: #161b26;
-  color: #8892a5;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.floorplan-panel__expand-btn:hover {
-  border-color: #E77133;
-  color: #e2e8f0;
-}
-
-.floorplan-panel__expand-btn--active {
-  background: #40251a;
-  border-color: #E77133;
-  color: #f5b57b;
-}
-
-/* ── Search bar ── */
+/* ══════════════════════════════════════
+   Search bar
+   ══════════════════════════════════════ */
 .floorplan-panel__search {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
-  border-bottom: 1px solid #2d3548;
-  background: #0d1117;
+  padding: 8px 16px;
+  background: #101d32;
 }
 
 .floorplan-panel__search-icon {
   flex-shrink: 0;
-  color: #5a6478;
+  color: #94a3b8;
 }
 
 .floorplan-panel__search-input {
   flex: 1;
-  height: 28px;
-  padding: 0 8px;
-  border: 1px solid #2d3548;
-  border-radius: 6px;
-  background: #161b26;
-  color: #e2e8f0;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid #243a58;
+  border-radius: 8px;
+  background: #152640;
+  color: #f0f4f8;
   font-size: 12px;
   outline: none;
   transition: border-color 0.15s ease;
 }
 
 .floorplan-panel__search-input::placeholder {
-  color: #5a6478;
+  color: #7b8ca1;
 }
 
 .floorplan-panel__search-input:focus {
   border-color: #E77133;
+  background: #1a2d4a;
 }
 
 .floorplan-panel__search-clear {
@@ -124,164 +98,103 @@
   height: 20px;
   border: none;
   border-radius: 50%;
-  background: #2d3548;
-  color: #8892a5;
+  background: #2e4a6e;
+  color: #c8d5e4;
   cursor: pointer;
   flex-shrink: 0;
   transition: background 0.12s ease;
 }
 
 .floorplan-panel__search-clear:hover {
-  background: #3d4558;
-  color: #e2e8f0;
+  background: #3a5a82;
+  color: #ffffff;
 }
 
-/* ── Floor tabs ── */
-.floorplan-panel__floor-tabs {
+/* ══════════════════════════════════════
+   Mode bar (segmented toggle)
+   ══════════════════════════════════════ */
+.floorplan-panel__mode-bar {
   display: flex;
-  gap: 2px;
-  padding: 8px 12px;
-  border-bottom: 1px solid #2d3548;
-  background: #0d1117;
-  overflow-x: auto;
+  align-items: center;
+  padding: 6px 16px 10px;
+  background: #101d32;
+  border-bottom: 1px solid #243a58;
+  border-radius: 8px;
+  overflow: hidden;
+  gap: 0;
 }
 
-.floorplan-panel__floor-tab {
+.floorplan-panel__seg-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 34px;
-  height: 28px;
-  padding: 0 8px;
-  border: 1px solid #2d3548;
-  border-radius: 6px;
-  background: #161b26;
-  color: #8892a5;
+  gap: 5px;
+  flex: 1;
+  height: 30px;
+  border: 1px solid #2e4a6e;
+  background: #152640;
+  color: #94a3b8;
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
-  flex-shrink: 0;
 }
 
-.floorplan-panel__floor-tab:hover {
-  border-color: #E77133;
-  color: #e2e8f0;
+.floorplan-panel__seg-btn:first-child {
+  border-radius: 8px 0 0 8px;
+  border-right: none;
 }
 
-.floorplan-panel__floor-tab--active {
-  background: #E77133;
-  border-color: #E77133;
-  color: #fff;
+.floorplan-panel__seg-btn:last-child {
+  border-radius: 0 8px 8px 0;
+}
+
+.floorplan-panel__seg-btn:hover {
+  color: #f0f4f8;
+  background: #1a2d4a;
+}
+
+.floorplan-panel__seg-btn--active {
+  background: #2a1a0a;
+  color: #f5a06a;
   font-weight: 600;
+  border-color: #E77133;
 }
 
-/* ── Controls row (toggle + filters) ── */
-.floorplan-panel__controls {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  border-bottom: 1px solid #2d3548;
-  background: #0d1117;
+.floorplan-panel__seg-btn--active svg {
+  stroke: #E77133;
 }
 
-.floorplan-panel__controls-row {
+/* ══════════════════════════════════════
+   Compare floors
+   ══════════════════════════════════════ */
+.floorplan-panel__compare-text-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px 4px;
-}
-
-/* ── View toggle ── */
-.floorplan-panel__view-toggle {
-  display: flex;
-  gap: 0;
-  border: 1px solid #2d3548;
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.floorplan-panel__toggle-btn {
-  padding: 0 14px;
-  height: 28px;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px;
   border: none;
-  background: #161b26;
-  color: #8892a5;
+  border-top: 1px solid #243a58;
+  background: #101d32;
+  color: #94a3b8;
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
-.floorplan-panel__toggle-btn:first-child {
-  border-right: 1px solid #2d3548;
+.floorplan-panel__compare-text-btn:hover {
+  color: #f0f4f8;
+  background: #152640;
 }
 
-.floorplan-panel__toggle-btn:hover {
-  color: #e2e8f0;
+.floorplan-panel__compare-text-btn--active {
+  color: #f5a06a;
+  background: #2a1a0a;
 }
 
-.floorplan-panel__toggle-btn--active {
-  background: #40251a;
-  color: #f5b57b;
-  font-weight: 600;
-}
-
-/* ── Heatmap dropdown ── */
-.floorplan-panel__heatmap-select {
-  flex: 1;
-}
-
-.floorplan-panel__heatmap-dropdown {
-  width: 100%;
-  height: 28px;
-  padding: 0 8px;
-  border: 1px solid #2d3548;
-  border-radius: 6px;
-  background: #161b26;
-  color: #c5cdd9;
-  font-size: 11px;
-  cursor: pointer;
-  outline: none;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%235a6478' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
-  padding-right: 24px;
-}
-
-.floorplan-panel__heatmap-dropdown:focus {
-  border-color: #E77133;
-}
-
-/* ── MEP toggle ── */
-.floorplan-panel__mep-btn {
-  padding: 0 10px;
-  height: 28px;
-  border: 1px solid #2d3548;
-  border-radius: 6px;
-  background: #161b26;
-  color: #8892a5;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  flex-shrink: 0;
-}
-
-.floorplan-panel__mep-btn:hover {
-  border-color: #E77133;
-  color: #e2e8f0;
-}
-
-.floorplan-panel__mep-btn--active {
-  background: #40251a;
-  border-color: #E77133;
-  color: #f5b57b;
-}
-
-/* ── Compare mode ── */
 .floorplan-panel__compare {
   display: flex;
   flex: 1;
@@ -299,24 +212,24 @@
 
 .floorplan-panel__compare-divider {
   width: 1px;
-  background: #2d3548;
+  background: #243a58;
   flex-shrink: 0;
 }
 
 .floorplan-panel__compare-selector {
   padding: 6px 8px;
-  border-bottom: 1px solid #2d3548;
-  background: #0d1117;
+  border-bottom: 1px solid #243a58;
+  background: #101d32;
 }
 
 .floorplan-panel__compare-dropdown {
   width: 100%;
   height: 26px;
   padding: 0 8px;
-  border: 1px solid #2d3548;
-  border-radius: 5px;
-  background: #161b26;
-  color: #c5cdd9;
+  border: 1px solid #2e4a6e;
+  border-radius: 6px;
+  background: #152640;
+  color: #f0f4f8;
   font-size: 11px;
   cursor: pointer;
   outline: none;
@@ -326,7 +239,9 @@
   border-color: #E77133;
 }
 
-/* ── Content area ── */
+/* ══════════════════════════════════════
+   Content area
+   ══════════════════════════════════════ */
 .floorplan-panel__content {
   flex: 1;
   overflow: hidden;
@@ -335,7 +250,9 @@
   min-height: 0;
 }
 
-/* ── Floor Plan Image styles ── */
+/* ══════════════════════════════════════
+   Floor Plan Image
+   ══════════════════════════════════════ */
 .floor-plan-image {
   flex: 1;
   overflow: hidden;
@@ -343,7 +260,7 @@
   user-select: none;
   position: relative;
   min-height: 0;
-  background: #0a1628;
+  background: #080e1c;
 }
 
 .floor-plan-image:active {
@@ -372,7 +289,7 @@
   transform: translate(-50%, -50%);
   font-size: 10px;
   font-weight: 500;
-  color: #e2e8f0;
+  color: #f0f4f8;
   padding: 2px 6px;
   border-radius: 4px;
   white-space: nowrap;
@@ -382,10 +299,10 @@
 }
 
 .floor-plan-image__label--search {
-  background: rgba(231, 113, 51, 0.85);
+  background: rgba(231, 113, 51, 0.9);
   color: #fff;
   font-weight: 600;
-  box-shadow: 0 0 6px rgba(231, 113, 51, 0.4);
+  box-shadow: 0 0 8px rgba(231, 113, 51, 0.5);
 }
 
 /* ── Search badge ── */
@@ -394,12 +311,12 @@
   bottom: 10px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(13, 17, 23, 0.85);
-  border: 1px solid #2d3548;
+  background: rgba(12, 21, 40, 0.9);
+  border: 1px solid #2e4a6e;
   border-radius: 12px;
   padding: 4px 12px;
   font-size: 11px;
-  color: #8892a5;
+  color: #94a3b8;
   pointer-events: none;
   z-index: 5;
 }
@@ -411,7 +328,7 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #5a6478;
+  color: #7b8ca1;
   font-size: 12px;
   gap: 10px;
 }
@@ -419,7 +336,7 @@
 .floor-plan-image__spinner {
   width: 24px;
   height: 24px;
-  border: 2px solid #2d3548;
+  border: 2px solid #2e4a6e;
   border-top-color: #E77133;
   border-radius: 50%;
   animation: fp-spin 0.8s linear infinite;
@@ -427,36 +344,6 @@
 
 @keyframes fp-spin {
   to { transform: rotate(360deg); }
-}
-
-/* ── Map button ── */
-.floorplan-panel__map-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0 10px;
-  height: 28px;
-  border: 1px solid #2d3548;
-  border-radius: 6px;
-  background: #161b26;
-  color: #8892a5;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  flex-shrink: 0;
-}
-
-.floorplan-panel__map-btn:hover {
-  border-color: #E77133;
-  color: #e2e8f0;
-}
-
-.floorplan-panel__map-btn--active {
-  background: #40251a;
-  border-color: #E77133;
-  color: #f5b57b;
 }
 
 /* ── Mapping mode styling ── */
@@ -468,7 +355,9 @@
   filter: brightness(0.85);
 }
 
-/* ── Polygon drawing overlay ── */
+/* ══════════════════════════════════════
+   Polygon overlays
+   ══════════════════════════════════════ */
 .polygon-drawing-overlay {
   position: absolute;
   top: 0;
@@ -479,7 +368,6 @@
   z-index: 3;
 }
 
-/* ── Saved polygons overlay ── */
 .saved-polygons-overlay {
   position: absolute;
   top: 0;
@@ -497,7 +385,7 @@
 .saved-polygon__tooltip {
   position: absolute;
   pointer-events: none;
-  background: rgba(13, 17, 23, 0.92);
+  background: rgba(12, 21, 40, 0.95);
   border: 1px solid #E77133;
   border-radius: 6px;
   padding: 5px 9px;
@@ -508,12 +396,12 @@
 .saved-polygon__tooltip-name {
   font-size: 11px;
   font-weight: 600;
-  color: #f5b57b;
+  color: #f5a06a;
 }
 
 .saved-polygon__tooltip-area {
   font-size: 10px;
-  color: #8892a5;
+  color: #94a3b8;
   margin-top: 1px;
 }
 
@@ -523,26 +411,28 @@
   top: 10px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(13, 17, 23, 0.9);
+  background: rgba(12, 21, 40, 0.95);
   border: 1px solid #E77133;
   border-radius: 8px;
   padding: 6px 14px;
   font-size: 11px;
   font-weight: 500;
-  color: #f5b57b;
+  color: #f5a06a;
   pointer-events: none;
   z-index: 10;
   white-space: nowrap;
 }
 
-/* ── Match confirm card ── */
+/* ══════════════════════════════════════
+   Match confirm card
+   ══════════════════════════════════════ */
 .match-confirm-card {
   position: absolute;
   bottom: 12px;
   right: 12px;
-  background: rgba(13, 17, 23, 0.96);
+  background: rgba(12, 21, 40, 0.96);
   backdrop-filter: blur(12px);
-  border: 1px solid #2d3548;
+  border: 1px solid #2e4a6e;
   border-radius: 10px;
   padding: 14px 16px;
   width: 280px;
@@ -571,12 +461,12 @@
 
 .match-confirm-card__count {
   font-size: 11px;
-  color: #5a6478;
+  color: #94a3b8;
 }
 
 .match-confirm-card__loading {
   font-size: 11px;
-  color: #5a6478;
+  color: #94a3b8;
   padding: 8px 0;
 }
 
@@ -590,7 +480,7 @@
 .match-confirm-card__field-label {
   font-size: 10px;
   font-weight: 600;
-  color: #5a6478;
+  color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -598,10 +488,10 @@
 .match-confirm-card__input {
   height: 28px;
   padding: 0 8px;
-  border: 1px solid #2d3548;
+  border: 1px solid #2e4a6e;
   border-radius: 6px;
-  background: #161b26;
-  color: #e2e8f0;
+  background: #152640;
+  color: #f0f4f8;
   font-size: 12px;
   font-weight: 500;
   outline: none;
@@ -613,7 +503,7 @@
 }
 
 .match-confirm-card__input--fn {
-  color: #f5b57b;
+  color: #f5a06a;
   font-weight: 600;
 }
 
@@ -621,7 +511,7 @@
 .match-confirm-card__data {
   display: flex;
   flex-direction: column;
-  border-top: 1px solid rgba(45, 53, 72, 0.5);
+  border-top: 1px solid rgba(46, 74, 110, 0.4);
   padding-top: 6px;
 }
 
@@ -630,7 +520,7 @@
   justify-content: space-between;
   align-items: baseline;
   padding: 4px 0;
-  border-bottom: 1px solid rgba(45, 53, 72, 0.3);
+  border-bottom: 1px solid rgba(46, 74, 110, 0.25);
 }
 
 .match-confirm-card__row:last-child {
@@ -639,14 +529,14 @@
 
 .match-confirm-card__row-label {
   font-size: 10px;
-  color: #5a6478;
+  color: #94a3b8;
   flex-shrink: 0;
   margin-right: 8px;
 }
 
 .match-confirm-card__row-value {
   font-size: 11px;
-  color: #c5cdd9;
+  color: #f0f4f8;
   font-weight: 500;
   text-align: right;
   word-break: break-word;
@@ -656,14 +546,14 @@
 .match-confirm-card__row-value--mono {
   font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
   font-size: 9px;
-  color: #8892a5;
+  color: #7b8ca1;
 }
 
 /* ── Actions ── */
 .match-confirm-card__actions {
   display: flex;
   gap: 6px;
-  border-top: 1px solid rgba(45, 53, 72, 0.5);
+  border-top: 1px solid rgba(46, 74, 110, 0.4);
   padding-top: 10px;
 }
 
@@ -684,33 +574,33 @@
 }
 
 .match-confirm-card__btn--accept {
-  background: #6e3a1e;
-  border-color: #8e4d2a;
-  color: #f5b57b;
+  background: #7a3a12;
+  border-color: #E77133;
+  color: #ffc59b;
 }
 
 .match-confirm-card__btn--accept:hover:not(:disabled) {
-  background: #884a25;
+  background: #944818;
 }
 
 .match-confirm-card__btn--next {
-  background: #161b26;
-  border-color: #2d3548;
-  color: #8892a5;
+  background: #152640;
+  border-color: #2e4a6e;
+  color: #c8d5e4;
 }
 
 .match-confirm-card__btn--next:hover:not(:disabled) {
   border-color: #E77133;
-  color: #e2e8f0;
+  color: #ffffff;
 }
 
 .match-confirm-card__btn--cancel {
   background: transparent;
-  border-color: #2d3548;
-  color: #5a6478;
+  border-color: #2e4a6e;
+  color: #7b8ca1;
 }
 
 .match-confirm-card__btn--cancel:hover {
-  border-color: #5a6478;
-  color: #8892a5;
+  border-color: #94a3b8;
+  color: #c8d5e4;
 }

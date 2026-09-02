@@ -55,6 +55,7 @@ const useStore = create((set, get) => ({
 
   // Floor plan snapshots (canvas captures from 3D viewer)
   floorSnapshots: {},         // { [floorId]: { imageUrl, spacePositions } }
+  floorTransitioning: false,  // true while camera is flying to a new floor
 
   // Polygon mapping mode
   mappingMode: false,
@@ -63,6 +64,12 @@ const useStore = create((set, get) => ({
   matchCandidateList: [],         // [{ id, name, leftPct, topPct, distance, inside }, ...]
   matchCandidateIndex: 0,
   hoveredPolygonGuid: null,
+
+  // Polygon editing (double-click to relabel)
+  editingPolygon: null,  // { ifc_guid, floor_id } or null
+
+  // Routing navigation
+  activeRoute: null,  // { type: 'elevator'|'staircase', path: [...], targetGuid, centroids: [[x,y],...], distanceM }
 
   // Chat
   messages: [],
@@ -108,11 +115,11 @@ const useStore = create((set, get) => ({
   },
 
   selectSpace: (spaceId, spaceData) => {
-    set({ selectedSpaceId: spaceId, selectedSpace: spaceData, drawerOpen: true });
+    set({ selectedSpaceId: spaceId, selectedSpace: spaceData, activeRoute: null });
   },
 
   clearSelection: () => {
-    set({ selectedSpaceId: null, selectedSpace: null, drawerOpen: false });
+    set({ selectedSpaceId: null, selectedSpace: null, drawerOpen: false, activeRoute: null });
   },
 
   toggleDrawer: () => set((s) => ({ drawerOpen: !s.drawerOpen })),
@@ -151,6 +158,7 @@ const useStore = create((set, get) => ({
   setStoreyMap: (floorId, map) => set((s) => ({ storeyMaps: { ...s.storeyMaps, [floorId]: map } })),
   setFloorToStoreyId: (mapping) => set({ floorToStoreyId: mapping }),
   setStoreyPluginRef: (ref) => set({ storeyPluginRef: ref }),
+  setFloorTransitioning: (v) => set({ floorTransitioning: v }),
   setFloorSnapshot: (floorId, snapshot) => set((s) => ({
     floorSnapshots: { ...s.floorSnapshots, [floorId]: { ...(s.floorSnapshots[floorId] || {}), ...snapshot } },
   })),
@@ -217,6 +225,32 @@ const useStore = create((set, get) => ({
   }),
 
   setHoveredPolygonGuid: (guid) => set({ hoveredPolygonGuid: guid }),
+
+  setEditingPolygon: (poly) => set({ editingPolygon: poly }),
+
+  setActiveRoute: (route) => set({ activeRoute: route }),
+  clearActiveRoute: () => set({ activeRoute: null }),
+
+  updatePolygonInFloor: (floorId, ifcGuid, updates) => {
+    const prev = get().floorPolygons;
+    const floor = (prev[floorId] || []).map((p) =>
+      p.ifc_guid === ifcGuid ? { ...p, ...updates, edited: true } : p
+    );
+    const updated = { ...prev, [floorId]: floor };
+    savePolygonsToStorage(updated);
+    set({ floorPolygons: updated });
+  },
+
+  nudgeFloorPolygons: (floorId, dx, dy) => {
+    const prev = get().floorPolygons;
+    const floor = (prev[floorId] || []).map((p) => ({
+      ...p,
+      vertices: p.vertices.map(([x, y]) => [x + dx, y + dy]),
+    }));
+    const updated = { ...prev, [floorId]: floor };
+    savePolygonsToStorage(updated);
+    set({ floorPolygons: updated });
+  },
 
   addMessage: (message) => {
     set((state) => ({

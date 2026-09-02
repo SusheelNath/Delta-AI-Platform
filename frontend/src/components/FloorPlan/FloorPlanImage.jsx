@@ -1,26 +1,12 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import useStore from '../../store/useStore';
 import { getCategoryIndex } from '../../utils/colorScheme';
-import { searchSpaces } from '../../api/client';
-import PolygonDrawingOverlay from './PolygonDrawingOverlay';
 import SavedPolygonsOverlay from './SavedPolygonsOverlay';
-import MatchConfirmCard from './MatchConfirmCard';
+import PolygonEditCard from './PolygonEditCard';
 
 const ZOOM_FACTOR = 0.85;
 const MIN_SCALE = 0.01;
 const MAX_SCALE = 30;
-
-function pointInPolygon(px, py, verts) {
-  let inside = false;
-  for (let i = 0, j = verts.length - 1; i < verts.length; j = i++) {
-    const xi = verts[i][0], yi = verts[i][1];
-    const xj = verts[j][0], yj = verts[j][1];
-    if ((yi > py) !== (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi) {
-      inside = !inside;
-    }
-  }
-  return inside;
-}
 
 export default function FloorPlanImage({ floorIdOverride }) {
   const storeFloorId = useStore((s) => s.activeFloorId);
@@ -29,23 +15,16 @@ export default function FloorPlanImage({ floorIdOverride }) {
   const activeFunctionFilters = useStore((s) => s.activeFunctionFilters);
   const searchQuery = useStore((s) => s.searchQuery);
   const selectedSpaceId = useStore((s) => s.selectedSpaceId);
-  const mappingMode = useStore((s) => s.mappingMode);
-  const addPendingVertex = useStore((s) => s.addPendingVertex);
-  const undoPendingVertex = useStore((s) => s.undoPendingVertex);
-  const clearPendingPolygon = useStore((s) => s.clearPendingPolygon);
-  const setPendingPolygonVertices = useStore((s) => s.setPendingPolygonVertices);
-  const setMatchCandidates = useStore((s) => s.setMatchCandidates);
-  const matchCandidateList = useStore((s) => s.matchCandidateList);
+  const editingPolygon = useStore((s) => s.editingPolygon);
+  const activeRoute = useStore((s) => s.activeRoute);
 
   const [transform, setTransform] = useState({ scale: 1, tx: 0, ty: 0 });
   const [imgDims, setImgDims] = useState(null); // { w, h } once decoded
-  const [drawMousePct, setDrawMousePct] = useState(null);
   const [polygonTooltip, setPolygonTooltip] = useState(null); // { name, area, x, y }
   const containerRef = useRef(null);
   const isPanning = useRef(false);
   const panStart = useRef({ x: 0, y: 0 });
   const didPan = useRef(false);
-  const rafRef = useRef(null);
 
   const snapshot = activeFloorId ? floorSnapshots[activeFloorId] : null;
   const imageUrl = snapshot?.imageUrl || null;
@@ -96,124 +75,6 @@ export default function FloorPlanImage({ floorIdOverride }) {
     );
   }, [searchQuery, spacePositions]);
 
-  // Convert client coords to image percentage coords
-  const clientToPct = useCallback((clientX, clientY) => {
-    const container = containerRef.current;
-    if (!container) return null;
-    const img = container.querySelector('img');
-    if (!img) return null;
-    const rect = img.getBoundingClientRect();
-    return [
-      ((clientX - rect.left) / rect.width) * 100,
-      ((clientY - rect.top) / rect.height) * 100,
-    ];
-  }, []);
-
-  // Finish polygon — find matching spaces
-  const finishPolygon = useCallback(() => {
-    const rawVerts = useStore.getState().pendingPolygonVertices;
-    // Remove duplicate vertices from double-click
-    const vertices = [...rawVerts];
-    while (vertices.length > 3) {
-      const last = vertices[vertices.length - 1];
-      const prev = vertices[vertices.length - 2];
-      if (Math.abs(last[0] - prev[0]) < 0.5 && Math.abs(last[1] - prev[1]) < 0.5) {
-        vertices.pop();
-      } else {
-        break;
-      }
-    }
-
-    if (vertices.length < 3) {
-      clearPendingPolygon();
-      return;
-    }
-
-    // Write deduplicated vertices back to store
-    setPendingPolygonVertices(vertices);
-
-    // Compute centroid
-    const cx = vertices.reduce((s, v) => s + v[0], 0) / vertices.length;
-    const cy = vertices.reduce((s, v) => s + v[1], 0) / vertices.length;
-
-    // Filter out already-mapped spaces
-    const existingPolygons = useStore.getState().floorPolygons[activeFloorId] || [];
-    const mappedGuids = new Set(existingPolygons.map((p) => p.ifc_guid));
-
-    // Find candidate matches from IFC space positions
-    const candidates = spacePositions
-      .filter((sp) => sp.isActive && !mappedGuids.has(sp.id))
-      .map((sp) => {
-        const inside = pointInPolygon(sp.leftPct, sp.topPct, vertices);
-        const dist = Math.sqrt((sp.leftPct - cx) ** 2 + (sp.topPct - cy) ** 2);
-        return { ...sp, inside, distance: dist };
-      })
-      .sort((a, b) => {
-        if (a.inside && !b.inside) return -1;
-        if (!a.inside && b.inside) return 1;
-        return a.distance - b.distance;
-      })
-      .slice(0, 20); // Top 20 candidates
-
-    if (candidates.length > 0) {
-      setMatchCandidates(candidates);
-    } else {
-      // No IFC-based candidates — fall back to API lookup
-      searchSpaces({ floor_id: activeFloorId, limit: 500 })
-        .then((apiSpaces) => {
-          const unmapped = apiSpaces.filter((sp) => sp.ifc_guid && !mappedGuids.has(sp.ifc_guid));
-          if (unmapped.length > 0) {
-            // Show unmapped spaces as candidates
-            const apiCandidates = unmapped
-              .map((sp) => ({
-                id: sp.ifc_guid,
-                name: sp.space_name || sp.ifc_guid,
-                leftPct: 50,
-                topPct: 50,
-                inside: false,
-                distance: 0,
-              }))
-              .slice(0, 30);
-            setMatchCandidates(apiCandidates);
-          } else {
-            // All spaces already mapped — generate a fresh GUID so existing polygons are not replaced
-            const newGuid = `polygon-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-            setMatchCandidates([{
-              id: newGuid,
-              name: 'New Room',
-              leftPct: cx,
-              topPct: cy,
-              inside: false,
-              distance: 0,
-            }]);
-          }
-        })
-        .catch(() => {
-          // API unavailable — still allow polygon creation with a fresh GUID
-          const newGuid = `polygon-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-          setMatchCandidates([{
-            id: newGuid,
-            name: 'New Room',
-            leftPct: cx,
-            topPct: cy,
-            inside: false,
-            distance: 0,
-          }]);
-        });
-    }
-  }, [activeFloorId, spacePositions, clearPendingPolygon, setPendingPolygonVertices, setMatchCandidates]);
-
-  // Click handler — mapping mode vertex placement
-  const handleImageClick = useCallback((e) => {
-    if (didPan.current) return;
-    if (!imageUrl) return;
-
-    if (mappingMode && matchCandidateList.length === 0) {
-      const pct = clientToPct(e.clientX, e.clientY);
-      if (pct) addPendingVertex(pct);
-    }
-  }, [imageUrl, mappingMode, matchCandidateList.length, addPendingVertex, clientToPct]);
-
   // Pan/zoom handlers
   const handleWheel = useCallback((e) => {
     e.preventDefault();
@@ -246,30 +107,15 @@ export default function FloorPlanImage({ floorIdOverride }) {
     }
   }, []);
 
-  // Throttled mouse move via requestAnimationFrame
   const handleMouseMove = useCallback((e) => {
-    const clientX = e.clientX;
-    const clientY = e.clientY;
-
-    // Panning is immediate (no throttle)
     if (isPanning.current) {
-      const dx = clientX - panStart.current.x;
-      const dy = clientY - panStart.current.y;
+      const dx = e.clientX - panStart.current.x;
+      const dy = e.clientY - panStart.current.y;
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) didPan.current = true;
-      panStart.current = { x: clientX, y: clientY };
+      panStart.current = { x: e.clientX, y: e.clientY };
       setTransform((prev) => ({ ...prev, tx: prev.tx + dx, ty: prev.ty + dy }));
     }
-
-    // Draw position tracking throttled to animation frame
-    if (mappingMode) {
-      if (rafRef.current) return;
-      rafRef.current = requestAnimationFrame(() => {
-        rafRef.current = null;
-        const pct = clientToPct(clientX, clientY);
-        setDrawMousePct(pct);
-      });
-    }
-  }, [mappingMode, clientToPct]);
+  }, []);
 
   const handleMouseUp = useCallback(() => {
     isPanning.current = false;
@@ -277,15 +123,10 @@ export default function FloorPlanImage({ floorIdOverride }) {
 
   const handleMouseLeave = useCallback(() => {
     isPanning.current = false;
-    setDrawMousePct(null);
     setPolygonTooltip(null);
   }, []);
 
   const handleDoubleClick = useCallback(() => {
-    if (mappingMode) {
-      finishPolygon();
-      return;
-    }
     const container = containerRef.current;
     if (!container || !imgDims) {
       setTransform({ scale: 1, tx: 0, ty: 0 });
@@ -297,22 +138,7 @@ export default function FloorPlanImage({ floorIdOverride }) {
     const scaledW = imgDims.w * fitScale;
     const scaledH = imgDims.h * fitScale;
     setTransform({ scale: fitScale, tx: (cw - scaledW) / 2, ty: (ch - scaledH) / 2 });
-  }, [imgDims, mappingMode, finishPolygon]);
-
-  // Keyboard shortcuts for mapping mode
-  useEffect(() => {
-    if (!mappingMode) return;
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        clearPendingPolygon();
-      } else if (e.key === 'z' && (e.ctrlKey || e.metaKey)) {
-        e.preventDefault();
-        undoPendingVertex();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [mappingMode, clearPendingPolygon, undoPendingVertex]);
+  }, [imgDims]);
 
   // Zoom 2D view to center on selected polygon
   useEffect(() => {
@@ -361,11 +187,6 @@ export default function FloorPlanImage({ floorIdOverride }) {
     return () => el.removeEventListener('wheel', handleWheel);
   }, [handleWheel, fitted]);
 
-  // Cleanup RAF on unmount
-  useEffect(() => {
-    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
-  }, []);
-
   // Empty state — no floor selected
   if (!activeFloorId) {
     return (
@@ -386,12 +207,12 @@ export default function FloorPlanImage({ floorIdOverride }) {
   }
 
   const isSearching = searchMatches !== null;
-  const showMatchCard = mappingMode && matchCandidateList.length > 0;
+  const showEditCard = editingPolygon != null && editingPolygon.floor_id === activeFloorId;
 
   return (
     <div
       ref={containerRef}
-      className={`floor-plan-image ${mappingMode ? 'floor-plan-image--mapping' : ''}`}
+      className="floor-plan-image"
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
@@ -410,16 +231,42 @@ export default function FloorPlanImage({ floorIdOverride }) {
           alt="Floor plan"
           className="floor-plan-image__img"
           draggable={false}
-          onClick={handleImageClick}
           style={isSearching ? { filter: 'brightness(0.6)' } : undefined}
         />
 
-        {/* Saved polygon outlines (Phase C) */}
+        {/* Saved polygon outlines */}
         <SavedPolygonsOverlay floorId={activeFloorId} onTooltipChange={setPolygonTooltip} />
 
-        {/* Drawing overlay (Phase B) */}
-        {mappingMode && (
-          <PolygonDrawingOverlay mousePos={drawMousePct} />
+        {/* Routing navigation line */}
+        {activeRoute?.centroids && activeRoute.centroids.length >= 2 && (
+          <svg
+            className="routing-line-overlay"
+            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+          >
+            <polyline
+              points={activeRoute.centroids.map((c) => `${c[0]},${c[1]}`).join(' ')}
+              fill="none"
+              stroke="#388bfd"
+              strokeWidth="0.35"
+              vectorEffect="non-scaling-stroke"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeDasharray="4 2"
+            />
+            {/* Start dot */}
+            <circle cx={activeRoute.centroids[0][0]} cy={activeRoute.centroids[0][1]} r="0.5" fill="#388bfd" />
+            {/* End dot */}
+            <circle
+              cx={activeRoute.centroids[activeRoute.centroids.length - 1][0]}
+              cy={activeRoute.centroids[activeRoute.centroids.length - 1][1]}
+              r="0.6"
+              fill="#79b8ff"
+              stroke="#388bfd"
+              strokeWidth="0.15"
+            />
+          </svg>
         )}
 
         {/* Search-matched labels */}
@@ -452,15 +299,8 @@ export default function FloorPlanImage({ floorIdOverride }) {
         </div>
       )}
 
-      {/* Mapping mode indicator */}
-      {mappingMode && !showMatchCard && (
-        <div className="floor-plan-image__mapping-hint">
-          Click to add vertices. Double-click to finish. Esc to cancel.
-        </div>
-      )}
-
-      {/* Match confirmation card */}
-      {showMatchCard && <MatchConfirmCard />}
+      {/* Polygon edit card (double-click to relabel) */}
+      {showEditCard && <PolygonEditCard />}
     </div>
   );
 }

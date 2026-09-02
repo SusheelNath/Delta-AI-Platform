@@ -1,34 +1,61 @@
+"""Space endpoints — polygon-driven.
+
+All data derives from polygons.json + computed intelligence.
+The DB Space table is no longer queried.
+"""
+
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import or_, func
+from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Space, Floor
-from app.schemas import SpaceSummary, SpaceDetail, SpaceUpdateRequest
+from app.services.polygon_intelligence import (
+    read_all_polygons,
+    write_all_polygons,
+    compute_space_intelligence,
+    compute_floor_intelligence,
+    get_floor_polygons,
+    search_polygons,
+    FLOOR_NAMES,
+)
+from app.services.classifier import classify_function
+from app.services.geometry import compute_floor_spatial
 
 router = APIRouter(tags=["spaces"])
 
 
-def _to_detail(space: Space) -> dict:
-    """Convert a Space ORM object to a SpaceDetail dict with floor_name."""
-    d = {c.name: getattr(space, c.name) for c in space.__table__.columns}
-    d["floor_name"] = space.floor.name if space.floor else None
-    return d
+def _polygon_to_summary(p: dict, metadata: dict | None = None) -> dict:
+    """Convert a polygon + optional classifier metadata to a summary dict."""
+    if metadata is None:
+        metadata = classify_function(p.get("primary_function"), p.get("space_name"))
+    return {
+        "id": p.get("ifc_guid", ""),
+        "ifc_guid": p.get("ifc_guid"),
+        "floor_id": p.get("floor_id", ""),
+        "space_name": p.get("space_name"),
+        "room_number": None,
+        "area_m2": p.get("area_m2"),
+        "primary_function": p.get("primary_function"),
+        "space_class": metadata.get("space_class"),
+        "occupiable": metadata.get("accessible"),
+        "functional_zone": metadata.get("functional_zone"),
+        "normal_occupancy": None,
+        "max_occupancy": None,
+        "accessible": metadata.get("accessible"),
+        "bookable": metadata.get("bookable"),
+        "access_level": metadata.get("access_level"),
+        "data_status": "complete" if (p.get("primary_function") and p.get("area_m2")) else "partial",
+    }
 
 
-@router.get("/floors/{floor_id}/spaces", response_model=list[SpaceSummary])
+@router.get("/floors/{floor_id}/spaces")
 def list_floor_spaces(floor_id: str, db: Session = Depends(get_db)):
-    spaces = (
-        db.query(Space)
-        .filter(Space.floor_id == floor_id.upper())
-        .order_by(Space.id)
-        .all()
-    )
-    return spaces
+    """List all spaces on a floor (from polygons)."""
+    polygons = get_floor_polygons(floor_id)
+    return [_polygon_to_summary(p) for p in polygons]
 
 
-@router.get("/spaces/search", response_model=list[SpaceDetail])
-def search_spaces(
+@router.get("/spaces/search")
+def search_spaces_endpoint(
     q: str | None = None,
     floor_id: str | None = None,
     primary_function: str | None = None,
@@ -41,102 +68,86 @@ def search_spaces(
     limit: int = Query(default=100, le=500),
     db: Session = Depends(get_db),
 ):
-    query = db.query(Space).join(Floor)
+    """Search spaces across all polygons with filters."""
+    polygons = read_all_polygons()
 
-    if floor_id:
-        query = query.filter(Space.floor_id == floor_id.upper())
+    # Text + area + floor filters handled by search_polygons
+    results = search_polygons(
+        polygons=polygons,
+        q=q,
+        floor_id=floor_id,
+        primary_function=primary_function,
+        min_area=min_area,
+        max_area=max_area,
+        limit=500,  # pre-filter generously, then apply classifier filters
+    )
 
-    if primary_function:
-        query = query.filter(
-            func.lower(Space.primary_function).contains(primary_function.lower())
-        )
+    # Post-filter by classifier-derived fields
+    filtered = []
+    for p in results:
+        meta = classify_function(p.get("primary_function"), p.get("space_name"))
 
-    if min_area is not None:
-        query = query.filter(Space.area_m2 >= min_area)
+        if bookable and meta.get("bookable", "").lower() != bookable.lower():
+            continue
+        if accessible and meta.get("accessible", "").lower() != accessible.lower():
+            continue
+        if space_class and space_class.lower() not in meta.get("space_class", "").lower():
+            continue
 
-    if max_area is not None:
-        query = query.filter(Space.area_m2 <= max_area)
+        # Compute full intelligence for search results
+        floor_polys = [pp for pp in polygons if pp.get("floor_id") == p.get("floor_id")]
+        intel = compute_space_intelligence(p, floor_polys, db)
+        filtered.append(intel)
 
-    if bookable:
-        query = query.filter(func.lower(Space.bookable) == bookable.lower())
+        if len(filtered) >= limit:
+            break
 
-    if accessible:
-        query = query.filter(func.lower(Space.accessible) == accessible.lower())
-
-    if space_class:
-        query = query.filter(
-            func.lower(Space.space_class).contains(space_class.lower())
-        )
-
-    if service_code:
-        query = query.filter(
-            func.lower(Space.service_code).contains(service_code.lower())
-        )
-
-    if q:
-        search_term = f"%{q.lower()}%"
-        query = query.filter(
-            or_(
-                func.lower(Space.space_name).like(search_term),
-                func.lower(Space.primary_function).like(search_term),
-                func.lower(Space.functional_zone).like(search_term),
-                func.lower(Space.room_number).like(search_term),
-                func.lower(Space.id).like(search_term),
-                func.lower(Space.facilities_available).like(search_term),
-                func.lower(Space.convertible_functions).like(search_term),
-            )
-        )
-
-    spaces = query.order_by(Space.floor_id, Space.id).limit(limit).all()
-    return [SpaceDetail(**_to_detail(s)) for s in spaces]
+    return filtered
 
 
-@router.get("/spaces/by-guid/{ifc_guid}", response_model=SpaceDetail)
+@router.get("/spaces/by-guid/{ifc_guid}")
 def get_space_by_guid(ifc_guid: str, db: Session = Depends(get_db)):
-    space = (
-        db.query(Space)
-        .join(Floor)
-        .filter(Space.ifc_guid == ifc_guid)
-        .first()
-    )
-    if not space:
-        raise HTTPException(status_code=404, detail=f"Space with GUID {ifc_guid} not found")
-    return SpaceDetail(**_to_detail(space))
+    """Get full space intelligence by GUID (from polygon + computed data)."""
+    polygons = read_all_polygons()
+    poly = next((p for p in polygons if p.get("ifc_guid") == ifc_guid), None)
+
+    if not poly:
+        raise HTTPException(status_code=404, detail=f"No polygon with GUID {ifc_guid}")
+
+    floor_id = poly.get("floor_id", "")
+    floor_polygons = [p for p in polygons if p.get("floor_id") == floor_id]
+
+    return compute_space_intelligence(poly, floor_polygons, db)
 
 
-@router.patch("/spaces/by-guid/{ifc_guid}", response_model=SpaceDetail)
-def update_space_by_guid(
-    ifc_guid: str,
-    body: SpaceUpdateRequest,
-    db: Session = Depends(get_db),
-):
-    space = (
-        db.query(Space)
-        .join(Floor)
-        .filter(Space.ifc_guid == ifc_guid)
-        .first()
-    )
-    if not space:
-        raise HTTPException(status_code=404, detail=f"Space with GUID {ifc_guid} not found")
+@router.patch("/spaces/by-guid/{ifc_guid}")
+def update_space_by_guid(ifc_guid: str, body: dict, db: Session = Depends(get_db)):
+    """Update a polygon's space_name or primary_function.
 
-    if body.space_name is not None:
-        space.space_name = body.space_name
-    if body.primary_function is not None:
-        space.primary_function = body.primary_function
+    Writes directly to polygons.json (source of truth).
+    """
+    polygons = read_all_polygons()
+    found = False
+    for p in polygons:
+        if p.get("ifc_guid") == ifc_guid:
+            if "space_name" in body and body["space_name"] is not None:
+                p["space_name"] = body["space_name"]
+            if "primary_function" in body and body["primary_function"] is not None:
+                p["primary_function"] = body["primary_function"]
+            found = True
+            target = p
+            break
 
-    db.commit()
-    db.refresh(space)
-    return SpaceDetail(**_to_detail(space))
+    if not found:
+        raise HTTPException(status_code=404, detail=f"No polygon with GUID {ifc_guid}")
+
+    write_all_polygons(polygons)
+
+    floor_polygons = [p for p in polygons if p.get("floor_id") == target.get("floor_id")]
+    return compute_space_intelligence(target, floor_polygons, db)
 
 
-@router.get("/spaces/{space_id}", response_model=SpaceDetail)
+@router.get("/spaces/{space_id}")
 def get_space(space_id: str, db: Session = Depends(get_db)):
-    space = (
-        db.query(Space)
-        .join(Floor)
-        .filter(Space.id == space_id)
-        .first()
-    )
-    if not space:
-        raise HTTPException(status_code=404, detail=f"Space {space_id} not found")
-    return SpaceDetail(**_to_detail(space))
+    """Get space by ID (which is ifc_guid in polygon-first world)."""
+    return get_space_by_guid(space_id, db)

@@ -52,6 +52,59 @@
   to { transform: rotate(360deg); }
 }
 
+/* ── Floor transition overlay ── */
+.xeokit-viewer__transition-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 22, 40, 0.78);
+  z-index: 6;
+  gap: 14px;
+  animation: transitionFadeIn 0.15s ease-out;
+  pointer-events: none;
+}
+
+@keyframes transitionFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.xeokit-viewer__transition-ring {
+  width: 56px;
+  height: 56px;
+}
+
+.xeokit-viewer__transition-ring svg {
+  width: 100%;
+  height: 100%;
+  animation: spin 1.1s linear infinite;
+}
+
+.xeokit-viewer__transition-track {
+  fill: none;
+  stroke: #1e293b;
+  stroke-width: 3;
+}
+
+.xeokit-viewer__transition-arc {
+  fill: none;
+  stroke: #E77133;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 90 138;
+  stroke-dashoffset: 0;
+}
+
+.xeokit-viewer__transition-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #cbd5e1;
+  letter-spacing: 0.3px;
+}
+
 .xeokit-viewer__error-icon {
   font-size: 36px;
   color: #E77133;

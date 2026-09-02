@@ -31,8 +31,10 @@ export default function SavedPolygonsOverlay({ floorId, onTooltipChange }) {
   const polygons = useStore((s) => s.floorPolygons[floorId] || []);
   const selectedSpaceId = useStore((s) => s.selectedSpaceId);
   const hoveredPolygonGuid = useStore((s) => s.hoveredPolygonGuid);
+  const activeRoute = useStore((s) => s.activeRoute);
   const setHoveredPolygonGuid = useStore((s) => s.setHoveredPolygonGuid);
   const selectSpace = useStore((s) => s.selectSpace);
+  const mappingMode = useStore((s) => s.mappingMode);
   const isDrawing = useStore((s) => s.mappingMode && s.pendingPolygonVertices.length > 0);
 
   const handleClick = useCallback(async (e, polygon) => {
@@ -47,17 +49,24 @@ export default function SavedPolygonsOverlay({ floorId, onTooltipChange }) {
       const spaceData = await fetchSpaceByGuid(polygon.ifc_guid);
       selectSpace(polygon.ifc_guid, { ...spaceData, ...overrides });
     } catch (err) {
+      // No DB record (e.g. cloned H040 polygons) — use polygon metadata directly
       selectSpace(polygon.ifc_guid, {
         ifc_guid: polygon.ifc_guid,
-        ifc_name: polygon.space_name,
+        space_name: polygon.space_name,
+        primary_function: polygon.primary_function,
+        floor_id: floorId,
         ...overrides,
       });
     }
   }, [selectSpace, floorId]);
 
-  const handleDoubleClick = useCallback((e) => {
+  const setEditingPolygon = useStore((s) => s.setEditingPolygon);
+
+  const handleDoubleClick = useCallback((e, polygon) => {
     e.stopPropagation();
-  }, []);
+    e.preventDefault();
+    setEditingPolygon({ ifc_guid: polygon.ifc_guid, floor_id: floorId });
+  }, [setEditingPolygon, floorId]);
 
   const handleMouseEnter = useCallback((e, polygon) => {
     setHoveredPolygonGuid(polygon.ifc_guid);
@@ -95,19 +104,36 @@ export default function SavedPolygonsOverlay({ floorId, onTooltipChange }) {
         const pts = poly.vertices.map((v) => `${v[0]},${v[1]}`).join(' ');
         const isSelected = selectedSpaceId === poly.ifc_guid;
         const isHovered = hoveredPolygonGuid === poly.ifc_guid;
+        const isEdited = poly.edited === true;
+        const isAssigned = poly.space_name && poly.space_name !== 'Unassigned';
+
+        // Check if this polygon is part of the active route
+        const isRouteTarget = activeRoute?.targetGuid === poly.ifc_guid;
+        const isRoutePath = activeRoute?.path?.some((p) => p.ifc_guid === poly.ifc_guid);
+
+        // Blue for routing, orange for hover/select, transparent otherwise
+        const fill = isRouteTarget ? 'rgba(56, 139, 253, 0.35)'
+          : isRoutePath ? 'rgba(56, 139, 253, 0.15)'
+          : isSelected ? 'rgba(255, 140, 50, 0.35)'
+          : isHovered ? 'rgba(255, 140, 50, 0.25)'
+          : 'transparent';
+        const stroke = isRouteTarget ? '#79b8ff'
+          : isRoutePath ? 'rgba(56, 139, 253, 0.4)'
+          : isSelected || isHovered ? '#FFB366'
+          : 'transparent';
 
         return (
           <polygon
             key={poly.ifc_guid}
             points={pts}
             className={`saved-polygon ${isSelected ? 'saved-polygon--selected' : ''} ${isHovered ? 'saved-polygon--hovered' : ''}`}
-            fill={isSelected ? 'rgba(231, 113, 51, 0.35)' : isHovered ? 'rgba(231, 113, 51, 0.25)' : 'rgba(231, 113, 51, 0.1)'}
-            stroke={isSelected ? '#E77133' : isHovered ? '#E77133' : 'rgba(231, 113, 51, 0.5)'}
+            fill={fill}
+            stroke={stroke}
             strokeWidth={isSelected ? '0.4' : '0.25'}
             vectorEffect="non-scaling-stroke"
-            style={{ cursor: isDrawing ? 'crosshair' : 'pointer', pointerEvents: isDrawing ? 'none' : 'visiblePainted' }}
+            style={{ cursor: isDrawing ? 'crosshair' : 'pointer', pointerEvents: isDrawing ? 'none' : 'all' }}
             onClick={(e) => handleClick(e, poly)}
-            onDoubleClick={handleDoubleClick}
+            onDoubleClick={(e) => handleDoubleClick(e, poly)}
             onMouseEnter={(e) => handleMouseEnter(e, poly)}
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}

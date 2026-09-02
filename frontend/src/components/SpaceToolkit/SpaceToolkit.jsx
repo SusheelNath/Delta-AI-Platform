@@ -1,31 +1,56 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import useStore from '../../store/useStore';
 import { translateFR } from '../../utils/translateFR';
+import { computeRouting } from '../../utils/routing';
+import { fetchSpaceFurnishings } from '../../api/client';
 import './SpaceToolkit.css';
-
-const SPACE_TABS = [
-  { key: 'overview', label: 'Overview' },
-  { key: 'physical', label: 'Physical' },
-  { key: 'access', label: 'Access' },
-  { key: 'routing', label: 'Routing' },
-  { key: 'facilities', label: 'Facilities' },
-];
 
 export default function SpaceToolkit() {
   const selectedSpace = useStore((s) => s.selectedSpace);
+  const selectedSpaceId = useStore((s) => s.selectedSpaceId);
   const clearSelection = useStore((s) => s.clearSelection);
   const drawerOpen = useStore((s) => s.drawerOpen);
   const toggleDrawer = useStore((s) => s.toggleDrawer);
-  const [activeTab, setActiveTab] = useState(null);
+  const activeFloorId = useStore((s) => s.activeFloorId);
+  const floorPolygons = useStore((s) => s.floorPolygons);
+  const setActiveRoute = useStore((s) => s.setActiveRoute);
+  const clearActiveRoute = useStore((s) => s.clearActiveRoute);
+  const activeRoute = useStore((s) => s.activeRoute);
+  const [routingOpen, setRoutingOpen] = useState(false);
+  const [descOpen, setDescOpen] = useState(false);
+  const [metricsOpen, setMetricsOpen] = useState(false);
+  const [furnishingsOpen, setFurnishingsOpen] = useState(false);
+  const [furnishings, setFurnishings] = useState([]);
 
-  const tabs = SPACE_TABS;
-
-  // Reset tab when selection changes
+  // Collapse dropdowns when selection changes
   useEffect(() => {
-    if (selectedSpace) {
-      setActiveTab('overview');
-    }
+    setRoutingOpen(false);
+    setDescOpen(false);
+    setMetricsOpen(false);
+    setFurnishingsOpen(false);
+    setFurnishings([]);
   }, [selectedSpace]);
+
+  // Eagerly fetch furnishings on selection (for count badge)
+  useEffect(() => {
+    if (!selectedSpaceId) return;
+    fetchSpaceFurnishings(selectedSpaceId)
+      .then(setFurnishings)
+      .catch(() => setFurnishings([]));
+  }, [selectedSpaceId]);
+
+  // Compute routing when dropdown opens
+  const routing = useMemo(() => {
+    if (!routingOpen || !selectedSpaceId || !activeFloorId) return null;
+    const polygons = floorPolygons[activeFloorId] || [];
+    if (polygons.length === 0) return null;
+    return computeRouting(polygons, selectedSpaceId);
+  }, [routingOpen, selectedSpaceId, activeFloorId, floorPolygons]);
+
+  // Clear route when dropdown closes
+  useEffect(() => {
+    if (!routingOpen) clearActiveRoute();
+  }, [routingOpen, clearActiveRoute]);
 
   if (!selectedSpace) return null;
 
@@ -34,13 +59,6 @@ export default function SpaceToolkit() {
   const get = (key, fallback = '--') => {
     if (s[key] !== undefined && s[key] !== null && s[key] !== '') return translateFR(String(s[key]));
     return fallback;
-  };
-
-  const getBool = (key) => {
-    const v = s[key];
-    if (v === true || v === 'true' || v === 'Yes' || v === 'yes') return 'Yes';
-    if (v === false || v === 'false' || v === 'No' || v === 'no') return 'No';
-    return '--';
   };
 
   const handleClose = () => clearSelection();
@@ -53,19 +71,30 @@ export default function SpaceToolkit() {
     }
   };
 
-  // Display values (all passed through FR→EN translation)
+  const handleRouteClick = (type) => {
+    if (!routing) return;
+    const data = type === 'elevator' ? routing.toElevator : routing.toStaircase;
+    if (!data) return;
+
+    if (activeRoute?.type === type) {
+      clearActiveRoute();
+    } else {
+      setActiveRoute({
+        type,
+        path: data.path,
+        targetGuid: data.target.ifc_guid,
+        centroids: data.centroids,
+        distanceM: data.distanceM,
+      });
+    }
+  };
+
+  // Display values
   const rawName = s.space_name || s.ifc_name || s.ifc_guid || 'Unknown';
   const displayName = translateFR(rawName);
-  const displayType = s.ifc_type || 'IfcSpace';
   const displayId = s.id || s.ifc_guid || '--';
-  const floorName = translateFR(s.floor_name || s.floor_id || '--');
-  const zone = translateFR(s.functional_zone || '--');
   const primaryFunction = translateFR(s.primary_function || '--');
   const area = s.area_m2 != null ? Number(s.area_m2).toFixed(1) : '--';
-  const status = s.data_status || null;
-
-  // Format IFC type for display (strip "Ifc" prefix)
-  const typeLabel = displayType.startsWith('Ifc') ? displayType.slice(3) : displayType;
 
   return (
     <div className={`space-toolkit ${drawerOpen ? 'space-toolkit--open' : 'space-toolkit--closed'}`}>
@@ -77,103 +106,144 @@ export default function SpaceToolkit() {
       {/* Header */}
       <div className="space-toolkit__header">
         <div className="space-toolkit__header-top">
-          <span className="space-toolkit__badge">SPACE TOOLKIT</span>
+          <span className="space-toolkit__badge">SPACE METADATA</span>
           <button className="space-toolkit__close" onClick={handleClose} title="Close">&times;</button>
         </div>
         <h2 className="space-toolkit__name">{displayName}</h2>
         <p className="space-toolkit__meta">{displayId}</p>
-        {zone !== '--' && <p className="space-toolkit__zone">{zone}</p>}
 
         {/* Badges */}
         <div className="space-toolkit__badges">
-          <span className="space-toolkit__type-badge">{typeLabel}</span>
-          {status && (
-            <span className={`space-toolkit__status ${status === 'Active' ? 'space-toolkit__status--active' : ''}`}>
-              {status}
-            </span>
-          )}
           {primaryFunction !== '--' && (
             <span className="space-toolkit__fn-badge">{primaryFunction}</span>
           )}
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="space-toolkit__tabs">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            className={`space-toolkit__tab ${activeTab === tab.key ? 'space-toolkit__tab--active' : ''}`}
-            onClick={() => setActiveTab(tab.key)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Tab content */}
+      {/* Content */}
       <div className="space-toolkit__content">
-
-        {activeTab === 'overview' && (
-          <div className="space-toolkit__section">
+        {/* Description dropdown */}
+        <button
+          className={`space-toolkit__dropdown-toggle ${descOpen ? 'space-toolkit__dropdown-toggle--active' : ''}`}
+          onClick={() => setDescOpen((v) => !v)}
+        >
+          <span className={`space-toolkit__dropdown-arrow ${descOpen ? 'space-toolkit__dropdown-arrow--open' : ''}`}>&#9656;</span>
+          Description
+        </button>
+        {descOpen && (
+          <div className="space-toolkit__section space-toolkit__section--nested">
             <Row label="Primary Function" value={primaryFunction} />
-            <Row label="Secondary Functions" value={get('secondary_functions')} />
-            <Row label="Space Class" value={get('space_class')} />
-            <Row label="Floor" value={floorName} />
-            <Row label="Area" value={area !== '--' ? `${area} m\u00B2` : '--'} />
-            <Row label="Normal Occupancy" value={get('normal_occupancy')} />
-            <Row label="Max Occupancy" value={get('max_occupancy')} />
-            <Row label="Patient Capacity" value={get('patient_capacity')} />
-            <Row label="Flexibility" value={get('flexibility')} />
-            <Row label="Convertible To" value={get('convertible_functions')} />
-            <Row label="Restrictions" value={get('function_restrictions')} />
-            <Row label="Noise Sensitivity" value={get('noise_sensitivity')} />
-          </div>
-        )}
-
-        {activeTab === 'physical' && (
-          <div className="space-toolkit__section">
-            <Row label="Area" value={area !== '--' ? `${area} m\u00B2` : '--'} />
-            <Row label="Perimeter" value={s.perimeter_cm ? `${Number(s.perimeter_cm).toFixed(0)} cm` : '--'} />
-            <Row label="Height" value={s.height_cm ? `${Number(s.height_cm).toFixed(0)} cm` : (s.calculation_height_cm ? `${Number(s.calculation_height_cm).toFixed(0)} cm` : '--')} />
-            <Row label="Floor Finish" value={get('floor_finish')} />
-            <Row label="Ceiling Finish" value={get('ceiling_finish')} />
-            <Row label="Section" value={get('section')} />
             <Row label="Room Number" value={get('room_number')} />
-            <Row label="Service Code" value={get('service_code')} />
             <Row label="IFC GUID" value={get('ifc_guid')} mono />
           </div>
         )}
 
-        {activeTab === 'access' && (
-          <div className="space-toolkit__section">
-            <Row label="Accessible" value={get('accessible')} />
-            <Row label="Bookable" value={getBool('bookable')} />
-            <Row label="Occupiable" value={get('occupiable')} />
-            <Row label="Access Level" value={get('access_level')} />
-            <Row label="Privacy Level" value={get('privacy_level')} />
-            <Row label="Visitor Access" value={get('visitor_access')} />
-            <Row label="Normal Visitors" value={get('normal_visitors')} />
-            <Row label="Max Visitors" value={get('max_visitors')} />
-            <Row label="Hours Restricted" value={get('visiting_hours_restricted')} />
-            <Row label="Visitor Notes" value={get('visitor_notes')} />
+        {/* Metrics dropdown */}
+        <button
+          className={`space-toolkit__dropdown-toggle ${metricsOpen ? 'space-toolkit__dropdown-toggle--active' : ''}`}
+          onClick={() => setMetricsOpen((v) => !v)}
+        >
+          <span className={`space-toolkit__dropdown-arrow ${metricsOpen ? 'space-toolkit__dropdown-arrow--open' : ''}`}>&#9656;</span>
+          Metrics
+        </button>
+        {metricsOpen && (
+          <div className="space-toolkit__section space-toolkit__section--nested">
+            <Row label="Area" value={area !== '--' ? `${area} m\u00B2` : '--'} />
+            <Row label="Perimeter" value={s.perimeter_cm ? `${(Number(s.perimeter_cm) / 100).toFixed(1)} m` : '--'} />
+            {s.used_area_m2 != null && s.area_m2 != null && (
+              <Row label="Used Area" value={`${Number(s.used_area_m2).toFixed(1)} m\u00B2 (${(Number(s.used_area_m2) / Number(s.area_m2) * 100).toFixed(0)}%)`} />
+            )}
+            {s.free_area_m2 != null && (
+              <Row label="Free Area" value={`${Number(s.free_area_m2).toFixed(1)} m\u00B2`} />
+            )}
+            <Row label="Normal Occupancy" value={s.normal_occupancy != null ? String(s.normal_occupancy) : '--'} />
+            <Row label="Max Occupancy" value={s.max_occupancy != null ? String(s.max_occupancy) : '--'} />
+            {s.absolute_occupancy > 0 && (
+              <Row label="Absolute Occupancy" value={String(s.absolute_occupancy)} />
+            )}
+            {s.occupancy_class && (
+              <Row label="Occupancy Class" value={s.occupancy_class.charAt(0).toUpperCase() + s.occupancy_class.slice(1)} />
+            )}
+            {s.furnishing_source && (
+              <Row label="Source" value={s.furnishing_source === 'furnishings' ? 'Furnishings' : 'Density Model'} />
+            )}
           </div>
         )}
 
-        {activeTab === 'routing' && (
-          <div className="space-toolkit__section">
-            <Row label="Nearest Lift" value={get('nearest_lift')} />
-            <Row label="Lift Distance" value={s.lift_distance_m != null ? `${Number(s.lift_distance_m).toFixed(1)} m` : '--'} />
-            <Row label="Nearest Stair" value={get('nearest_stair')} />
-            <Row label="Stair Distance" value={s.stair_distance_m != null ? `${Number(s.stair_distance_m).toFixed(1)} m` : '--'} />
-            <Row label="Step-free Access" value={get('step_free_access')} />
-            <Row label="Adjacent Spaces" value={get('adjacent_spaces')} />
+        {/* Furnishings dropdown */}
+        <button
+          className={`space-toolkit__dropdown-toggle ${furnishingsOpen ? 'space-toolkit__dropdown-toggle--active' : ''}`}
+          onClick={() => setFurnishingsOpen((v) => !v)}
+        >
+          <span className={`space-toolkit__dropdown-arrow ${furnishingsOpen ? 'space-toolkit__dropdown-arrow--open' : ''}`}>&#9656;</span>
+          Furnishings
+          {furnishings.length > 0 && (
+            <span className="space-toolkit__furnishing-count">{furnishings.length}</span>
+          )}
+        </button>
+        {furnishingsOpen && (
+          <div className="space-toolkit__section space-toolkit__section--nested">
+            {furnishings.length === 0 ? (
+              <div className="space-toolkit__empty-msg">No furnishings assigned</div>
+            ) : (
+              furnishings.map((f) => (
+                <div key={f.id} className="space-toolkit__furnishing-item">
+                  <span className="space-toolkit__furnishing-qty">{f.quantity}×</span>
+                  <span className="space-toolkit__furnishing-label">{f.label || f.item_type}</span>
+                  <span className="space-toolkit__furnishing-meta">
+                    {f.footprint_m2 > 0 ? `${(f.footprint_m2 * f.quantity).toFixed(1)} m\u00B2` : ''}
+                    {f.normal_occ > 0 ? ` · ${f.normal_occ * f.quantity} occ` : ''}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         )}
 
-        {activeTab === 'facilities' && (
-          <div className="space-toolkit__section">
-            <FacilitiesList value={get('facilities_available')} />
+        {/* Routing dropdown */}
+        <button
+          className={`space-toolkit__dropdown-toggle ${routingOpen ? 'space-toolkit__dropdown-toggle--active' : ''}`}
+          onClick={() => setRoutingOpen((v) => !v)}
+        >
+          <span className={`space-toolkit__dropdown-arrow ${routingOpen ? 'space-toolkit__dropdown-arrow--open' : ''}`}>&#9656;</span>
+          Routing
+        </button>
+        {routingOpen && (
+          <div className="space-toolkit__section space-toolkit__section--nested">
+            {routing?.toElevator ? (
+              <button
+                className={`space-toolkit__route-row ${activeRoute?.type === 'elevator' ? 'space-toolkit__route-row--active' : ''}`}
+                onClick={() => handleRouteClick('elevator')}
+              >
+                <span className="space-toolkit__route-label">Nearest Elevator</span>
+                <span className="space-toolkit__route-value">
+                  {routing.toElevator.target.space_name || 'Elevator'}
+                  <span className="space-toolkit__route-dist">{routing.toElevator.distanceM.toFixed(1)} m</span>
+                </span>
+              </button>
+            ) : (
+              <div className="space-toolkit__row">
+                <span className="space-toolkit__row-label">Nearest Elevator</span>
+                <span className="space-toolkit__row-value">--</span>
+              </div>
+            )}
+            {routing?.toStaircase ? (
+              <button
+                className={`space-toolkit__route-row ${activeRoute?.type === 'staircase' ? 'space-toolkit__route-row--active' : ''}`}
+                onClick={() => handleRouteClick('staircase')}
+              >
+                <span className="space-toolkit__route-label">Nearest Staircase</span>
+                <span className="space-toolkit__route-value">
+                  {routing.toStaircase.target.space_name || 'Staircase'}
+                  <span className="space-toolkit__route-dist">{routing.toStaircase.distanceM.toFixed(1)} m</span>
+                </span>
+              </button>
+            ) : (
+              <div className="space-toolkit__row">
+                <span className="space-toolkit__row-label">Nearest Staircase</span>
+                <span className="space-toolkit__row-value">--</span>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -194,20 +264,6 @@ function Row({ label, value, mono = false }) {
     <div className="space-toolkit__row">
       <span className="space-toolkit__row-label">{label}</span>
       <span className={`space-toolkit__row-value ${mono ? 'space-toolkit__row-value--mono' : ''}`}>{value}</span>
-    </div>
-  );
-}
-
-function FacilitiesList({ value }) {
-  if (!value || value === '--') {
-    return <p className="space-toolkit__empty">No facilities data available.</p>;
-  }
-  const items = value.split(',').map((s) => s.trim()).filter(Boolean);
-  return (
-    <div className="space-toolkit__facilities">
-      {items.map((item, i) => (
-        <span key={i} className="space-toolkit__facility-tag">{item}</span>
-      ))}
     </div>
   );
 }
