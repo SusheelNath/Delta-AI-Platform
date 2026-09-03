@@ -145,10 +145,6 @@ export default function XeokitViewer() {
       viewer.camera.projection = 'perspective';
       viewer.camera.perspective.near = 1.0;
 
-      // Disable xeokit keyboard camera controls so WASD only nudges polygons
-      viewer.cameraControl.keyboardPanRate = 0;
-      viewer.cameraControl.keyboardRotationRate = 0;
-      viewer.cameraControl.keyboardDollyRate = 0;
 
       // ── SAO (Scalable Ambient Occlusion) — adds depth shadows ──
       viewer.scene.sao.enabled = true;
