@@ -95,3 +95,79 @@ nudgeFloorPolygons: (floorId, dx, dy) => {
 - Use the **SAVE** button in the 3D viewer to persist to backend + backup + GitHub.
 
 ---
+
+## Delete Polygon Toolkit
+
+Delete key removes the currently selected polygon with a confirmation dialog.
+
+### Prerequisites
+
+- `removePolygonFromFloor(floorId, ifcGuid)` must exist in `useStore.js` (already present)
+- `deletePolygon` must be imported from `api/client.js` (already present)
+
+### 1. FloorPlanPanel.jsx — Add import
+
+Add `deletePolygon` to the client import:
+
+```jsx
+import { fetchFloors, fetchFloorPolygons, syncPolygons, savePolygon, deletePolygon } from '../../api/client';
+```
+
+### 2. FloorPlanPanel.jsx — Add store selector
+
+Add inside the component, near other store selectors:
+
+```jsx
+const removePolygonFromFloor = useStore((s) => s.removePolygonFromFloor);
+```
+
+### 3. FloorPlanPanel.jsx — Add Delete key handler
+
+Insert inside the component, after the P-key handler `useEffect`:
+
+```jsx
+// Delete key — remove selected polygon with confirmation (works from any view)
+useEffect(() => {
+  const handleKeyDown = (e) => {
+    if (e.key !== 'Delete') return;
+    const selId = useStore.getState().selectedSpaceId;
+    const floorId = useStore.getState().activeFloorId;
+    if (!selId || !floorId) return;
+    const polygons = useStore.getState().floorPolygons[floorId] || [];
+    const poly = polygons.find((p) => p.ifc_guid === selId);
+    if (!poly) return;
+
+    const name = poly.space_name || poly.ifc_guid;
+    if (!window.confirm(`Delete polygon for "${name}"?`)) return;
+
+    removePolygonFromFloor(floorId, selId);
+    clearSelection();
+    deletePolygon(selId).catch((err) => {
+      console.error('[Delta] Failed to delete polygon from server:', err);
+    });
+  };
+  window.addEventListener('keydown', handleKeyDown);
+  return () => window.removeEventListener('keydown', handleKeyDown);
+}, [removePolygonFromFloor, clearSelection]);
+```
+
+### 4. useStore.js — removePolygonFromFloor (already present)
+
+```js
+removePolygonFromFloor: (floorId, ifcGuid) => {
+  const prev = get().floorPolygons;
+  const updated = { ...prev, [floorId]: (prev[floorId] || []).filter((p) => p.ifc_guid !== ifcGuid) };
+  savePolygonsToStorage(updated);
+  set({ floorPolygons: updated });
+},
+```
+
+### Notes
+
+- Select a polygon first (click it in 2D floor plan or 3D viewer), then press **Delete**.
+- Confirmation dialog shows the polygon name before deleting.
+- Removes from localStorage, store, and sends DELETE to backend.
+- Backend DELETE endpoint is currently disabled (returns 403) — polygon is only removed locally.
+  To enable server-side deletion, update `/api/spaces/{ifc_guid}/polygon` DELETE route in `polygons.py`.
+
+---

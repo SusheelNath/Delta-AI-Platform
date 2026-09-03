@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useCallback } from 'react';
 import useStore from '../../store/useStore';
-import { fetchFloors, fetchFloorPolygons, syncPolygons, savePolygon, deletePolygon } from '../../api/client';
+import { fetchFloors, fetchFloorPolygons, syncPolygons, savePolygon } from '../../api/client';
 import { computePolygonMetrics } from '../../utils/unprojectPolygon';
 import RoomDirectory from './RoomDirectory';
 import FloorPlanImage from './FloorPlanImage';
@@ -30,7 +30,6 @@ export default function FloorPlanPanel() {
   const compareFloorId = useStore((s) => s.compareFloorId);
   const setCompareFloorId = useStore((s) => s.setCompareFloorId);
   const setFloorPolygons = useStore((s) => s.setFloorPolygons);
-  const removePolygonFromFloor = useStore((s) => s.removePolygonFromFloor);
 
   const searchTimerRef = useRef(null);
   const panelRef = useRef(null);
@@ -82,30 +81,6 @@ export default function FloorPlanPanel() {
     window.addEventListener('keydown', handlePush);
     return () => window.removeEventListener('keydown', handlePush);
   }, []);
-
-  // Delete key — remove selected polygon with confirmation (works from any view)
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key !== 'Delete') return;
-      const selId = useStore.getState().selectedSpaceId;
-      const floorId = useStore.getState().activeFloorId;
-      if (!selId || !floorId) return;
-      const polygons = useStore.getState().floorPolygons[floorId] || [];
-      const poly = polygons.find((p) => p.ifc_guid === selId);
-      if (!poly) return;
-
-      const name = poly.space_name || poly.ifc_guid;
-      if (!window.confirm(`Delete polygon for "${name}"?`)) return;
-
-      removePolygonFromFloor(floorId, selId);
-      clearSelection();
-      deletePolygon(selId).catch((err) => {
-        console.error('[Delta] Failed to delete polygon from server:', err);
-      });
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [removePolygonFromFloor, clearSelection]);
 
   // Fetch floors on mount
   useEffect(() => {

@@ -407,8 +407,19 @@ def full_save(body: list[PolygonSyncItem], db: Session = Depends(get_db)):
     try:
         subprocess.run(["git", "add", "data/polygons.json"], cwd=str(repo_root),
                        capture_output=True, timeout=10)
-        floors_str = ", ".join(sorted(incoming_floors.keys()))
-        commit_msg = f"Save polygons [{floors_str}] — {now[:19]}"
+        # Build descriptive commit message with per-floor polygon counts
+        floor_details = []
+        for fid in sorted(incoming_floors.keys()):
+            count = len(incoming_floors[fid])
+            floor_details.append(f"{fid}: {count}")
+        total_saved = sum(len(v) for v in incoming_floors.values())
+        total_all = len(polygons)
+        commit_msg = (
+            f"Save polygons — {total_saved} polygons across {len(incoming_floors)} floors\n\n"
+            f"Floors updated: {', '.join(floor_details)}\n"
+            f"Total polygons in file: {total_all}\n"
+            f"Saved at: {now[:19]}"
+        )
         result = subprocess.run(
             ["git", "commit", "-m", commit_msg],
             cwd=str(repo_root), capture_output=True, text=True, timeout=15,
