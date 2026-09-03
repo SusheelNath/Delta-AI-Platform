@@ -1203,10 +1203,6 @@ export default function XeokitViewer() {
           mesh.material.alpha = 0.45;
           mesh.material.diffuse = [1.0, 0.55, 0.2];
           mesh.material.emissive = [0.4, 0.15, 0.0];
-        } else if (activeFloorId === 'H020') {
-          mesh.material.alpha = 0.25;
-          mesh.material.diffuse = [1.0, 0.55, 0.2];
-          mesh.material.emissive = [0.3, 0.1, 0.0];
         } else {
           mesh.material.alpha = 0.01;
           mesh.material.diffuse = [0, 0, 0];
@@ -1214,7 +1210,7 @@ export default function XeokitViewer() {
         }
       } catch {}
     }
-  }, [hoveredPolygonGuid, selectedSpaceId, activeRoute, activeFloorId]);
+  }, [hoveredPolygonGuid, selectedSpaceId, activeRoute]);
 
 
   return (
