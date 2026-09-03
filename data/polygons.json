@@ -16903,7 +16903,7 @@
       ]
     ],
     "space_name": "Pharmacy",
-    "primary_function": "Commercial - Pharmacy",
+    "primary_function": "Commercial",
     "area_m2": 28.38151238160208,
     "perimeter_cm": null,
     "created_at": "2026-09-03T11:21:17.075549"
@@ -16954,7 +16954,7 @@
       ]
     ],
     "space_name": "Pharmacy - Large",
-    "primary_function": "Commercial - Pharmacy",
+    "primary_function": "Commercial",
     "area_m2": 213.4281347093638,
     "perimeter_cm": null,
     "created_at": "2026-09-03T11:21:17.075549"
@@ -17068,7 +17068,7 @@
       ]
     ],
     "space_name": "Cafeteria",
-    "primary_function": "Commercial - Cafeteria",
+    "primary_function": "Commercial",
     "area_m2": 79.38442675955594,
     "perimeter_cm": null,
     "created_at": "2026-09-03T11:21:17.075549"
@@ -17767,7 +17767,7 @@
       ]
     ],
     "space_name": "Pharmacy - Medium",
-    "primary_function": "Commercial - Pharmacy",
+    "primary_function": "Commercial",
     "area_m2": 112.81628345977515,
     "perimeter_cm": null,
     "created_at": "2026-09-03T11:21:17.075549"
@@ -17802,7 +17802,7 @@
       ]
     ],
     "space_name": "Convenience Store - Small",
-    "primary_function": "Commercial - Convenience Store",
+    "primary_function": "Commercial",
     "area_m2": 30.35207871813327,
     "perimeter_cm": null,
     "created_at": "2026-09-03T11:21:17.075549"
@@ -21953,7 +21953,7 @@
       ]
     ],
     "space_name": "Cafeteria",
-    "primary_function": "Commercial - Cafeteria",
+    "primary_function": "Commercial",
     "area_m2": 25.206829350674525,
     "perimeter_cm": null,
     "created_at": "2026-09-03T11:21:17.075549"
@@ -22179,7 +22179,7 @@
       ]
     ],
     "space_name": "Pharmacy - Large",
-    "primary_function": "Commercial - Pharmacy",
+    "primary_function": "Commercial",
     "area_m2": 222.9002011124976,
     "perimeter_cm": null,
     "created_at": "2026-09-03T11:21:17.075549"
