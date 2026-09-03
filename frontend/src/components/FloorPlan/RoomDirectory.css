@@ -12,26 +12,6 @@
   margin-bottom: 2px;
 }
 
-.room-directory__group--zero .room-directory__group-header {
-  background: #0c1528;
-}
-
-.room-directory__group--zero .room-directory__group-name {
-  color: #ffffff;
-}
-
-.room-directory__group--zero .room-directory__chevron {
-  color: #4a6080;
-}
-
-.room-directory__group--zero .room-directory__group-count {
-  color: #5e7088;
-  background: #101d32;
-}
-
-.room-directory__group--zero .room-directory__group-occ {
-  color: #4a6080;
-}
 
 /* ── Group header ── */
 .room-directory__group-header {
@@ -56,13 +36,6 @@
   background: #152640;
 }
 
-/* Coloured left accent bar */
-.room-directory__accent-bar {
-  width: 3px;
-  align-self: stretch;
-  border-radius: 0 2px 2px 0;
-  flex-shrink: 0;
-}
 
 .room-directory__chevron {
   display: flex;

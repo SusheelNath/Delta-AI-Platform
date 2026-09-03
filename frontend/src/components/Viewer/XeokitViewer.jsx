@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useCallback, useState, useMemo } from 'react';
 import useStore from '../../store/useStore';
-import { fetchSpaceByGuid, searchSpaces } from '../../api/client';
+import { fetchSpaceByGuid, searchSpaces, fullSavePolygons } from '../../api/client';
 import { getColorForFunction, getCategoryIndex } from '../../utils/colorScheme';
 import { unprojectPolygon, earClipTriangulate, computePolygonMetrics } from '../../utils/unprojectPolygon';
 import './XeokitViewer.css';
@@ -72,6 +72,38 @@ export default function XeokitViewer() {
   const [loadStatus, setLoadStatus] = useState('Initialising viewer...');
   const [polygonTooltip, setPolygonTooltip] = useState(null); // { name, area, x, y }
   const [transitionLabel, setTransitionLabel] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saveResult, setSaveResult] = useState(null); // { ok, msg }
+
+  const handleFullSave = useCallback(async () => {
+    setSaving(true);
+    setSaveResult(null);
+    try {
+      const allPolygons = useStore.getState().floorPolygons;
+      const payload = [];
+      for (const [floorId, polys] of Object.entries(allPolygons)) {
+        for (const p of polys) {
+          if (!p.vertices || p.vertices.length < 3) continue;
+          payload.push({
+            ifc_guid: p.ifc_guid,
+            floor_id: p.floor_id || floorId,
+            vertices: p.vertices,
+            space_name: p.space_name || null,
+            primary_function: p.primary_function || null,
+            area_m2: p.area_m2 ?? null,
+            perimeter_cm: p.perimeter_cm ?? null,
+          });
+        }
+      }
+      const result = await fullSavePolygons(payload);
+      setSaveResult({ ok: true, msg: `Saved ${result.saved} polygons` + (result.git_pushed ? ' — pushed to GitHub' : ' — git push failed') });
+    } catch (err) {
+      setSaveResult({ ok: false, msg: err.message });
+    } finally {
+      setSaving(false);
+      setTimeout(() => setSaveResult(null), 4000);
+    }
+  }, []);
 
   const storeyObjectsRef = useRef({});
   const mepIdsRef = useRef(new Set());
@@ -112,6 +144,11 @@ export default function XeokitViewer() {
       viewer.scene.canvas.backgroundColor = [10/255, 22/255, 40/255];
       viewer.camera.projection = 'perspective';
       viewer.camera.perspective.near = 1.0;
+
+      // Disable xeokit keyboard camera controls so WASD only nudges polygons
+      viewer.cameraControl.keyboardPanRate = 0;
+      viewer.cameraControl.keyboardRotationRate = 0;
+      viewer.cameraControl.keyboardDollyRate = 0;
 
       // ── SAO (Scalable Ambient Occlusion) — adds depth shadows ──
       viewer.scene.sao.enabled = true;
@@ -1170,6 +1207,10 @@ export default function XeokitViewer() {
           mesh.material.alpha = 0.45;
           mesh.material.diffuse = [1.0, 0.55, 0.2];
           mesh.material.emissive = [0.4, 0.15, 0.0];
+        } else if (activeFloorId === 'H020') {
+          mesh.material.alpha = 0.25;
+          mesh.material.diffuse = [1.0, 0.55, 0.2];
+          mesh.material.emissive = [0.3, 0.1, 0.0];
         } else {
           mesh.material.alpha = 0.01;
           mesh.material.diffuse = [0, 0, 0];
@@ -1177,7 +1218,7 @@ export default function XeokitViewer() {
         }
       } catch {}
     }
-  }, [hoveredPolygonGuid, selectedSpaceId, activeRoute]);
+  }, [hoveredPolygonGuid, selectedSpaceId, activeRoute, activeFloorId]);
 
 
   return (
@@ -1212,6 +1253,23 @@ export default function XeokitViewer() {
         </div>
       )}
 
+
+      {/* Save button */}
+      <button
+        className="xeokit-viewer__save-btn"
+        onClick={handleFullSave}
+        disabled={saving}
+        title="Save all polygon data to backend, backup, and GitHub"
+      >
+        {saving ? 'Saving...' : 'SAVE'}
+      </button>
+
+      {/* Save result toast */}
+      {saveResult && (
+        <div className={`xeokit-viewer__save-toast ${saveResult.ok ? 'xeokit-viewer__save-toast--ok' : 'xeokit-viewer__save-toast--err'}`}>
+          {saveResult.msg}
+        </div>
+      )}
 
       {/* Polygon hover tooltip */}
       {polygonTooltip && (

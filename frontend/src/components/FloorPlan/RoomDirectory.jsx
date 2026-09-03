@@ -4,42 +4,6 @@ import { fetchSpaceByGuid } from '../../api/client';
 import { computePolygonMetrics } from '../../utils/unprojectPolygon';
 import './RoomDirectory.css';
 
-// Accent colours by occupancy class for group left-bar
-const CLASS_COLOURS = {
-  clinical: '#e05555',
-  surgical: '#d44040',
-  patient_bed: '#e87070',
-  patient_bed_double: '#e87070',
-  office: '#5b8def',
-  waiting: '#e0a030',
-  assembly: '#c78f2e',
-  commercial: '#55c490',
-  storage: '#7a8599',
-  laboratory: '#9b6de3',
-  sanitary: '#6ab4c8',
-  changing: '#6ab4c8',
-  general: '#94a3b8',
-  zero: '#5e7088',
-};
-
-function getAccentForGroup(polygons) {
-  // Use the most common occupancy_class in the group
-  const counts = {};
-  for (const p of polygons) {
-    const cls = p.occupancy_class || 'zero';
-    counts[cls] = (counts[cls] || 0) + 1;
-  }
-  let best = 'zero';
-  let bestCount = 0;
-  for (const [cls, count] of Object.entries(counts)) {
-    if (count > bestCount) { best = cls; bestCount = count; }
-  }
-  return CLASS_COLOURS[best] || CLASS_COLOURS.general;
-}
-
-function isZeroGroup(polygons) {
-  return polygons.every((p) => !p.occupiable || p.occupancy_class === 'zero');
-}
 
 function getPolygonOverrides(polygon, floorId) {
   const overrides = {};
@@ -189,18 +153,15 @@ export default function RoomDirectory() {
   return (
     <div className="room-directory">
       {groups.map(([fn, fnPolygons]) => {
-        const accent = getAccentForGroup(fnPolygons);
-        const zero = isZeroGroup(fnPolygons);
         const collapsed = collapsedGroups.has(fn);
         const totalOcc = fnPolygons.reduce((s, p) => s + (p.max_occupancy || 0), 0);
 
         return (
-          <div key={fn} className={`room-directory__group ${zero ? 'room-directory__group--zero' : ''}`}>
+          <div key={fn} className="room-directory__group">
             <button
               className="room-directory__group-header"
               onClick={() => toggleGroup(fn)}
             >
-              <span className="room-directory__accent-bar" style={{ backgroundColor: accent }} />
               <span className={`room-directory__chevron ${collapsed ? '' : 'room-directory__chevron--open'}`}>
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                   <path d="M3 2l4 3-4 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>

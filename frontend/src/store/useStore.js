@@ -5,7 +5,18 @@ const POLYGONS_KEY = 'delta_floorPolygons';
 function loadPolygonsFromStorage() {
   try {
     const raw = localStorage.getItem(POLYGONS_KEY);
-    return raw ? JSON.parse(raw) : {};
+    if (!raw) return {};
+    const data = JSON.parse(raw);
+    // Keep only h020-prefixed polygons for H020 (purge stale IFC-guid ones)
+    if (data.H020 && Array.isArray(data.H020)) {
+      const clean = data.H020.filter((p) => p.ifc_guid?.startsWith('h020-'));
+      if (clean.length !== data.H020.length) {
+        data.H020 = clean.length > 0 ? clean : undefined;
+        if (!data.H020) delete data.H020;
+        localStorage.setItem(POLYGONS_KEY, JSON.stringify(data));
+      }
+    }
+    return data;
   } catch { return {}; }
 }
 
@@ -245,6 +256,7 @@ const useStore = create((set, get) => ({
     const prev = get().floorPolygons;
     const floor = (prev[floorId] || []).map((p) => ({
       ...p,
+      edited: true,
       vertices: p.vertices.map(([x, y]) => [x + dx, y + dy]),
     }));
     const updated = { ...prev, [floorId]: floor };

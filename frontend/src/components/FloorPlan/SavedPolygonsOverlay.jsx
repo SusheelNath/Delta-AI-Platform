@@ -112,14 +112,18 @@ export default function SavedPolygonsOverlay({ floorId, onTooltipChange }) {
         const isRoutePath = activeRoute?.path?.some((p) => p.ifc_guid === poly.ifc_guid);
 
         // Blue for routing, orange for hover/select, transparent otherwise
+        // H020 cloned polygons always show orange fill for visibility
+        const isH020 = floorId === 'H020';
         const fill = isRouteTarget ? 'rgba(56, 139, 253, 0.35)'
           : isRoutePath ? 'rgba(56, 139, 253, 0.15)'
           : isSelected ? 'rgba(255, 140, 50, 0.35)'
           : isHovered ? 'rgba(255, 140, 50, 0.25)'
+          : isH020 ? 'rgba(255, 140, 50, 0.25)'
           : 'transparent';
         const stroke = isRouteTarget ? '#79b8ff'
           : isRoutePath ? 'rgba(56, 139, 253, 0.4)'
           : isSelected || isHovered ? '#FFB366'
+          : isH020 ? '#E77133'
           : 'transparent';
 
         return (

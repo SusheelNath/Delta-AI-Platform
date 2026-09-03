@@ -83,6 +83,24 @@ export default function FloorPlanPanel() {
     return () => window.removeEventListener('keydown', handlePush);
   }, []);
 
+  // WASD keys — nudge Floor +2 (H020) polygons only
+  useEffect(() => {
+    const nudge = useStore.getState().nudgeFloorPolygons;
+    const STEP = 0.15; // percentage units per press
+    const handleWASD = (e) => {
+      const key = e.key.toLowerCase();
+      if (!['w', 'a', 's', 'd'].includes(key)) return;
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      const dx = key === 'd' ? STEP : key === 'a' ? -STEP : 0;
+      const dy = key === 's' ? STEP : key === 'w' ? -STEP : 0;
+      nudge('H020', dx, dy);
+    };
+    window.addEventListener('keydown', handleWASD, true);
+    return () => window.removeEventListener('keydown', handleWASD, true);
+  }, []);
+
   // Delete key — remove selected polygon with confirmation (works from any view)
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -117,6 +135,19 @@ export default function FloorPlanPanel() {
       })
       .catch((err) => console.error('[Delta] Failed to fetch floors:', err));
   }, []);
+
+  // Eagerly load H020 polygons on mount so WASD nudge works immediately
+  useEffect(() => {
+    const existing = useStore.getState().floorPolygons['H020'];
+    if (existing && existing.length > 0) return;
+    fetchFloorPolygons('H020')
+      .then((serverPolygons) => {
+        if (serverPolygons.length > 0) {
+          setFloorPolygons('H020', serverPolygons);
+        }
+      })
+      .catch(() => {});
+  }, [setFloorPolygons]);
 
   // Sync polygons with backend when active floor changes (localStorage is source of truth)
   useEffect(() => {

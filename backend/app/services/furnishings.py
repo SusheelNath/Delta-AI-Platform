@@ -80,7 +80,7 @@ FURNISHING_CATALOG = [
 EXCLUDED_PATTERNS = [
     "elevator", "lift",
     "staircase", "stairway", "stair ", "stair-core", "vertical circulation",
-    "shaft", "vent",
+    "shaft", "vent shaft", "ventilation",
     "no access", "no acccess", "no infrastructure",
     "corridor", "circulation", "hallway",
     "parking", "ramp",
@@ -152,11 +152,21 @@ FUNCTION_FURNISHING_RULES = [
       ("nurse_call", 1), ("gas_outlet", 1), ("cabinet", 1)],
      {"min_area": 15}),
 
-    # ═══════════════════ PATIENT CARE (generic) ═══════════════════
-    (["patient care", "patient room"],
+    # ═══════════════════ PATIENT ROOM (named) ═══════════════════
+    (["patient room"],
+     [("patient_bed", 1), ("bedside_table", 1), ("wardrobe", 1),
+      ("visitor_chair", 2), ("nurse_call", 1), ("gas_outlet", 1), ("cabinet", 1)],
+     {"min_area": 10}),
+
+    # ═══════════════════ PATIENT CARE (generic — includes "patient" keyword) ═══════════════════
+    (["patient care", "patient"],
      [("patient_bed", 1), ("bedside_table", 1), ("visitor_chair", 1),
       ("nurse_call", 1), ("cabinet", 1)],
-     {"min_area": 10}),
+     {"min_area": 10,
+      "scale": {"patient_bed": {"per_m2": 25, "min": 1, "max": 2},
+                "bedside_table": {"per_m2": 25, "min": 1, "max": 2},
+                "visitor_chair": {"per_m2": 15, "min": 1, "max": 3},
+                "curtain_divider": {"per_m2": 30, "min": 0, "max": 1}}}),
 
     # ═══════════════════ ICU ═══════════════════
     (["intensive-care", "intensive care", "icu"],
@@ -394,11 +404,6 @@ FUNCTION_FURNISHING_RULES = [
      [("countertop", 1), ("cabinet", 1), ("shelving", 1)],
      {"min_area": 3}),
 
-    # ═══════════════════ PATIENT (bare keyword — last resort) ═══════════════════
-    (["patient"],
-     [("patient_bed", 1), ("bedside_table", 1), ("visitor_chair", 1),
-      ("nurse_call", 1)],
-     {"min_area": 10}),
 ]
 
 

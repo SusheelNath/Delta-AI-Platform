@@ -207,3 +207,20 @@ export async function streamChat(messages, selectedSpaceId, signal) {
   }
   return res.body.getReader();
 }
+
+/**
+ * Full save: push all polygons for given floors to backend, backup, and GitHub.
+ * POST /api/polygons/full-save
+ */
+export async function fullSavePolygons(polygons) {
+  const res = await fetch(`${BASE}/polygons/full-save`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(polygons),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`API ${res.status}: ${text}`);
+  }
+  return res.json();
+}

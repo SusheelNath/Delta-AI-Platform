@@ -1,5 +1,6 @@
 import json
 import re
+import subprocess
 from datetime import datetime
 from pathlib import Path
 
@@ -126,22 +127,50 @@ def upsert_polygon(
     perimeter_m = round(perimeter_cm / 100, 2) if perimeter_cm is not None else None
     area_m2 = body.computed_area_m2
 
-    # ── Polygon metadata hard lock ──
-    # For EXISTING polygons, always preserve server-side space_name,
-    # primary_function, area_m2, and perimeter_cm.  These fields can only
-    # be changed via PATCH /spaces/by-guid/{guid}.
-    # For NEW polygons, accept whatever the request provides.
+    # ── Polygon geometry freeze ──
+    # Existing polygon geometry (vertices, area, perimeter) is immutable.
+    # Name and function CAN be updated by the user via the editor.
     existing = next((p for p in polygons if p["ifc_guid"] == ifc_guid), None)
     if existing:
+        # Geometry stays frozen
+        area_m2 = existing.get("area_m2")
+        perimeter_cm = existing.get("perimeter_cm")
+        perimeter_m = round(perimeter_cm / 100, 2) if perimeter_cm is not None else None
+
+        # Allow name/function edits from the UI
+        dirty = False
         space_name = existing.get("space_name")
         primary_function = existing.get("primary_function")
-        area_m2 = existing.get("area_m2") if existing.get("area_m2") is not None else area_m2
-        perimeter_cm = existing.get("perimeter_cm") if existing.get("perimeter_cm") is not None else perimeter_cm
-    else:
-        space_name = body.space_name
-        primary_function = body.primary_function
+        if body.space_name and body.space_name != space_name:
+            existing["space_name"] = body.space_name
+            space_name = body.space_name
+            dirty = True
+        if body.primary_function and body.primary_function != primary_function:
+            existing["primary_function"] = body.primary_function
+            primary_function = body.primary_function
+            dirty = True
+        if dirty:
+            _write_all(polygons)
 
-    # Upsert: replace existing or append
+        metrics = _upsert_metrics(db, ifc_guid, existing["floor_id"], area_m2, perimeter_m, primary_function, space_name)
+        return SpacePolygonResponse(
+            ifc_guid=ifc_guid,
+            floor_id=existing["floor_id"],
+            vertices=existing["vertices"],
+            space_name=space_name,
+            primary_function=primary_function,
+            area_m2=area_m2,
+            perimeter_m=perimeter_m,
+            normal_occupancy=metrics.normal_occupancy,
+            max_occupancy=metrics.max_occupancy,
+            occupancy_class=metrics.occupancy_class,
+            occupiable=metrics.occupiable,
+            created_at=existing.get("created_at"),
+        )
+
+    # New polygon — accept all fields and persist
+    space_name = body.space_name
+    primary_function = body.primary_function
     entry = {
         "ifc_guid": ifc_guid,
         "floor_id": body.floor_id,
@@ -152,17 +181,7 @@ def upsert_polygon(
         "perimeter_cm": perimeter_cm,
         "created_at": now,
     }
-
-    found = False
-    for i, p in enumerate(polygons):
-        if p["ifc_guid"] == ifc_guid:
-            entry["created_at"] = p.get("created_at", now)  # keep original timestamp
-            polygons[i] = entry
-            found = True
-            break
-    if not found:
-        polygons.append(entry)
-
+    polygons.append(entry)
     _write_all(polygons)
 
     # Compute and store metrics
@@ -182,6 +201,41 @@ def upsert_polygon(
         occupiable=metrics.occupiable,
         created_at=entry["created_at"],
     )
+
+
+@router.post("/polygons/commit-edits")
+def commit_edits(body: list[dict], db: Session = Depends(get_db)):
+    """Bulk commit: push localStorage name/function edits to polygons.json.
+
+    Accepts list of {ifc_guid, space_name, primary_function}.
+    Only updates name/function for polygons that already exist.
+    Geometry (vertices, area, perimeter) is never touched.
+    """
+    polygons = _read_all()
+    poly_map = {p["ifc_guid"]: p for p in polygons}
+
+    updated = 0
+    for item in body:
+        guid = item.get("ifc_guid")
+        if not guid or guid not in poly_map:
+            continue
+        p = poly_map[guid]
+        dirty = False
+        new_name = item.get("space_name")
+        new_fn = item.get("primary_function")
+        if new_name and new_name != p.get("space_name"):
+            p["space_name"] = new_name
+            dirty = True
+        if new_fn and new_fn != p.get("primary_function"):
+            p["primary_function"] = new_fn
+            dirty = True
+        if dirty:
+            updated += 1
+
+    if updated > 0:
+        _write_all(polygons)
+
+    return {"updated": updated, "total": len(polygons)}
 
 
 @router.post("/polygons/sync")
@@ -226,57 +280,43 @@ def sync_polygons(body: list[PolygonSyncItem], db: Session = Depends(get_db)):
 
 @router.put("/floors/{floor_id}/polygons")
 def save_floor_polygons(floor_id: str, body: list[PolygonSyncItem], db: Session = Depends(get_db)):
-    """Replace all polygons for a floor with the provided set (used by nudge/position save).
+    """Append-only floor save.
 
-    ── Polygon metadata hard lock ──
-    For polygons that already exist on the server, space_name, primary_function,
-    area_m2, and perimeter_cm are preserved from the server copy.  Only vertices
-    may be updated through this endpoint (for nudge / repositioning).
-    Metadata changes go through PATCH /spaces/by-guid/{guid}.
+    ── Polygon permanent freeze ──
+    Existing polygons are completely immutable — ALL fields (vertices, name,
+    function, area, perimeter) are preserved from the server copy unchanged.
+    Only genuinely new polygons (GUID not yet on server) are appended.
     """
     polygons = _read_all()
     now = datetime.utcnow().isoformat()
 
-    # Build lookup of existing server-side polygons for this floor
-    existing_map = {p["ifc_guid"]: p for p in polygons if p["floor_id"].upper() == floor_id.upper()}
+    existing_guids = {p["ifc_guid"] for p in polygons}
 
-    # Keep polygons from other floors
-    other = [p for p in polygons if p["floor_id"].upper() != floor_id.upper()]
-    incoming = []
+    added = 0
     for item in body:
+        if item.ifc_guid in existing_guids:
+            continue  # frozen — skip entirely
         if len(item.vertices) < 3:
             continue
-
-        existing = existing_map.get(item.ifc_guid)
-        if existing:
-            # Preserve locked metadata from server
-            space_name = existing.get("space_name") or item.space_name
-            primary_function = existing.get("primary_function") or item.primary_function
-            area_m2 = existing.get("area_m2") if existing.get("area_m2") is not None else item.area_m2
-            perimeter_cm = existing.get("perimeter_cm") if existing.get("perimeter_cm") is not None else item.perimeter_cm
-            created_at = existing.get("created_at", now)
-        else:
-            space_name = item.space_name
-            primary_function = item.primary_function
-            area_m2 = item.area_m2
-            perimeter_cm = item.perimeter_cm
-            created_at = now
-
+        perimeter_cm = item.perimeter_cm
         perimeter_m = round(perimeter_cm / 100, 2) if perimeter_cm is not None else None
-        incoming.append({
+        polygons.append({
             "ifc_guid": item.ifc_guid,
             "floor_id": floor_id,
             "vertices": item.vertices,
-            "space_name": space_name,
-            "primary_function": primary_function,
-            "area_m2": area_m2,
+            "space_name": item.space_name,
+            "primary_function": item.primary_function,
+            "area_m2": item.area_m2,
             "perimeter_cm": perimeter_cm,
-            "created_at": created_at,
+            "created_at": now,
         })
-        _upsert_metrics(db, item.ifc_guid, floor_id, area_m2, perimeter_m, primary_function, space_name)
+        existing_guids.add(item.ifc_guid)
+        _upsert_metrics(db, item.ifc_guid, floor_id, item.area_m2, perimeter_m, item.primary_function, item.space_name)
+        added += 1
 
-    _write_all(other + incoming)
-    return {"saved": len(incoming), "total": len(other) + len(incoming)}
+    if added > 0:
+        _write_all(polygons)
+    return {"added": added, "total": len(polygons)}
 
 
 @router.get("/floors/{floor_id}/polygons", response_model=list[SpacePolygonResponse])
@@ -315,17 +355,77 @@ def list_floor_polygons(floor_id: str, db: Session = Depends(get_db)):
 
 @router.delete("/spaces/{ifc_guid}/polygon")
 def delete_polygon(ifc_guid: str, db: Session = Depends(get_db)):
+    """Polygon deletion is permanently disabled."""
+    raise HTTPException(
+        status_code=403,
+        detail="Polygon deletion is permanently disabled. "
+               "Polygons cannot be removed through any API endpoint.",
+    )
+
+
+@router.post("/polygons/full-save")
+def full_save(body: list[PolygonSyncItem], db: Session = Depends(get_db)):
+    """Full save: overwrite polygons for each floor present in the payload,
+    write to JSON + backup, upsert metrics, and push data/ to GitHub."""
+    now = datetime.utcnow().isoformat()
     polygons = _read_all()
-    before = len(polygons)
-    polygons = [p for p in polygons if p["ifc_guid"] != ifc_guid]
-    if len(polygons) == before:
-        raise HTTPException(status_code=404, detail=f"No polygon for GUID {ifc_guid}")
+
+    # Group incoming by floor
+    incoming_floors = {}
+    for item in body:
+        incoming_floors.setdefault(item.floor_id, []).append(item)
+
+    # For each floor in the payload, replace all polygons for that floor
+    for floor_id, items in incoming_floors.items():
+        # Remove existing polygons for this floor
+        polygons = [p for p in polygons if p["floor_id"] != floor_id]
+        # Add incoming
+        for item in items:
+            if len(item.vertices) < 3:
+                continue
+            perimeter_cm = item.perimeter_cm
+            perimeter_m = round(perimeter_cm / 100, 2) if perimeter_cm is not None else None
+            polygons.append({
+                "ifc_guid": item.ifc_guid,
+                "floor_id": floor_id,
+                "vertices": item.vertices,
+                "space_name": item.space_name,
+                "primary_function": item.primary_function,
+                "area_m2": item.area_m2,
+                "perimeter_cm": perimeter_cm,
+                "created_at": now,
+            })
+            _upsert_metrics(db, item.ifc_guid, floor_id, item.area_m2, perimeter_m,
+                            item.primary_function, item.space_name)
+
     _write_all(polygons)
 
-    # Remove metrics
-    metrics = db.query(SpaceMetrics).filter(SpaceMetrics.ifc_guid == ifc_guid).first()
-    if metrics:
-        db.delete(metrics)
-        db.commit()
+    # Git add + commit + push data/polygons.json
+    repo_root = DATA_DIR.parent
+    git_ok = False
+    git_msg = ""
+    try:
+        subprocess.run(["git", "add", "data/polygons.json"], cwd=str(repo_root),
+                       capture_output=True, timeout=10)
+        floors_str = ", ".join(sorted(incoming_floors.keys()))
+        commit_msg = f"Save polygons [{floors_str}] — {now[:19]}"
+        result = subprocess.run(
+            ["git", "commit", "-m", commit_msg],
+            cwd=str(repo_root), capture_output=True, text=True, timeout=15,
+        )
+        push = subprocess.run(
+            ["git", "push"],
+            cwd=str(repo_root), capture_output=True, text=True, timeout=30,
+        )
+        git_ok = push.returncode == 0
+        git_msg = push.stdout.strip() or push.stderr.strip()
+    except Exception as e:
+        git_msg = str(e)
 
-    return {"deleted": True}
+    return {
+        "saved": sum(len(v) for v in incoming_floors.values()),
+        "floors": list(incoming_floors.keys()),
+        "total": len(polygons),
+        "git_pushed": git_ok,
+        "git_message": git_msg,
+    }

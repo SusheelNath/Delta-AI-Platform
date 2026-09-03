@@ -10,7 +10,6 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.services.polygon_intelligence import (
     read_all_polygons,
-    write_all_polygons,
     compute_space_intelligence,
     compute_floor_intelligence,
     get_floor_polygons,
@@ -122,29 +121,16 @@ def get_space_by_guid(ifc_guid: str, db: Session = Depends(get_db)):
 
 @router.patch("/spaces/by-guid/{ifc_guid}")
 def update_space_by_guid(ifc_guid: str, body: dict, db: Session = Depends(get_db)):
-    """Update a polygon's space_name or primary_function.
+    """Polygon metadata is permanently locked.
 
-    Writes directly to polygons.json (source of truth).
+    space_name, primary_function, vertices, area_m2, and perimeter_cm
+    cannot be modified through any API endpoint.
     """
-    polygons = read_all_polygons()
-    found = False
-    for p in polygons:
-        if p.get("ifc_guid") == ifc_guid:
-            if "space_name" in body and body["space_name"] is not None:
-                p["space_name"] = body["space_name"]
-            if "primary_function" in body and body["primary_function"] is not None:
-                p["primary_function"] = body["primary_function"]
-            found = True
-            target = p
-            break
-
-    if not found:
-        raise HTTPException(status_code=404, detail=f"No polygon with GUID {ifc_guid}")
-
-    write_all_polygons(polygons)
-
-    floor_polygons = [p for p in polygons if p.get("floor_id") == target.get("floor_id")]
-    return compute_space_intelligence(target, floor_polygons, db)
+    raise HTTPException(
+        status_code=403,
+        detail="Polygon metadata is permanently locked. "
+               "space_name, primary_function, vertices, area, and perimeter cannot be modified.",
+    )
 
 
 @router.get("/spaces/{space_id}")
