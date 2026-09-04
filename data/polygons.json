@@ -63994,7 +63994,7 @@
     "primary_function": "Staircase",
     "area_m2": 37.23,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNKP",
@@ -64025,7 +64025,7 @@
     "primary_function": "Staircase",
     "area_m2": 34.45,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "18gi5AYJr2nhHf$ZCLvbwh",
@@ -64056,7 +64056,7 @@
     "primary_function": "Technical",
     "area_m2": 94.2,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "18gi5AYJr2nhHf$ZCLvbwK",
@@ -64087,7 +64087,7 @@
     "primary_function": "Staircase",
     "area_m2": 29.59,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0DmKpVRSn1Kulj_xa9oGPO",
@@ -64118,7 +64118,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 10.6849000000002,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNGZ",
@@ -64149,7 +64149,7 @@
     "primary_function": "Storage",
     "area_m2": 32.17,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2KrtsoPRr8wRWOxYBcgaUd",
@@ -64180,7 +64180,7 @@
     "primary_function": "Storage",
     "area_m2": 33.68,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNKO",
@@ -64211,7 +64211,7 @@
     "primary_function": "Storage",
     "area_m2": 3.28510000010614,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNG1",
@@ -64242,7 +64242,7 @@
     "primary_function": "Staff",
     "area_m2": 202.34,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2KrtsoPRr8wRWOxYBcgaU$",
@@ -64269,7 +64269,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 30.2,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1StGgIgqP6cPFC8irNAeAz",
@@ -64300,7 +64300,7 @@
     "primary_function": "Staircase",
     "area_m2": 153.8,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2gKgPypP16VBZ6sYZb0KhE",
@@ -64343,7 +64343,7 @@
     "primary_function": "Technical",
     "area_m2": 197.13,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtN3n",
@@ -64374,7 +64374,7 @@
     "primary_function": "Elevator",
     "area_m2": 10.2940757574714,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtN3i",
@@ -64405,7 +64405,7 @@
     "primary_function": "Elevator",
     "area_m2": 10.9229999998508,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtN3l",
@@ -64436,7 +64436,7 @@
     "primary_function": "Elevator",
     "area_m2": 10.9229999998511,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1StGgIgqP6cPFC8irNAe9o",
@@ -64467,7 +64467,7 @@
     "primary_function": "Corridor",
     "area_m2": 35.67,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtN16",
@@ -64498,7 +64498,7 @@
     "primary_function": "Storage",
     "area_m2": 9.32,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtN1F",
@@ -64525,7 +64525,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 5.5028186296112835,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "18iM037TD5CvBYwySu9bju",
@@ -64556,7 +64556,7 @@
     "primary_function": "Technical",
     "area_m2": 5.322757318615913,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2MY7WzsQf5ugo0yctj5qZj",
@@ -64595,7 +64595,7 @@
     "primary_function": "Technical",
     "area_m2": 8.024262710474432,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2MY7WzsQf5ugo0yctj5qZk",
@@ -64626,7 +64626,7 @@
     "primary_function": "Technical",
     "area_m2": 39.775204645935446,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNMD",
@@ -64657,7 +64657,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 3.615076681599021,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNMI",
@@ -64688,7 +64688,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 3.7744877685327083,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNMP",
@@ -64719,7 +64719,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 3.8921963509637862,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNMU",
@@ -64750,7 +64750,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 3.83769141160883,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNMN",
@@ -64781,7 +64781,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 3.7355650824029,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNMK",
@@ -64812,7 +64812,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 4.019467370817438,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtN6V",
@@ -64843,7 +64843,7 @@
     "primary_function": "Elevator",
     "area_m2": 11.41344691440463,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtN6U",
@@ -64874,7 +64874,7 @@
     "primary_function": "Elevator",
     "area_m2": 10.86789447744377,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtN6T",
@@ -64905,7 +64905,7 @@
     "primary_function": "Elevator",
     "area_m2": 11.211731495102867,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1StGgIgqP6cPFC8irNAeth",
@@ -64940,7 +64940,7 @@
     "primary_function": "Corridor",
     "area_m2": 29.55231152451597,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtN7h",
@@ -64967,7 +64967,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 5.85678899125196,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtN7a",
@@ -64998,7 +64998,7 @@
     "primary_function": "Technical",
     "area_m2": 6.331215314567089,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNEk",
@@ -65029,7 +65029,7 @@
     "primary_function": "Elevator",
     "area_m2": 6.715520372847095,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNEp",
@@ -65060,7 +65060,7 @@
     "primary_function": "Elevator",
     "area_m2": 5.918545641005039,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNEm",
@@ -65091,7 +65091,7 @@
     "primary_function": "Elevator",
     "area_m2": 6.342787203378975,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNEr",
@@ -65122,7 +65122,7 @@
     "primary_function": "Elevator",
     "area_m2": 6.285173364914954,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNEf",
@@ -65149,7 +65149,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 5.430207381956279,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNEa",
@@ -65180,7 +65180,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 4.395200550323352,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNFn",
@@ -65211,7 +65211,7 @@
     "primary_function": "Elevator",
     "area_m2": 6.088343849871308,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNFm",
@@ -65242,7 +65242,7 @@
     "primary_function": "Elevator",
     "area_m2": 6.449001115048304,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNFt",
@@ -65273,7 +65273,7 @@
     "primary_function": "Elevator",
     "area_m2": 6.269836493534967,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNFs",
@@ -65304,7 +65304,7 @@
     "primary_function": "Elevator",
     "area_m2": 5.8789662106428295,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNFo",
@@ -65335,7 +65335,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 4.544155564159155,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNFp",
@@ -65366,7 +65366,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 4.575818898389116,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNKU",
@@ -65393,7 +65393,7 @@
     "primary_function": "Technical",
     "area_m2": 6.663850859971717,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNAg",
@@ -65424,7 +65424,7 @@
     "primary_function": "Staircase",
     "area_m2": 34.258732517948374,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNuV",
@@ -65455,7 +65455,7 @@
     "primary_function": "Facilities",
     "area_m2": 54.70507543650456,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0KFGI5vyT0r9qBHbYSmeAe",
@@ -65486,7 +65486,7 @@
     "primary_function": "Technical",
     "area_m2": 34.087493299972266,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0NYnbAA9fA5uUAKa_xtHJb",
@@ -65533,7 +65533,7 @@
     "primary_function": "Ramp",
     "area_m2": 28.701827794779092,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2KrtsoPRr8wRWOxYBcgaUr",
@@ -65572,7 +65572,7 @@
     "primary_function": "Technical",
     "area_m2": 7.100877763470635,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0DmKpVRSn1Kulj_xa9oGX7",
@@ -65611,7 +65611,7 @@
     "primary_function": "Technical",
     "area_m2": 2218.828507168917,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtN6c",
@@ -65638,7 +65638,7 @@
     "primary_function": "Staircase",
     "area_m2": 15.504252147860825,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0KFGI5vyT0r9qBHbYSme7K",
@@ -65701,7 +65701,7 @@
     "primary_function": "Ramp",
     "area_m2": 32.017850265605375,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtN6b",
@@ -65768,7 +65768,7 @@
     "primary_function": "Corridor",
     "area_m2": 73.9240602538921,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNGb",
@@ -65811,7 +65811,7 @@
     "primary_function": "Corridor",
     "area_m2": 87.61144561413676,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNvV",
@@ -65838,7 +65838,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 7.343560187611729,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNwr",
@@ -65869,7 +65869,7 @@
     "primary_function": "Staircase",
     "area_m2": 34.09423005068675,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtN6d",
@@ -65900,7 +65900,7 @@
     "primary_function": "Elevator",
     "area_m2": 10.47983601083979,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtN6i",
@@ -65931,7 +65931,7 @@
     "primary_function": "Elevator",
     "area_m2": 10.298476577037945,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtN6p",
@@ -65962,7 +65962,7 @@
     "primary_function": "Elevator",
     "area_m2": 10.814684715354815,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1StGgIgqP6cPFC8irNAe85",
@@ -65989,7 +65989,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 5.7973249303177,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNww",
@@ -66016,7 +66016,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 4.894189493497834,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNuS",
@@ -66047,7 +66047,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 6.687909824540839,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2KrtsoPRr8wRWOxYBcgaUX",
@@ -66078,7 +66078,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 7.59673567302525,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNN0",
@@ -66113,7 +66113,7 @@
     "primary_function": "Corridor",
     "area_m2": 25.239368707407266,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNN5",
@@ -66144,7 +66144,7 @@
     "primary_function": "Storage",
     "area_m2": 5.928909340174869,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNNF",
@@ -66175,7 +66175,7 @@
     "primary_function": "Storage",
     "area_m2": 5.624903760151938,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNN8",
@@ -66206,7 +66206,7 @@
     "primary_function": "Staircase",
     "area_m2": 21.946673831203952,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNN6",
@@ -66237,7 +66237,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 9.467618811875582,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNN7",
@@ -66276,7 +66276,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 400.2451236725319,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2KrtsoPRr8wRWOxYBcgaV4",
@@ -66307,7 +66307,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 180.53734201053157,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNKw",
@@ -66338,7 +66338,7 @@
     "primary_function": "Staircase",
     "area_m2": 25.880136431893334,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNK2",
@@ -66369,7 +66369,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 8.41916846157983,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNwC",
@@ -66400,7 +66400,7 @@
     "primary_function": "Storage",
     "area_m2": 6.122966949827969,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNwD",
@@ -66431,7 +66431,7 @@
     "primary_function": "Storage",
     "area_m2": 5.934502076823264,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtN63",
@@ -66466,7 +66466,7 @@
     "primary_function": "Staircase",
     "area_m2": 27.53585377545096,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNAf",
@@ -66505,7 +66505,7 @@
     "primary_function": "Staircase",
     "area_m2": 26.844267549924552,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNAo",
@@ -66536,7 +66536,7 @@
     "primary_function": "Technical",
     "area_m2": 10.825355464825407,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNLB",
@@ -66567,7 +66567,7 @@
     "primary_function": "Staircase",
     "area_m2": 23.355936606880277,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNLI",
@@ -66594,7 +66594,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 4.510031587909907,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNLA",
@@ -66621,7 +66621,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 4.200354246189818,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtN6F",
@@ -66652,7 +66652,7 @@
     "primary_function": "Elevator",
     "area_m2": 10.483222519047558,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtN62",
@@ -66683,7 +66683,7 @@
     "primary_function": "Elevator",
     "area_m2": 9.468500530114397,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtN61",
@@ -66714,7 +66714,7 @@
     "primary_function": "Elevator",
     "area_m2": 9.702443943824619,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1StGgIgqP6cPFC8irNAe8O",
@@ -66749,7 +66749,7 @@
     "primary_function": "Corridor",
     "area_m2": 28.133790555177256,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtN68",
@@ -66780,7 +66780,7 @@
     "primary_function": "Storage",
     "area_m2": 8.87820226768963,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0NYnbAA9fA5uUAKa_xtHDl",
@@ -66807,7 +66807,7 @@
     "primary_function": "Technical",
     "area_m2": 5.851251554209739,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNL8",
@@ -66834,7 +66834,7 @@
     "primary_function": "Technical",
     "area_m2": 6.009836492361501,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2KrtsoPRr8wRWOxYBcgaUh",
@@ -66865,7 +66865,7 @@
     "primary_function": "Storage",
     "area_m2": 7.879610671894625,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0NYnbAA9fA5uUAKa_xtH3k",
@@ -66928,7 +66928,7 @@
     "primary_function": "Technical",
     "area_m2": 1178.3426667274907,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0KFGI5vyT0r9qBHbYSmeAa",
@@ -66979,7 +66979,7 @@
     "primary_function": "Corridor",
     "area_m2": 1474.9327042517252,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0KFGI5vyT0r9qBHbYSmeAd",
@@ -67010,7 +67010,7 @@
     "primary_function": "No Access",
     "area_m2": 71.81489435653202,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0KFGI5vyT0r9qBHbYSmeAv",
@@ -67041,7 +67041,7 @@
     "primary_function": "Corridor",
     "area_m2": 7.0373627867084,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0KFGI5vyT0r9qBHbYSmeA_",
@@ -67080,7 +67080,7 @@
     "primary_function": "No Access",
     "area_m2": 137.02379940403625,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNvc",
@@ -67127,7 +67127,7 @@
     "primary_function": "No Infrastructure",
     "area_m2": 431.911225986667,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNLJ",
@@ -67222,7 +67222,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 2018.46,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNGW",
@@ -67589,7 +67589,7 @@
     "primary_function": "Basement",
     "area_m2": 5244.66312626726,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNvX",
@@ -67620,7 +67620,7 @@
     "primary_function": "No Access",
     "area_m2": 7.620096614584327,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNAl",
@@ -67867,7 +67867,7 @@
     "primary_function": "Basement",
     "area_m2": 5370.8726538994815,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "18iM037TD5CvBYwySu9bjx",
@@ -68062,7 +68062,7 @@
     "primary_function": "Basement",
     "area_m2": 998.0503456755541,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNvO",
@@ -68093,7 +68093,7 @@
     "primary_function": "Staircase",
     "area_m2": 87.02378374407999,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3EAjiLDhf3ovSsYJyXtNvU",
@@ -68160,7 +68160,7 @@
     "primary_function": "No Access",
     "area_m2": 2062.0850516471546,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "202tj5U0r8kB_UCpyiuB5Z",
@@ -68195,7 +68195,7 @@
     "primary_function": "Storage",
     "area_m2": 264.773113216972,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "27l6_gayjAeumEukr86Alm",
@@ -68234,7 +68234,7 @@
     "primary_function": "Emergency",
     "area_m2": 760.5063495810609,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1TVru68LL0mufnE_hXGx1R",
@@ -68289,7 +68289,7 @@
     "primary_function": "Technical",
     "area_m2": 353.2558445662726,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2vmqgjc2z1hhR8i4VLsdQr",
@@ -68344,7 +68344,7 @@
     "primary_function": "Ambulance",
     "area_m2": 1813.0734411224257,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1TVru68LL0mufnE_hXGx1S",
@@ -68399,7 +68399,7 @@
     "primary_function": "Technical",
     "area_m2": 414.04608406405896,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0CEfwrLXnBUfu1vdcfHKSO",
@@ -68438,7 +68438,7 @@
     "primary_function": "Staff",
     "area_m2": 50.17568816966377,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0CEfwrLXnBUfu1vdcfHKVf",
@@ -68481,7 +68481,7 @@
     "primary_function": "Staff",
     "area_m2": 48.61897463724017,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0F7F5brL995A$m$WcOlHeg",
@@ -68544,7 +68544,7 @@
     "primary_function": "Reception",
     "area_m2": 538.6362225871999,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1oJRlPmv97Ge3I9G00A8XY",
@@ -68587,7 +68587,7 @@
     "primary_function": "Radiotherapy",
     "area_m2": 92.35114750568755,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3Gc9J5JNXDeg28nl8CIva1",
@@ -68622,7 +68622,7 @@
     "primary_function": "Corridor",
     "area_m2": 308.0607827042695,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3Gc9J5JNXDeg28nl8CIvYB",
@@ -68653,7 +68653,7 @@
     "primary_function": "Storage",
     "area_m2": 5.910944953095168,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1amom8ESL06ftx40DTKpgf",
@@ -68684,7 +68684,7 @@
     "primary_function": "Staff",
     "area_m2": 42.79744798177853,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3Gc9J5JNXDeg28nl8CIvY4",
@@ -68715,7 +68715,7 @@
     "primary_function": "Staff",
     "area_m2": 40.99908476206474,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0n7u88jlj96O_eYUKeyoRX",
@@ -68746,7 +68746,7 @@
     "primary_function": "Storage",
     "area_m2": 10.52141713257879,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2jb5DKZIL8pQJ8vDMYuwZS",
@@ -68785,7 +68785,7 @@
     "primary_function": "Storage",
     "area_m2": 6.631558913504705,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2jb5DKZIL8pQJ8vDMYuwam",
@@ -68816,7 +68816,7 @@
     "primary_function": "Staff",
     "area_m2": 40.6569615425542,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2jb5DKZIL8pQJ8vDMYuwap",
@@ -68847,7 +68847,7 @@
     "primary_function": "Staff",
     "area_m2": 40.79983863630332,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3Gc9J5JNXDeg28nl8CIvkX",
@@ -68878,7 +68878,7 @@
     "primary_function": "Storage",
     "area_m2": 5.190907263197005,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3Gc9J5JNXDeg28nl8CIva2",
@@ -68909,7 +68909,7 @@
     "primary_function": "Storage",
     "area_m2": 8.618088532006368,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2jb5DKZIL8pQJ8vDMYuwb4",
@@ -68940,7 +68940,7 @@
     "primary_function": "Staff",
     "area_m2": 47.363495076075196,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3Gc9J5JNXDeg28nl8CIvkY",
@@ -68971,7 +68971,7 @@
     "primary_function": "Pantry",
     "area_m2": 9.486286191735417,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3Gc9J5JNXDeg28nl8CIvlV",
@@ -69002,7 +69002,7 @@
     "primary_function": "Pantry",
     "area_m2": 10.19845693721436,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3Gc9J5JNXDeg28nl8CIvlO",
@@ -69033,7 +69033,7 @@
     "primary_function": "Pantry",
     "area_m2": 8.720509611302987,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2zLdZrjQX4TelY2mWZz6wi",
@@ -69064,7 +69064,7 @@
     "primary_function": "Storage",
     "area_m2": 12.07496120664291,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3qbJC5rvT34AIW5LBm4AdP",
@@ -69095,7 +69095,7 @@
     "primary_function": "Corridor",
     "area_m2": 98.76142453914508,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0SgPA8YVn3AvrGaD_VswnE",
@@ -69186,7 +69186,7 @@
     "primary_function": "Corridor",
     "area_m2": 485.4748659601901,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3Gc9J5JNXDeg28nl8CIvXT",
@@ -69257,7 +69257,7 @@
     "primary_function": "Corridor",
     "area_m2": 117.44008790957741,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1amom8ESL06ftx40DTKpt1",
@@ -69312,7 +69312,7 @@
     "primary_function": "Sterilization",
     "area_m2": 413.1425169392023,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3Gc9J5JNXDeg28nl8CIvaE",
@@ -69407,7 +69407,7 @@
     "primary_function": "Sterilization",
     "area_m2": 391.62960398802534,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3Gc9J5JNXDeg28nl8CIvWK",
@@ -69438,7 +69438,7 @@
     "primary_function": "Storage",
     "area_m2": 25.740821733837947,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3G13BNZ0v4x9XZRfjgCc3R",
@@ -69469,7 +69469,7 @@
     "primary_function": "Storage",
     "area_m2": 12.670396762667224,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3Gc9J5JNXDeg28nl8CIvZV",
@@ -69500,7 +69500,7 @@
     "primary_function": "Storage",
     "area_m2": 12.706392501248047,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnFe",
@@ -69531,7 +69531,7 @@
     "primary_function": "Storage",
     "area_m2": 5.9648651636671275,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0s94NjgBT5DRCCuOKRTKKt",
@@ -69566,7 +69566,7 @@
     "primary_function": "Radiotherapy",
     "area_m2": 23.533514801878482,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1y2SXx6$r0n9kPJt2AuJxP",
@@ -69597,7 +69597,7 @@
     "primary_function": "Storage",
     "area_m2": 34.76940457243472,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3Gc9J5JNXDeg28nl8CIvZL",
@@ -69668,7 +69668,7 @@
     "primary_function": "Corridor",
     "area_m2": 119.75554151204415,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1amom8ESL06ftx40DTKpej",
@@ -69695,7 +69695,7 @@
     "primary_function": "Storage",
     "area_m2": 48.96931445389055,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnFb",
@@ -69726,7 +69726,7 @@
     "primary_function": "Storage",
     "area_m2": 11.631504317047074,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnFY",
@@ -69757,7 +69757,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 2.1395885860547423,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "306Ek_iLT069W9x7AOGUOq",
@@ -69788,7 +69788,7 @@
     "primary_function": "Technical",
     "area_m2": 2.5290541478898376,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2nhPB9HWb7iPdwRexbYw7$",
@@ -69819,7 +69819,7 @@
     "primary_function": "Corridor",
     "area_m2": 74.18257117061876,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "37borEmvPCkBjCapQU4mPp",
@@ -69850,7 +69850,7 @@
     "primary_function": "Storage",
     "area_m2": 10.532174181658775,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3Gc9J5JNXDeg28nl8CIvXU",
@@ -69881,7 +69881,7 @@
     "primary_function": "Storage",
     "area_m2": 48.171580638037995,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1jvbNRqYX6Cxni7W76gAbB",
@@ -69944,7 +69944,7 @@
     "primary_function": "Radiotherapy",
     "area_m2": 86.09484812547453,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9Sflxfn2",
@@ -69975,7 +69975,7 @@
     "primary_function": "Storage",
     "area_m2": 6.923032185062766,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3hCto7p1r1f8olGyKE76rx",
@@ -70006,7 +70006,7 @@
     "primary_function": "Storage",
     "area_m2": 5.609318041941151,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9SflxfnR",
@@ -70037,7 +70037,7 @@
     "primary_function": "Pantry",
     "area_m2": 8.734587714308873,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9SflxfnM",
@@ -70068,7 +70068,7 @@
     "primary_function": "Storage",
     "area_m2": 7.02277921885252,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9SflxfnS",
@@ -70099,7 +70099,7 @@
     "primary_function": "Staff",
     "area_m2": 39.35765201412141,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3wpgAzlv1CgAt8nQoCaq8J",
@@ -70130,7 +70130,7 @@
     "primary_function": "Staff",
     "area_m2": 52.08338202442974,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9Sflxfn1",
@@ -70161,7 +70161,7 @@
     "primary_function": "Storage",
     "area_m2": 8.711175749078393,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9SflxfnL",
@@ -70192,7 +70192,7 @@
     "primary_function": "Storage",
     "area_m2": 10.584724609274417,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "19pl6IhATFnPfbElWTzgrv",
@@ -70223,7 +70223,7 @@
     "primary_function": "Corridor",
     "area_m2": 18.145115985535085,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "19pl6IhATFnPfbElWTzgr4",
@@ -70250,7 +70250,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 2.504478046204895,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "19pl6IhATFnPfbElWTzgr3",
@@ -70285,7 +70285,7 @@
     "primary_function": "Corridor",
     "area_m2": 9.196399963460863,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "19pl6IhATFnPfbElWTzgrD",
@@ -70324,7 +70324,7 @@
     "primary_function": "Corridor",
     "area_m2": 112.08677170542069,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9SflxfdU",
@@ -70355,7 +70355,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 2.1044378101360053,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2jb5DKZIL8pQJ8vDMYuwb9",
@@ -70386,7 +70386,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 2.202159317675978,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1KzZihtgb4AOXs0z4pYLo7",
@@ -70621,7 +70621,7 @@
     "primary_function": "Corridor",
     "area_m2": 338.60481341718696,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "19pl6IhATFnPfbElWTzgrE",
@@ -70652,7 +70652,7 @@
     "primary_function": "Reception",
     "area_m2": 16.872344591189176,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "004EpGNJ59hQbSU1gjV8xO",
@@ -70683,7 +70683,7 @@
     "primary_function": "Waiting Room",
     "area_m2": 66.57522770483047,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1amom8ESL06ftx40DTKpon",
@@ -70714,7 +70714,7 @@
     "primary_function": "Toilet",
     "area_m2": 6.555893448414281,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3FeAca9PPC2wWXL3B2c0hP",
@@ -70745,7 +70745,7 @@
     "primary_function": "Staff",
     "area_m2": 14.347686525899917,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3G13BNZ0v4x9XZRfjgCc2K",
@@ -70784,7 +70784,7 @@
     "primary_function": "Staff",
     "area_m2": 44.514118617167696,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0QM6Bc$OX8wPOKoDvo0E5c",
@@ -70815,7 +70815,7 @@
     "primary_function": "Storage",
     "area_m2": 9.36165244388394,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQPb",
@@ -70858,7 +70858,7 @@
     "primary_function": "Staff",
     "area_m2": 34.44202484446578,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQPl",
@@ -70889,7 +70889,7 @@
     "primary_function": "Storage",
     "area_m2": 8.560777412028983,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQPY",
@@ -70920,7 +70920,7 @@
     "primary_function": "Waiting Room",
     "area_m2": 7.6434499269817024,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQPi",
@@ -70951,7 +70951,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 2.481791756581515,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1F8_I7wiL6XhQuK4cMo54Y",
@@ -70994,7 +70994,7 @@
     "primary_function": "Staff",
     "area_m2": 32.19872733205557,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQPM",
@@ -71025,7 +71025,7 @@
     "primary_function": "Waiting Room",
     "area_m2": 5.662193739321083,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2eE$N_yFT9oOmqZjytO0g6",
@@ -71056,7 +71056,7 @@
     "primary_function": "Storage",
     "area_m2": 11.460173411294818,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1amom8ESL06ftx40DTKpny",
@@ -71087,7 +71087,7 @@
     "primary_function": "Storage",
     "area_m2": 9.471176224760711,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQPG",
@@ -71118,7 +71118,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 2.666177593637258,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQPf",
@@ -71149,7 +71149,7 @@
     "primary_function": "Storage",
     "area_m2": 16.30535961757414,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1KWbue1PzBmA4MF27P1HQF",
@@ -71180,7 +71180,7 @@
     "primary_function": "Janitor",
     "area_m2": 7.667988058412448,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQPJ",
@@ -71211,7 +71211,7 @@
     "primary_function": "Waiting Room",
     "area_m2": 7.6075930944643915,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1n6JnRjafEQBAe6xbQV4jL",
@@ -71250,7 +71250,7 @@
     "primary_function": "Staff",
     "area_m2": 35.627478944836184,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "37borEmvPCkBjCapQU4mPm",
@@ -71281,7 +71281,7 @@
     "primary_function": "Storage",
     "area_m2": 8.650702739832923,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "306Ek_iLT069W9x7AOGUOn",
@@ -71312,7 +71312,7 @@
     "primary_function": "Waiting Room",
     "area_m2": 7.905934499343857,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2eE$N_yFT9oOmqZjytO0eN",
@@ -71343,7 +71343,7 @@
     "primary_function": "Storage",
     "area_m2": 9.787435029167682,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2eE$N_yFT9oOmqZjytO0fb",
@@ -71386,7 +71386,7 @@
     "primary_function": "Staff",
     "area_m2": 33.074755201116204,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0ZHnZovvj5lvANhWgv5zb2",
@@ -71417,7 +71417,7 @@
     "primary_function": "Storage",
     "area_m2": 8.11795154074207,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1F8_I7wiL6XhQuK4cMo56D",
@@ -71456,7 +71456,7 @@
     "primary_function": "Technical",
     "area_m2": 16.004317613318563,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "19pl6IhATFnPfbElWTzgmh",
@@ -71495,7 +71495,7 @@
     "primary_function": "Staircase",
     "area_m2": 45.83823370351456,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3Gc9J5JNXDeg28nl8CIvaG",
@@ -71534,7 +71534,7 @@
     "primary_function": "Technical",
     "area_m2": 11.387483939994127,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3Gc9J5JNXDeg28nl8CIvaN",
@@ -71565,7 +71565,7 @@
     "primary_function": "Storage",
     "area_m2": 9.395257488824427,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0JmiWgSgL1YuD7ycnwYa0u",
@@ -71588,7 +71588,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 0.2856350385118276,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQPQ",
@@ -71619,7 +71619,7 @@
     "primary_function": "Technical",
     "area_m2": 4.296931688906625,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQPT",
@@ -71650,7 +71650,7 @@
     "primary_function": "Technical",
     "area_m2": 2.5777483750134706,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1amom8ESL06ftx40DTKpgA",
@@ -71689,7 +71689,7 @@
     "primary_function": "Waiting Room",
     "area_m2": 57.53680958179757,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3Gc9J5JNXDeg28nl8CIvaQ",
@@ -71720,7 +71720,7 @@
     "primary_function": "Staff",
     "area_m2": 18.28784551890567,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3Gc9J5JNXDeg28nl8CIva4",
@@ -71751,7 +71751,7 @@
     "primary_function": "Staff",
     "area_m2": 19.58028309396468,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2jb5DKZIL8pQJ8vDMYuwbE",
@@ -71782,7 +71782,7 @@
     "primary_function": "Storage",
     "area_m2": 7.580976325785741,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3Gc9J5JNXDeg28nl8CIvau",
@@ -71817,7 +71817,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 3.110754309222102,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3Gc9J5JNXDeg28nl8CIvaB",
@@ -71856,7 +71856,7 @@
     "primary_function": "Technical",
     "area_m2": 17.426081812009215,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1nm_u3b1vAVxDbODNsEkvu",
@@ -71907,7 +71907,7 @@
     "primary_function": "Storage",
     "area_m2": 55.99111354141496,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1amom8ESL06ftx40DTKpmO",
@@ -71938,7 +71938,7 @@
     "primary_function": "Storage",
     "area_m2": 11.781358757289127,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2s3H9oCaj5rABq4$sbt_VO",
@@ -71969,7 +71969,7 @@
     "primary_function": "Corridor",
     "area_m2": 21.79622140689753,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3Gc9J5JNXDeg28nl8CIva$",
@@ -72000,7 +72000,7 @@
     "primary_function": "Staircase",
     "area_m2": 30.58421445451677,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "306Ek_iLT069W9x7AOGUTJ",
@@ -72031,7 +72031,7 @@
     "primary_function": "Elevator",
     "area_m2": 6.230974287027493,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9SflxfmO",
@@ -72062,7 +72062,7 @@
     "primary_function": "Elevator",
     "area_m2": 9.425640712492168,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2s3H9oCaj5rABq4$sbt$pA",
@@ -72337,7 +72337,7 @@
     "primary_function": "Corridor",
     "area_m2": 544.0872566003818,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1F8_I7wiL6XhQuK4cMo568",
@@ -72368,7 +72368,7 @@
     "primary_function": "Elevator",
     "area_m2": 12.134462248301134,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1KWbue1PzBmA4MF27P1HPU",
@@ -72427,7 +72427,7 @@
     "primary_function": "Corridor",
     "area_m2": 29.311443637358025,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnFn",
@@ -72502,7 +72502,7 @@
     "primary_function": "Corridor",
     "area_m2": 22.228807030478492,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2s3H9oCaj5rABq4$sbtueQ",
@@ -72529,7 +72529,7 @@
     "primary_function": "Staircase",
     "area_m2": 14.403227879432961,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1KzZihtgb4AOXs0z4pYLdG",
@@ -72560,7 +72560,7 @@
     "primary_function": "Elevator",
     "area_m2": 10.009149718331173,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1CWJzL_dH66O$Uxp$2TETH",
@@ -72591,7 +72591,7 @@
     "primary_function": "Elevator",
     "area_m2": 10.712777954759076,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnFk",
@@ -72622,7 +72622,7 @@
     "primary_function": "Elevator",
     "area_m2": 9.504997390555218,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnmI",
@@ -72697,7 +72697,7 @@
     "primary_function": "Corridor",
     "area_m2": 133.53737061144784,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1F8_I7wiL6XhQuK4cMo54h",
@@ -72728,7 +72728,7 @@
     "primary_function": "Sanitation",
     "area_m2": 42.44611675129272,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1F8_I7wiL6XhQuK4cMo55H",
@@ -72759,7 +72759,7 @@
     "primary_function": "Changing Room",
     "area_m2": 35.48260676744394,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1F8_I7wiL6XhQuK4cMo55M",
@@ -72790,7 +72790,7 @@
     "primary_function": "Storage",
     "area_m2": 7.929085093783215,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3yGjYYRJL3vATXUotTsjd$",
@@ -72837,7 +72837,7 @@
     "primary_function": "Corridor",
     "area_m2": 15.509655197151005,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1y6SXL1u94tAxrAWoQC3kW",
@@ -72864,7 +72864,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 2.024146605283022,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0QM6Bc$OX8wPOKoDvo0EDg",
@@ -72895,7 +72895,7 @@
     "primary_function": "Storage",
     "area_m2": 9.15514684584923,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0QM6Bc$OX8wPOKoDvo0DPA",
@@ -72934,7 +72934,7 @@
     "primary_function": "Sanitation",
     "area_m2": 62.26262673223391,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "004EpGNJ59hQbSU1gjV8ys",
@@ -72977,7 +72977,7 @@
     "primary_function": "Sanitation",
     "area_m2": 98.27289528166875,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1F8_I7wiL6XhQuK4cMo557",
@@ -73008,7 +73008,7 @@
     "primary_function": "Staircase",
     "area_m2": 30.5958095099777,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1amom8ESL06ftx40DTKpfD",
@@ -73039,7 +73039,7 @@
     "primary_function": "Corridor",
     "area_m2": 248.74671378871426,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3Gc9J5JNXDeg28nl8CIvar",
@@ -73070,7 +73070,7 @@
     "primary_function": "Staff",
     "area_m2": 28.38843092112802,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0KrvkLcLn74gx0RxBzAFjX",
@@ -73101,7 +73101,7 @@
     "primary_function": "Toilet",
     "area_m2": 15.131134768249467,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2jb5DKZIL8pQJ8vDMYuway",
@@ -73140,7 +73140,7 @@
     "primary_function": "Staff",
     "area_m2": 82.29768706974573,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2jb5DKZIL8pQJ8vDMYuwa$",
@@ -73171,7 +73171,7 @@
     "primary_function": "Conference Room",
     "area_m2": 98.24661582498811,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0n7u88jlj96O_eYUKeyoRq",
@@ -73202,7 +73202,7 @@
     "primary_function": "Conference Room",
     "area_m2": 100.49229042371735,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3Gc9J5JNXDeg28nl8CIvas",
@@ -73233,7 +73233,7 @@
     "primary_function": "Staff",
     "area_m2": 29.076345725916326,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0n7u88jlj96O_eYUKeyoRz",
@@ -73264,7 +73264,7 @@
     "primary_function": "Toilet",
     "area_m2": 43.666335833026096,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1F8_I7wiL6XhQuK4cMo54e",
@@ -73295,7 +73295,7 @@
     "primary_function": "Storage",
     "area_m2": 12.122095654252917,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1y6SXL1u94tAxrAWoQC3kG",
@@ -73330,7 +73330,7 @@
     "primary_function": "Radiotherapy",
     "area_m2": 20.12007844937034,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1SZG9JYIr0kB0CC3vNO3Uk",
@@ -73657,7 +73657,7 @@
     "primary_function": "Corridor",
     "area_m2": 547.9899829248898,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0Ita45WqnD4fyyPWAW3rlB",
@@ -73848,7 +73848,7 @@
     "primary_function": "Corridor",
     "area_m2": 206.31148077663966,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnFh",
@@ -73919,7 +73919,7 @@
     "primary_function": "Corridor",
     "area_m2": 59.46229055384174,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnoe",
@@ -74094,7 +74094,7 @@
     "primary_function": "Commercial",
     "area_m2": 756.6306784143671,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9Sflxfyu",
@@ -74129,7 +74129,7 @@
     "primary_function": "Staircase",
     "area_m2": 33.7662457160186,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnon",
@@ -74160,7 +74160,7 @@
     "primary_function": "Technical",
     "area_m2": 27.238296733470634,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9SflxfyZ",
@@ -74187,7 +74187,7 @@
     "primary_function": "Storage",
     "area_m2": 4.357383935712278,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0ptqHdNBfAVOFjkOD$jP32",
@@ -74278,7 +74278,7 @@
     "primary_function": "Corridor",
     "area_m2": 168.16366137354635,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnnK",
@@ -74325,7 +74325,7 @@
     "primary_function": "Storage",
     "area_m2": 297.52284465683624,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3FeAca9PPC2wWXL3B2c0Xq",
@@ -74356,7 +74356,7 @@
     "primary_function": "Storage",
     "area_m2": 11.841477707726881,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9Sflxf$K",
@@ -74395,7 +74395,7 @@
     "primary_function": "Toilet",
     "area_m2": 20.031313576735556,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3Gc9J5JNXDeg28nl8CIvbv",
@@ -74442,7 +74442,7 @@
     "primary_function": "Waiting Room",
     "area_m2": 99.34546049148776,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3FeAca9PPC2wWXL3B2c0an",
@@ -74481,7 +74481,7 @@
     "primary_function": "Waiting Room",
     "area_m2": 61.48956762580201,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2jb5DKZIL8pQJ8vDMYuwac",
@@ -74564,7 +74564,7 @@
     "primary_function": "Meeting Room",
     "area_m2": 135.65029850462452,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2jb5DKZIL8pQJ8vDMYuwaX",
@@ -74603,7 +74603,7 @@
     "primary_function": "Staircase",
     "area_m2": 14.673810111358762,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3Gc9J5JNXDeg28nl8CIvap",
@@ -74626,7 +74626,7 @@
     "primary_function": "Corridor",
     "area_m2": 0.8178409421816468,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3Gc9J5JNXDeg28nl8CIvWR",
@@ -74657,7 +74657,7 @@
     "primary_function": "Storage",
     "area_m2": 11.75415968359448,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1KzZihtgb4AOXs0z4pYM_a",
@@ -74688,7 +74688,7 @@
     "primary_function": "Storage",
     "area_m2": 10.558866346720606,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3J6JH53LP2qeExE4yB7LSm",
@@ -74719,7 +74719,7 @@
     "primary_function": "Toilet",
     "area_m2": 8.80475403694436,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3Gc9J5JNXDeg28nl8CIvl7",
@@ -74750,7 +74750,7 @@
     "primary_function": "Toilet",
     "area_m2": 8.697395012481138,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1jvbNRqYX6Cxni7W76gAXB",
@@ -74789,7 +74789,7 @@
     "primary_function": "Staff",
     "area_m2": 62.25283442484215,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "19OLyvxaP4Duv$Ps$UBB7w",
@@ -74820,7 +74820,7 @@
     "primary_function": "Storage",
     "area_m2": 7.397432104451582,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9Sflxf$0",
@@ -74851,7 +74851,7 @@
     "primary_function": "Staff",
     "area_m2": 11.395753513323143,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9Sflxf$V",
@@ -74882,7 +74882,7 @@
     "primary_function": "Corridor",
     "area_m2": 10.218691553222016,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3qbJC5rvT34AIW5LBm4AcN",
@@ -74913,7 +74913,7 @@
     "primary_function": "Storage",
     "area_m2": 6.076614347752184,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9Sflxfms",
@@ -74944,7 +74944,7 @@
     "primary_function": "Locker Room",
     "area_m2": 17.36120693408884,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1Q7acCRD5ADeUPNd_iVeAP",
@@ -74975,7 +74975,7 @@
     "primary_function": "Locker Room",
     "area_m2": 17.925276942085475,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1y2SXx6$r0n9kPJt2AuJxn",
@@ -75018,7 +75018,7 @@
     "primary_function": "Surgery Room",
     "area_m2": 52.41281497385353,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9Sflxfmr",
@@ -75049,7 +75049,7 @@
     "primary_function": "Surgery Room",
     "area_m2": 7.422368255676702,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9Sflxfmm",
@@ -75076,7 +75076,7 @@
     "primary_function": "Janitor",
     "area_m2": 3.071912085870281,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1KzZihtgb4AOXs0z4pYM_Z",
@@ -75107,7 +75107,7 @@
     "primary_function": "Corridor",
     "area_m2": 14.783724423265085,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3FeAca9PPC2wWXL3B2c0ai",
@@ -75138,7 +75138,7 @@
     "primary_function": "Locker Room",
     "area_m2": 10.236721246968955,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9SflxftF",
@@ -75177,7 +75177,7 @@
     "primary_function": "Locker Room",
     "area_m2": 18.338297725422308,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9Sflxft9",
@@ -75208,7 +75208,7 @@
     "primary_function": "Elevator",
     "area_m2": 14.456772617530078,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3Gc9J5JNXDeg28nl8CIvaf",
@@ -75239,7 +75239,7 @@
     "primary_function": "Elevator",
     "area_m2": 9.588642628863454,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9SflxftA",
@@ -75270,7 +75270,7 @@
     "primary_function": "Staircase",
     "area_m2": 29.69994593039155,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3Gc9J5JNXDeg28nl8CIvai",
@@ -75301,7 +75301,7 @@
     "primary_function": "Corridor",
     "area_m2": 12.794789981329814,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3wpgAzlv1CgAt8nQoCaqGz",
@@ -75332,7 +75332,7 @@
     "primary_function": "Surgery Room",
     "area_m2": 91.64258800353855,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3qbJC5rvT34AIW5LBm4AXg",
@@ -75359,7 +75359,7 @@
     "primary_function": "Surgery Room",
     "area_m2": 16.23075043153949,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9Sflxf$Q",
@@ -75386,7 +75386,7 @@
     "primary_function": "Locker Room",
     "area_m2": 15.79211154486984,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9Sflxf$P",
@@ -75417,7 +75417,7 @@
     "primary_function": "Storage",
     "area_m2": 6.447874569799751,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9Sflxf$5",
@@ -75448,7 +75448,7 @@
     "primary_function": "Staircase",
     "area_m2": 29.00727825332433,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3qbJC5rvT34AIW5LBm4AZd",
@@ -75479,7 +75479,7 @@
     "primary_function": "Corridor",
     "area_m2": 8.893295459682122,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3qbJC5rvT34AIW5LBm4Acd",
@@ -75510,7 +75510,7 @@
     "primary_function": "Storage",
     "area_m2": 9.348515025805682,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3qbJC5rvT34AIW5LBm4Acf",
@@ -75541,7 +75541,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 2.1693541747517884,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3qbJC5rvT34AIW5LBm4Acw",
@@ -75572,7 +75572,7 @@
     "primary_function": "Assembly Room",
     "area_m2": 44.22785879764706,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3qbJC5rvT34AIW5LBm4AXO",
@@ -75603,7 +75603,7 @@
     "primary_function": "Assembly Room",
     "area_m2": 34.91289311111905,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2nhPB9HWb7iPdwRexbYw7w",
@@ -75634,7 +75634,7 @@
     "primary_function": "Assembly Room",
     "area_m2": 78.90625288221054,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0F7F5brL995A$m$WcOlHdR",
@@ -75681,7 +75681,7 @@
     "primary_function": "Assembly Room",
     "area_m2": 26.575354264350608,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "306Ek_iLT069W9x7AOGU2w",
@@ -75704,7 +75704,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 0.21136166504584253,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9SflxfrN",
@@ -75735,7 +75735,7 @@
     "primary_function": "Staircase",
     "area_m2": 30.242620516801253,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3A3q2f8ibExxMYVwIa7chI",
@@ -75766,7 +75766,7 @@
     "primary_function": "Assembly Room",
     "area_m2": 350.31950289709494,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9SflxfrA",
@@ -75797,7 +75797,7 @@
     "primary_function": "Elevator",
     "area_m2": 18.142837949097157,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "306Ek_iLT069W9x7AOGU1c",
@@ -75836,7 +75836,7 @@
     "primary_function": "Corridor",
     "area_m2": 14.828803394222632,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1m_kVdJb9A1Blv9k0c35X9",
@@ -76135,7 +76135,7 @@
     "primary_function": "Corridor",
     "area_m2": 583.9632632585708,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9Sflxf_6",
@@ -76258,7 +76258,7 @@
     "primary_function": "Corridor",
     "area_m2": 150.8663882697001,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9Sflxf_Q",
@@ -76381,7 +76381,7 @@
     "primary_function": "Corridor",
     "area_m2": 76.56725924368948,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9Sflxf_V",
@@ -76412,7 +76412,7 @@
     "primary_function": "Corridor",
     "area_m2": 3.089054826879874,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2KrtsoPRr8wRWOxYBcghBg",
@@ -76571,7 +76571,7 @@
     "primary_function": "Corridor",
     "area_m2": 352.60389027860947,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQQ2",
@@ -76802,7 +76802,7 @@
     "primary_function": "Corridor",
     "area_m2": 169.34796066815034,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0X_HHBnnLCbv3OsWw4p6x_",
@@ -76836,7 +76836,7 @@
     "primary_function": "Elevator",
     "area_m2": 12.152869523270056,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQJY",
@@ -76867,7 +76867,7 @@
     "primary_function": "Elevator",
     "area_m2": 11.720375257078558,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQJT",
@@ -76898,7 +76898,7 @@
     "primary_function": "Elevator",
     "area_m2": 11.234787085326388,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQJK",
@@ -76929,7 +76929,7 @@
     "primary_function": "Elevator",
     "area_m2": 10.756288698641583,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQJv",
@@ -76956,7 +76956,7 @@
     "primary_function": "Technical",
     "area_m2": 2.2894367387052625,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0X_HHBnnLCbv3OsWw4p6z5",
@@ -76983,7 +76983,7 @@
     "primary_function": "Technical",
     "area_m2": 1.6252598592545837,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQJm",
@@ -77010,7 +77010,7 @@
     "primary_function": "Elevator",
     "area_m2": 6.319881062023342,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQIC",
@@ -77041,7 +77041,7 @@
     "primary_function": "Elevator",
     "area_m2": 6.368643427500501,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQIR",
@@ -77076,7 +77076,7 @@
     "primary_function": "Corridor",
     "area_m2": 29.704556750133634,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQR6",
@@ -77139,7 +77139,7 @@
     "primary_function": "Corridor",
     "area_m2": 42.09830242116004,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1nm_u3b1vAVxDbODNsEkt8",
@@ -77202,7 +77202,7 @@
     "primary_function": "Assembly Room",
     "area_m2": 26.75003648456186,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1amom8ESL06ftx40DTKprd",
@@ -77233,7 +77233,7 @@
     "primary_function": "Elevator",
     "area_m2": 13.521878242958337,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQOu",
@@ -77264,7 +77264,7 @@
     "primary_function": "Elevator",
     "area_m2": 7.792589342687279,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQOq",
@@ -77295,7 +77295,7 @@
     "primary_function": "Elevator",
     "area_m2": 7.821908507728949,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1CWJzL_dH66O$Uxp$2TETm",
@@ -77322,7 +77322,7 @@
     "primary_function": "Elevator",
     "area_m2": 6.278635176597163,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnFV",
@@ -77353,7 +77353,7 @@
     "primary_function": "Elevator",
     "area_m2": 7.083635896677151,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQQF",
@@ -77384,7 +77384,7 @@
     "primary_function": "Elevator",
     "area_m2": 12.127086698776111,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQQC",
@@ -77411,7 +77411,7 @@
     "primary_function": "Elevator",
     "area_m2": 6.4148163283243775,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "18gi5AYJr2nhHf$ZCLvbvf",
@@ -77438,7 +77438,7 @@
     "primary_function": "Technical",
     "area_m2": 2.5574523378163576,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQRp",
@@ -77465,7 +77465,7 @@
     "primary_function": "Elevator",
     "area_m2": 6.078647151123732,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQQ5",
@@ -77512,7 +77512,7 @@
     "primary_function": "Corridor",
     "area_m2": 28.078022728674114,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQQR",
@@ -77543,7 +77543,7 @@
     "primary_function": "Elevator",
     "area_m2": 9.348055795300752,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQQO",
@@ -77574,7 +77574,7 @@
     "primary_function": "Elevator",
     "area_m2": 9.838237250922248,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQQK",
@@ -77605,7 +77605,7 @@
     "primary_function": "Elevator",
     "area_m2": 9.883950043935329,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQQH",
@@ -77656,7 +77656,7 @@
     "primary_function": "Corridor",
     "area_m2": 20.242923070909455,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "306Ek_iLT069W9x7AOGU7v",
@@ -77687,7 +77687,7 @@
     "primary_function": "Assembly Room",
     "area_m2": 32.95179858757183,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1bkb3XH69BhhM2s$v0mITB",
@@ -77718,7 +77718,7 @@
     "primary_function": "Storage",
     "area_m2": 4.186455455143005,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3FeAca9PPC2wWXL3B2c0WG",
@@ -77749,7 +77749,7 @@
     "primary_function": "Storage",
     "area_m2": 4.712311077164486,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3A3q2f8ibExxMYVwIa7crx",
@@ -77776,7 +77776,7 @@
     "primary_function": "Storage",
     "area_m2": 3.4897477321792394,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9SflxfrU",
@@ -77807,7 +77807,7 @@
     "primary_function": "Staff",
     "area_m2": 16.36140257283114,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1KWbue1PzBmA4MF27P1Mkm",
@@ -77846,7 +77846,7 @@
     "primary_function": "Staff",
     "area_m2": 17.446582874981686,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0ptqHdNBfAVOFjkOD$jP5b",
@@ -77885,7 +77885,7 @@
     "primary_function": "Staff",
     "area_m2": 18.005065651843324,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1m_kVdJb9A1Blv9k0c35XC",
@@ -77912,7 +77912,7 @@
     "primary_function": "Storage",
     "area_m2": 3.655393661931157,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1bkb3XH69BhhM2s$v0mITK",
@@ -77939,7 +77939,7 @@
     "primary_function": "Storage",
     "area_m2": 3.450700774323195,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3VwX$4Ew51SeGYKxx8XXZH",
@@ -77970,7 +77970,7 @@
     "primary_function": "Corridor",
     "area_m2": 7.798613744555041,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9SflxfrH",
@@ -78009,7 +78009,7 @@
     "primary_function": "Storage",
     "area_m2": 14.49373819003813,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9SflxfrI",
@@ -78040,7 +78040,7 @@
     "primary_function": "Storage",
     "area_m2": 6.699895333731547,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1KWbue1PzBmA4MF27P1MHk",
@@ -78071,7 +78071,7 @@
     "primary_function": "Storage",
     "area_m2": 4.122454738477245,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnmp",
@@ -78190,7 +78190,7 @@
     "primary_function": "Morgue",
     "area_m2": 304.4996892940253,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnmX",
@@ -78233,7 +78233,7 @@
     "primary_function": "Storage",
     "area_m2": 9.802072698716074,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3IXfdr5wX7deynTe7wsP_Z",
@@ -78284,7 +78284,7 @@
     "primary_function": "Staff",
     "area_m2": 8.057723000878468,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnma",
@@ -78327,7 +78327,7 @@
     "primary_function": "Staff",
     "area_m2": 9.678555183811113,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2zT4W080j6PQuTwY0FTH4y",
@@ -78366,7 +78366,7 @@
     "primary_function": "Technical",
     "area_m2": 3.46111185871996,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnEf",
@@ -78417,7 +78417,7 @@
     "primary_function": "Corridor",
     "area_m2": 25.511042420519516,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2zT4W080j6PQuTwY0FTIqd",
@@ -78444,7 +78444,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 11.147831983631477,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9Sflxfrb",
@@ -78471,7 +78471,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 9.570577226346359,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2zT4W080j6PQuTwY0FTIqY",
@@ -78502,7 +78502,7 @@
     "primary_function": "Storage",
     "area_m2": 5.775127446046099,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1Q7acCRD5ADeUPNd_iVe4F",
@@ -78533,7 +78533,7 @@
     "primary_function": "Storage",
     "area_m2": 5.204932266846299,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2zT4W080j6PQuTwY0FTIqa",
@@ -78564,7 +78564,7 @@
     "primary_function": "Storage",
     "area_m2": 5.751973697682843,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1OcrwFDVD8$Qw2PGd6obr4",
@@ -78595,7 +78595,7 @@
     "primary_function": "Storage",
     "area_m2": 5.7099236054345965,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9Sflxfrc",
@@ -78626,7 +78626,7 @@
     "primary_function": "Storage",
     "area_m2": 5.5639327929820865,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2zT4W080j6PQuTwY0FTIrT",
@@ -78657,7 +78657,7 @@
     "primary_function": "Storage",
     "area_m2": 5.9340036197099835,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9SflxfrW",
@@ -78688,7 +78688,7 @@
     "primary_function": "Storage",
     "area_m2": 6.186003832146525,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2zLdZrjQX4TelY2mWZz6b7",
@@ -78719,7 +78719,7 @@
     "primary_function": "Storage",
     "area_m2": 6.619046809850261,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnoG",
@@ -78750,7 +78750,7 @@
     "primary_function": "Storage",
     "area_m2": 63.483399376040325,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQR3",
@@ -78777,7 +78777,7 @@
     "primary_function": "Technical",
     "area_m2": 2.0204053681809455,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQRD",
@@ -78804,7 +78804,7 @@
     "primary_function": "Technical",
     "area_m2": 2.5139410975389183,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQRA",
@@ -78835,7 +78835,7 @@
     "primary_function": "Elevator",
     "area_m2": 9.035304640885442,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3DOBo$C5D78eFHaA41NfyW",
@@ -78866,7 +78866,7 @@
     "primary_function": "Elevator",
     "area_m2": 9.043326712446287,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQR0",
@@ -78897,7 +78897,7 @@
     "primary_function": "Elevator",
     "area_m2": 9.159603610867634,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1MJY4ZTWP5xhQPuCsz8iVB",
@@ -78936,7 +78936,7 @@
     "primary_function": "Control Room",
     "area_m2": 8.22430559922941,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnm6",
@@ -79007,7 +79007,7 @@
     "primary_function": "Corridor",
     "area_m2": 83.4590734676458,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2zT4W080j6PQuTwY0FTH4q",
@@ -79042,7 +79042,7 @@
     "primary_function": "Technical",
     "area_m2": 12.952692178310826,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1MJY4ZTWP5xhQPuCsz8iV7",
@@ -79081,7 +79081,7 @@
     "primary_function": "Technical",
     "area_m2": 10.07604670082219,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2zT4W080j6PQuTwY0FTH59",
@@ -79108,7 +79108,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 4.168295362265781,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2zT4W080j6PQuTwY0FTH5E",
@@ -79135,7 +79135,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 2.832804013043642,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2W9w7jP$9478cnymht0CFs",
@@ -79182,7 +79182,7 @@
     "primary_function": "Corridor",
     "area_m2": 6.3674769015051425,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1MJY4ZTWP5xhQPuCsz8iV0",
@@ -79221,7 +79221,7 @@
     "primary_function": "Staff",
     "area_m2": 12.071545141516253,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnmd",
@@ -79252,7 +79252,7 @@
     "primary_function": "Staff",
     "area_m2": 15.267526669893414,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnmj",
@@ -79283,7 +79283,7 @@
     "primary_function": "Storage",
     "area_m2": 5.0609315887559205,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2s3H9oCaj5rABq4$sbtvD5",
@@ -79330,7 +79330,7 @@
     "primary_function": "Corridor",
     "area_m2": 8.977969185914844,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnmg",
@@ -79365,7 +79365,7 @@
     "primary_function": "Staff",
     "area_m2": 14.900424929335713,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0qPVT7W6bCLxMuA_rU7IwY",
@@ -79396,7 +79396,7 @@
     "primary_function": "Staff",
     "area_m2": 47.675538847688586,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1SZG9JYIr0kB0CC3vNO3KX",
@@ -79427,7 +79427,7 @@
     "primary_function": "Waiting Room",
     "area_m2": 7.810574074974284,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1amom8ESL06ftx40DTKpfY",
@@ -79458,7 +79458,7 @@
     "primary_function": "Toilet",
     "area_m2": 9.715135482838377,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1Q7acCRD5ADeUPNd_iVeA8",
@@ -79489,7 +79489,7 @@
     "primary_function": "Staff",
     "area_m2": 40.24794815829955,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0QM6Bc$OX8wPOKoDvo0E0A",
@@ -79520,7 +79520,7 @@
     "primary_function": "Waiting Room",
     "area_m2": 6.546331045683473,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3Gc9J5JNXDeg28nl8CIvWW",
@@ -79567,7 +79567,7 @@
     "primary_function": "Toilet",
     "area_m2": 21.016598247922957,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1amom8ESL06ftx40DTKpez",
@@ -79598,7 +79598,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 2.4001856143586338,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3WJlP9usHDEBRIkl7HPIdq",
@@ -79629,7 +79629,7 @@
     "primary_function": "Staff",
     "area_m2": 38.46108985017054,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2s3H9oCaj5rABq4$sbt_l0",
@@ -79660,7 +79660,7 @@
     "primary_function": "Waiting Room",
     "area_m2": 7.490432453341782,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2jb5DKZIL8pQJ8vDMYuwbQ",
@@ -79691,7 +79691,7 @@
     "primary_function": "Toilet",
     "area_m2": 8.565884941956028,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3qbJC5rvT34AIW5LBm4AaG",
@@ -79722,7 +79722,7 @@
     "primary_function": "Staff",
     "area_m2": 41.15835598856211,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQRy",
@@ -79765,7 +79765,7 @@
     "primary_function": "Toilet",
     "area_m2": 21.638184688286856,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0sBHoaHQHFXg96PwhGPx3M",
@@ -79804,7 +79804,7 @@
     "primary_function": "Waiting Room",
     "area_m2": 5.130162658169866,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3qbJC5rvT34AIW5LBm4AXx",
@@ -79835,7 +79835,7 @@
     "primary_function": "Staff",
     "area_m2": 39.74455745588057,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3qbJC5rvT34AIW5LBm4AdA",
@@ -79882,7 +79882,7 @@
     "primary_function": "Waiting Room",
     "area_m2": 7.582554535707459,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0kxOwgpFTDGefEo9EsRbKu",
@@ -79913,7 +79913,7 @@
     "primary_function": "Toilet",
     "area_m2": 9.45270460122265,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3qbJC5rvT34AIW5LBm4Adw",
@@ -79944,7 +79944,7 @@
     "primary_function": "Staff",
     "area_m2": 41.34473510249518,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3qbJC5rvT34AIW5LBm4Adf",
@@ -79995,7 +79995,7 @@
     "primary_function": "Toilet",
     "area_m2": 20.703469367697835,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQOx",
@@ -80026,7 +80026,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 2.3103516465052962,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3gEk3Rlvf91v13CptBox$u",
@@ -80057,7 +80057,7 @@
     "primary_function": "Waiting Room",
     "area_m2": 4.694869474275038,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQOt",
@@ -80088,7 +80088,7 @@
     "primary_function": "Meeting Room",
     "area_m2": 51.21290196129121,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "37borEmvPCkBjCapQU4mXe",
@@ -80127,7 +80127,7 @@
     "primary_function": "Corridor",
     "area_m2": 18.1157685960643,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1amom8ESL06ftx40DTKpq7",
@@ -80166,7 +80166,7 @@
     "primary_function": "Toilet",
     "area_m2": 24.459586122538894,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "37borEmvPCkBjCapQU4mXj",
@@ -80193,7 +80193,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 2.2720767275895923,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnnE",
@@ -80224,7 +80224,7 @@
     "primary_function": "Meeting Room",
     "area_m2": 50.121042983140796,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnnH",
@@ -80255,7 +80255,7 @@
     "primary_function": "Corridor",
     "area_m2": 12.499230707995594,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnn8",
@@ -80286,7 +80286,7 @@
     "primary_function": "Storage",
     "area_m2": 9.139663849491626,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnnB",
@@ -80313,7 +80313,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 2.087170456536114,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3gEk3Rlvf91v13CptBox$$",
@@ -80344,7 +80344,7 @@
     "primary_function": "Staff",
     "area_m2": 41.30770700518042,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1y2SXx6$r0n9kPJt2AuJxQ",
@@ -80375,7 +80375,7 @@
     "primary_function": "Waiting Room",
     "area_m2": 7.610093850642443,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3gEk3Rlvf91v13CptBox$b",
@@ -80406,7 +80406,7 @@
     "primary_function": "Toilet",
     "area_m2": 8.580919943982735,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnnN",
@@ -80445,7 +80445,7 @@
     "primary_function": "Toilet",
     "area_m2": 24.10353637044318,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1KWbue1PzBmA4MF27P1Hc2",
@@ -80476,7 +80476,7 @@
     "primary_function": "Waiting Room",
     "area_m2": 5.798053366364911,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnnf",
@@ -80507,7 +80507,7 @@
     "primary_function": "Staff",
     "area_m2": 38.128598855109885,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1Q7acCRD5ADeUPNd_iVe5S",
@@ -80534,7 +80534,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 2.914592584595084,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnnQ",
@@ -80565,7 +80565,7 @@
     "primary_function": "Staff",
     "area_m2": 46.120743937790394,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnni",
@@ -80596,7 +80596,7 @@
     "primary_function": "Waiting Room",
     "area_m2": 6.347025320399553,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3gEk3Rlvf91v13CptBox$l",
@@ -80627,7 +80627,7 @@
     "primary_function": "Toilet",
     "area_m2": 7.663688832661137,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnnT",
@@ -80658,7 +80658,7 @@
     "primary_function": "Staff",
     "area_m2": 45.97416414646432,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1bkb3XH69BhhM2s$v0mIVL",
@@ -80693,7 +80693,7 @@
     "primary_function": "Waiting Room",
     "area_m2": 6.605568740749732,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnnl",
@@ -80724,7 +80724,7 @@
     "primary_function": "Corridor",
     "area_m2": 8.761961871292442,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnnW",
@@ -80763,7 +80763,7 @@
     "primary_function": "Toilet",
     "area_m2": 16.9212188643869,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2s3H9oCaj5rABq4$sbtv_$",
@@ -80798,7 +80798,7 @@
     "primary_function": "Technical",
     "area_m2": 11.091133477399126,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9Sflxf_0",
@@ -80825,7 +80825,7 @@
     "primary_function": "Staircase",
     "area_m2": 31.475836301455274,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9Sflxf_P",
@@ -80872,7 +80872,7 @@
     "primary_function": "Commercial",
     "area_m2": 28.38151238160208,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0X_HHBnnLCbv3OsWw4p6_i",
@@ -80923,7 +80923,7 @@
     "primary_function": "Commercial",
     "area_m2": 213.4281347093638,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1KWbue1PzBmA4MF27P1H2g",
@@ -80986,7 +80986,7 @@
     "primary_function": "Commercial",
     "area_m2": 167.82410065783188,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "19pl6IhATFnPfbElWTzgmi",
@@ -81037,7 +81037,7 @@
     "primary_function": "Commercial",
     "area_m2": 79.38442675955594,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2yXS6QX5v1ABIJgLfUFVFp",
@@ -81072,7 +81072,7 @@
     "primary_function": "Technical",
     "area_m2": 19.454447373747826,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnow",
@@ -81119,7 +81119,7 @@
     "primary_function": "Corridor",
     "area_m2": 76.43923576385714,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0SgPA8YVn3AvrGaD_Vswn7",
@@ -81166,7 +81166,7 @@
     "primary_function": "Commercial",
     "area_m2": 95.00425284262747,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3DMiP7aCj8JvIPwh9pgQcK",
@@ -81197,7 +81197,7 @@
     "primary_function": "Storage",
     "area_m2": 11.892285090638325,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2s3H9oCaj5rABq4$sbtvqJ",
@@ -81228,7 +81228,7 @@
     "primary_function": "Storage",
     "area_m2": 11.060003182617947,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3FeAca9PPC2wWXL3B2c0aG",
@@ -81259,7 +81259,7 @@
     "primary_function": "Janitor",
     "area_m2": 5.522639130940661,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9SflxfrT",
@@ -81294,7 +81294,7 @@
     "primary_function": "Storage",
     "area_m2": 15.565278802998364,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1eJWXsrmbEWQs8oMggHnxb",
@@ -81321,7 +81321,7 @@
     "primary_function": "Technical",
     "area_m2": 3.115455948282033,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1eJWXsrmbEWQs8oMggHnxW",
@@ -81352,7 +81352,7 @@
     "primary_function": "Technical",
     "area_m2": 2.7468376213219017,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "306Ek_iLT069W9x7AOGU2z",
@@ -81383,7 +81383,7 @@
     "primary_function": "Storage",
     "area_m2": 5.266245409846306,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0X_HHBnnLCbv3OsWw4p6xN",
@@ -81414,7 +81414,7 @@
     "primary_function": "Storage",
     "area_m2": 5.021631709532812,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1KzZihtgb4AOXs0z4pYLGZ",
@@ -81445,7 +81445,7 @@
     "primary_function": "Storage",
     "area_m2": 4.556684721726924,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2llHrbaoj6IvdS8xb6L9gV",
@@ -81476,7 +81476,7 @@
     "primary_function": "Storage",
     "area_m2": 4.42242041346617,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1nm_u3b1vAVxDbODNsEkbP",
@@ -81503,7 +81503,7 @@
     "primary_function": "Technical",
     "area_m2": 1.5030255988240242,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0Ita45WqnD4fyyPWAW3rlU",
@@ -81534,7 +81534,7 @@
     "primary_function": "Storage",
     "area_m2": 4.0840525715611875,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQIF",
@@ -81565,7 +81565,7 @@
     "primary_function": "Storage",
     "area_m2": 9.478750163223594,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1SZG9JYIr0kB0CC3vNO3QU",
@@ -81596,7 +81596,7 @@
     "primary_function": "Storage",
     "area_m2": 9.525658858707175,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1eJWXsrmbEWQs8oMggHnwV",
@@ -81635,7 +81635,7 @@
     "primary_function": "Staff",
     "area_m2": 53.28754843608476,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2s3H9oCaj5rABq4$sbtvM$",
@@ -81666,7 +81666,7 @@
     "primary_function": "Technical",
     "area_m2": 5.8845929119270295,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0s94NjgBT5DRCCuOKRTN2X",
@@ -81697,7 +81697,7 @@
     "primary_function": "Janitor",
     "area_m2": 3.48388960538432,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnnZ",
@@ -81736,7 +81736,7 @@
     "primary_function": "Commercial",
     "area_m2": 112.81628345977515,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnno",
@@ -81771,7 +81771,7 @@
     "primary_function": "Commercial",
     "area_m2": 30.35207871813327,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnnx",
@@ -81802,7 +81802,7 @@
     "primary_function": "Storage",
     "area_m2": 22.276368968421593,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3gEk3Rlvf91v13CptBox$c",
@@ -81833,7 +81833,7 @@
     "primary_function": "Technical",
     "area_m2": 8.832076530205086,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3gEk3Rlvf91v13CptBox$Z",
@@ -81864,7 +81864,7 @@
     "primary_function": "Storage",
     "area_m2": 12.916665739146993,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1bkb3XH69BhhM2s$v0mIPL",
@@ -81903,7 +81903,7 @@
     "primary_function": "Waiting Room",
     "area_m2": 121.44666664069518,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnnc",
@@ -81934,7 +81934,7 @@
     "primary_function": "Staff",
     "area_m2": 19.562214236706495,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1Q7acCRD5ADeUPNd_iVe6C",
@@ -81969,7 +81969,7 @@
     "primary_function": "Staff",
     "area_m2": 15.423269105143845,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnnr",
@@ -82028,7 +82028,7 @@
     "primary_function": "Corridor",
     "area_m2": 18.92279805452563,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnn5",
@@ -82059,7 +82059,7 @@
     "primary_function": "Staff",
     "area_m2": 10.018795372918248,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnm$",
@@ -82094,7 +82094,7 @@
     "primary_function": "Waste",
     "area_m2": 4.863280451158062,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3A3q2f8ibExxMYVwIa7cq4",
@@ -82133,7 +82133,7 @@
     "primary_function": "Waste",
     "area_m2": 5.3538926432374865,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnn_",
@@ -82180,7 +82180,7 @@
     "primary_function": "Staff",
     "area_m2": 13.40354259707965,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0ptqHdNBfAVOFjkOD$jP3U",
@@ -82211,7 +82211,7 @@
     "primary_function": "Staff",
     "area_m2": 10.791676851222292,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2KrtsoPRr8wRWOxYBcgh7P",
@@ -82266,7 +82266,7 @@
     "primary_function": "Staff",
     "area_m2": 16.28633146150969,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1amom8ESL06ftx40DTKpp_",
@@ -82297,7 +82297,7 @@
     "primary_function": "Technical",
     "area_m2": 2.068229456199333,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3DMiP7aCj8JvIPwh9pgQdG",
@@ -82324,7 +82324,7 @@
     "primary_function": "Staff",
     "area_m2": 5.589345259591937,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2KrtsoPRr8wRWOxYBcgh8c",
@@ -82347,7 +82347,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 0.33765947190113366,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnn2",
@@ -82378,7 +82378,7 @@
     "primary_function": "Storage",
     "area_m2": 14.909725454403087,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnEi",
@@ -82417,7 +82417,7 @@
     "primary_function": "Staff",
     "area_m2": 30.5392486336641,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1oJRlPmv97Ge3I9G00A8Zx",
@@ -82448,7 +82448,7 @@
     "primary_function": "Staff",
     "area_m2": 44.0,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2KrtsoPRr8wRWOxYBcghB8",
@@ -82479,7 +82479,7 @@
     "primary_function": "Staff",
     "area_m2": 17.811095151118934,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnFS",
@@ -82510,7 +82510,7 @@
     "primary_function": "Staff",
     "area_m2": 19.68677151412703,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1bkb3XH69BhhM2s$v0mIP8",
@@ -82561,7 +82561,7 @@
     "primary_function": "Corridor",
     "area_m2": 55.21277841180563,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnFP",
@@ -82592,7 +82592,7 @@
     "primary_function": "Storage",
     "area_m2": 7.923467509681359,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnFM",
@@ -82623,7 +82623,7 @@
     "primary_function": "Storage",
     "area_m2": 12.88177844393067,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnmy",
@@ -82654,7 +82654,7 @@
     "primary_function": "Staff",
     "area_m2": 40.92258227802813,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1bkb3XH69BhhM2s$v0mIRr",
@@ -82701,7 +82701,7 @@
     "primary_function": "Staff",
     "area_m2": 31.70103064738214,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1MJY4ZTWP5xhQPuCsz8iVE",
@@ -82732,7 +82732,7 @@
     "primary_function": "Corridor",
     "area_m2": 9.302869247971103,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1oJRlPmv97Ge3I9G00A8Z_",
@@ -82759,7 +82759,7 @@
     "primary_function": "Corridor",
     "area_m2": 4.601422855863348,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1MJY4ZTWP5xhQPuCsz8iVD",
@@ -82806,7 +82806,7 @@
     "primary_function": "Staff",
     "area_m2": 33.66687633888796,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1bkb3XH69BhhM2s$v0mIRe",
@@ -82837,7 +82837,7 @@
     "primary_function": "Toilet",
     "area_m2": 26.812414549291134,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnmU",
@@ -82868,7 +82868,7 @@
     "primary_function": "Toilet",
     "area_m2": 14.820851402590051,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnEY",
@@ -82899,7 +82899,7 @@
     "primary_function": "Storage",
     "area_m2": 11.517819556640461,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnF1",
@@ -82938,7 +82938,7 @@
     "primary_function": "Storage",
     "area_m2": 9.638897720957175,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2zT4W080j6PQuTwY0FTH4$",
@@ -82965,7 +82965,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 3.364754635374993,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1KzZihtgb4AOXs0z4pYLDK",
@@ -82992,7 +82992,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 2.8366012435872108,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1SZG9JYIr0kB0CC3vNO3GP",
@@ -83023,7 +83023,7 @@
     "primary_function": "Storage",
     "area_m2": 12.150892086792737,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnmF",
@@ -83054,7 +83054,7 @@
     "primary_function": "Staff",
     "area_m2": 40.79399571218528,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnmO",
@@ -83085,7 +83085,7 @@
     "primary_function": "Changing Room",
     "area_m2": 5.1122692509088665,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1KWbue1PzBmA4MF27P1My1",
@@ -83140,7 +83140,7 @@
     "primary_function": "Staff",
     "area_m2": 28.18929512356408,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1oJRlPmv97Ge3I9G00A8Xl",
@@ -83171,7 +83171,7 @@
     "primary_function": "Laboratory",
     "area_m2": 7.611703128786758,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1F8_I7wiL6XhQuK4cMo554",
@@ -83202,7 +83202,7 @@
     "primary_function": "Storage",
     "area_m2": 40.8640630308073,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1amom8ESL06ftx40DTKpoN",
@@ -83233,7 +83233,7 @@
     "primary_function": "Laboratory",
     "area_m2": 14.073598174145445,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1MJY4ZTWP5xhQPuCsz8iGU",
@@ -83264,7 +83264,7 @@
     "primary_function": "Corridor",
     "area_m2": 8.35124498186633,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2zLdZrjQX4TelY2mWZz6b$",
@@ -83295,7 +83295,7 @@
     "primary_function": "Laboratory",
     "area_m2": 22.682512761792168,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1MJY4ZTWP5xhQPuCsz8iGT",
@@ -83326,7 +83326,7 @@
     "primary_function": "Laboratory",
     "area_m2": 14.500554325059056,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1nm_u3b1vAVxDbODNsEkbN",
@@ -83357,7 +83357,7 @@
     "primary_function": "Meeting Room",
     "area_m2": 41.0921059185639,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0ptqHdNBfAVOFjkOD$jP03",
@@ -83388,7 +83388,7 @@
     "primary_function": "Laboratory",
     "area_m2": 18.36587956501171,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1nm_u3b1vAVxDbODNsEkbK",
@@ -83439,7 +83439,7 @@
     "primary_function": "Commercial",
     "area_m2": 17.956730441888794,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQJp",
@@ -83478,7 +83478,7 @@
     "primary_function": "Corridor",
     "area_m2": 25.227390221087262,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2nhPB9HWb7iPdwRexbYw71",
@@ -83513,7 +83513,7 @@
     "primary_function": "Storage",
     "area_m2": 25.983714694157243,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1KWbue1PzBmA4MF27P1HA5",
@@ -83560,7 +83560,7 @@
     "primary_function": "Laboratory",
     "area_m2": 18.34732775716111,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1CWJzL_dH66O$Uxp$2TEU5",
@@ -83595,7 +83595,7 @@
     "primary_function": "Laboratory",
     "area_m2": 13.24458677158691,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1oJRlPmv97Ge3I9G00A8Wj",
@@ -83630,7 +83630,7 @@
     "primary_function": "Corridor",
     "area_m2": 5.930581833701581,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnnu",
@@ -83657,7 +83657,7 @@
     "primary_function": "Toilet",
     "area_m2": 14.07047461764887,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0ptqHdNBfAVOFjkOD$jP7Z",
@@ -83688,7 +83688,7 @@
     "primary_function": "Waiting Room",
     "area_m2": 43.25474230363034,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQQU",
@@ -83719,7 +83719,7 @@
     "primary_function": "Technical",
     "area_m2": 12.657315212767571,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3X9zexXXP0jh$e9ds4GFGD",
@@ -83758,7 +83758,7 @@
     "primary_function": "Waiting Room",
     "area_m2": 31.33129008486867,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnoA",
@@ -83813,7 +83813,7 @@
     "primary_function": "Waiting Room",
     "area_m2": 24.16455177916214,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEno7",
@@ -83836,7 +83836,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 0.23191512073390186,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnoD",
@@ -83859,7 +83859,7 @@
     "primary_function": "Technical",
     "area_m2": 0.3667108954396099,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1Q7acCRD5ADeUPNd_iVe9T",
@@ -83882,7 +83882,7 @@
     "primary_function": "Technical",
     "area_m2": 0.43575352150946856,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0Xmd20QAL34wWqAHqppGKO",
@@ -83913,7 +83913,7 @@
     "primary_function": "Patient Care",
     "area_m2": 41.94326572516002,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "306Ek_iLT069W9x7AOGUCB",
@@ -83944,7 +83944,7 @@
     "primary_function": "Patient Care",
     "area_m2": 22.630939880385995,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1SZG9JYIr0kB0CC3vNO3SQ",
@@ -83983,7 +83983,7 @@
     "primary_function": "Patient Care",
     "area_m2": 17.04017387004569,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1eJWXsrmbEWQs8oMggHngv",
@@ -84022,7 +84022,7 @@
     "primary_function": "Patient Care",
     "area_m2": 18.612765388097614,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1oJRlPmv97Ge3I9G00A8ZE",
@@ -84053,7 +84053,7 @@
     "primary_function": "Patient Care",
     "area_m2": 20.791325887665153,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1eJWXsrmbEWQs8oMggHngT",
@@ -84084,7 +84084,7 @@
     "primary_function": "Patient Care",
     "area_m2": 20.38970084907487,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1eJWXsrmbEWQs8oMggHngO",
@@ -84115,7 +84115,7 @@
     "primary_function": "Patient Care",
     "area_m2": 20.79992810310796,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1eJWXsrmbEWQs8oMggHngN",
@@ -84146,7 +84146,7 @@
     "primary_function": "Patient Care",
     "area_m2": 20.340636670356616,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1eJWXsrmbEWQs8oMggHngU",
@@ -84177,7 +84177,7 @@
     "primary_function": "Patient Care",
     "area_m2": 20.315705053741112,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1eJWXsrmbEWQs8oMggHnhZ",
@@ -84208,7 +84208,7 @@
     "primary_function": "Patient Care",
     "area_m2": 20.670379143673927,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1eJWXsrmbEWQs8oMggHnha",
@@ -84239,7 +84239,7 @@
     "primary_function": "Technical",
     "area_m2": 16.475847691763192,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1S3xIwTef2zxAnUQq$Hzlw",
@@ -84270,7 +84270,7 @@
     "primary_function": "Patient Care",
     "area_m2": 21.8880523936823,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1eJWXsrmbEWQs8oMggHnhf",
@@ -84309,7 +84309,7 @@
     "primary_function": "Patient Care",
     "area_m2": 12.577682504197583,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnoY",
@@ -84348,7 +84348,7 @@
     "primary_function": "Patient Care",
     "area_m2": 18.21287316759117,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1eJWXsrmbEWQs8oMggHndN",
@@ -84379,7 +84379,7 @@
     "primary_function": "Toilet",
     "area_m2": 6.849398100282997,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnob",
@@ -84410,7 +84410,7 @@
     "primary_function": "Corridor",
     "area_m2": 13.488396586850286,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1KzZihtgb4AOXs0z4pYL6U",
@@ -84441,7 +84441,7 @@
     "primary_function": "Patient Care",
     "area_m2": 19.288374579278752,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnoJ",
@@ -84472,7 +84472,7 @@
     "primary_function": "Patient Care",
     "area_m2": 20.670798865379766,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnoS",
@@ -84503,7 +84503,7 @@
     "primary_function": "Patient Care",
     "area_m2": 20.3494881328661,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnoP",
@@ -84534,7 +84534,7 @@
     "primary_function": "Patient Care",
     "area_m2": 20.615396892651916,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "19OLyvxaP4Duv$Ps$UBBBq",
@@ -84565,7 +84565,7 @@
     "primary_function": "Patient Care",
     "area_m2": 21.755268851295114,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1ILGrmh$n7mx0p5PeFjkT4",
@@ -84596,7 +84596,7 @@
     "primary_function": "Patient Care",
     "area_m2": 20.066132954554632,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "18gi5AYJr2nhHf$ZCLvbvy",
@@ -84627,7 +84627,7 @@
     "primary_function": "Storage",
     "area_m2": 4.528648441890255,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3VwX$4Ew51SeGYKxx8XXS6",
@@ -84670,7 +84670,7 @@
     "primary_function": "Pantry",
     "area_m2": 34.07582100806758,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnoM",
@@ -84701,7 +84701,7 @@
     "primary_function": "Staff",
     "area_m2": 17.31429076846689,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0F7F5brL995A$m$WcOlHdu",
@@ -84912,7 +84912,7 @@
     "primary_function": "Corridor",
     "area_m2": 401.3941725154873,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1eJWXsrmbEWQs8oMggHngB",
@@ -84943,7 +84943,7 @@
     "primary_function": "Storage",
     "area_m2": 4.251765454187989,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1eJWXsrmbEWQs8oMggHngI",
@@ -84974,7 +84974,7 @@
     "primary_function": "Staff",
     "area_m2": 33.60905386507511,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1eJWXsrmbEWQs8oMggHng0",
@@ -85025,7 +85025,7 @@
     "primary_function": "Corridor",
     "area_m2": 34.40595685434528,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1eJWXsrmbEWQs8oMggHngH",
@@ -85060,7 +85060,7 @@
     "primary_function": "Toilet",
     "area_m2": 6.993071613833308,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9Sflxfyz",
@@ -85087,7 +85087,7 @@
     "primary_function": "Janitor",
     "area_m2": 4.727469560690224,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0F7F5brL995A$m$WcOlHc5",
@@ -85118,7 +85118,7 @@
     "primary_function": "Staff",
     "area_m2": 21.585136037087068,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEno1",
@@ -85149,7 +85149,7 @@
     "primary_function": "Staff",
     "area_m2": 25.6784174812492,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1eJWXsrmbEWQs8oMggHnxc",
@@ -85200,7 +85200,7 @@
     "primary_function": "Corridor",
     "area_m2": 21.97807465493679,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1eJWXsrmbEWQs8oMggHngq",
@@ -85231,7 +85231,7 @@
     "primary_function": "Staff",
     "area_m2": 15.50753039564006,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1eJWXsrmbEWQs8oMggHng$",
@@ -85262,7 +85262,7 @@
     "primary_function": "Staff",
     "area_m2": 15.256523743271828,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0F7F5brL995A$m$WcOlHbQ",
@@ -85309,7 +85309,7 @@
     "primary_function": "Staff",
     "area_m2": 16.11500904127024,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1eJWXsrmbEWQs8oMggHnad",
@@ -85356,7 +85356,7 @@
     "primary_function": "Staff",
     "area_m2": 16.521097992314026,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "306Ek_iLT069W9x7AOGUCr",
@@ -85387,7 +85387,7 @@
     "primary_function": "Toilet",
     "area_m2": 2.3966252428945154,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1bkb3XH69BhhM2s$v0mIUq",
@@ -85418,7 +85418,7 @@
     "primary_function": "Toilet",
     "area_m2": 2.4477614597417414,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1S3xIwTef2zxAnUQq$Hzlm",
@@ -85441,7 +85441,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 0.23749963799491525,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1eJWXsrmbEWQs8oMggHnXh",
@@ -85472,7 +85472,7 @@
     "primary_function": "Toilet",
     "area_m2": 2.6064723741728812,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1eJWXsrmbEWQs8oMggHngw",
@@ -85495,7 +85495,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 0.34077846677973866,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEno4",
@@ -85534,7 +85534,7 @@
     "primary_function": "Toilet",
     "area_m2": 5.926812172867358,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "306Ek_iLT069W9x7AOGUC8",
@@ -85561,7 +85561,7 @@
     "primary_function": "Storage",
     "area_m2": 3.866020500427112,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0ptqHdNBfAVOFjkOD$jP46",
@@ -85592,7 +85592,7 @@
     "primary_function": "Technical",
     "area_m2": 13.822020872263238,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9SflxfrO",
@@ -85619,7 +85619,7 @@
     "primary_function": "Janitor",
     "area_m2": 4.902785305166617,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0F7F5brL995A$m$WcOlHcx",
@@ -85650,7 +85650,7 @@
     "primary_function": "Toilet",
     "area_m2": 2.4247642138507217,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2s3H9oCaj5rABq4$sbtvao",
@@ -85681,7 +85681,7 @@
     "primary_function": "Corridor",
     "area_m2": 22.880114938365296,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3w47DUQ0LC8vCPdctqHZWy",
@@ -85716,7 +85716,7 @@
     "primary_function": "Pantry",
     "area_m2": 19.566526901209727,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1eJWXsrmbEWQs8oMggHng5",
@@ -85747,7 +85747,7 @@
     "primary_function": "Storage",
     "area_m2": 5.555435046786442,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1eJWXsrmbEWQs8oMggHng6",
@@ -85774,7 +85774,7 @@
     "primary_function": "Storage",
     "area_m2": 3.3684628307819366,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9Sflxfyo",
@@ -85813,7 +85813,7 @@
     "primary_function": "Technical",
     "area_m2": 5.741236643632874,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2s3H9oCaj5rABq4$sbtvj5",
@@ -85856,7 +85856,7 @@
     "primary_function": "Staff",
     "area_m2": 13.363634448731318,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1KWbue1PzBmA4MF27P1MbS",
@@ -85887,7 +85887,7 @@
     "primary_function": "Staff",
     "area_m2": 12.904190866043791,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1eJWXsrmbEWQs8oMggHndA",
@@ -85922,7 +85922,7 @@
     "primary_function": "Commercial",
     "area_m2": 25.206829350674525,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0s94NjgBT5DRCCuOKRTN2i",
@@ -85957,7 +85957,7 @@
     "primary_function": "Waiting Room",
     "area_m2": 24.1459436500445,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3Gc9J5JNXDeg28nl8CIvXR",
@@ -85988,7 +85988,7 @@
     "primary_function": "Pantry",
     "area_m2": 10.525256958091632,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2nhPB9HWb7iPdwRexbYw6X",
@@ -86035,7 +86035,7 @@
     "primary_function": "Assembly Room",
     "area_m2": 18.325345683377236,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "37borEmvPCkBjCapQU4mkq",
@@ -86078,7 +86078,7 @@
     "primary_function": "Toilet",
     "area_m2": 9.2330928419251,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "18gi5AYJr2nhHf$ZCLvbvi",
@@ -86101,7 +86101,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 0.14934964990243316,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "19pl6IhATFnPfbElWTzgms",
@@ -86148,7 +86148,7 @@
     "primary_function": "Commercial",
     "area_m2": 222.9002011124976,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9Sflxf_5",
@@ -86203,7 +86203,7 @@
     "primary_function": "Corridor",
     "area_m2": 5.28806201252155,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3A3q2f8ibExxMYVwIa7chv",
@@ -86234,7 +86234,7 @@
     "primary_function": "Patient Care",
     "area_m2": 24.129719296470284,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2kGqIcXDT1quLjFlHdxfCQ",
@@ -86265,7 +86265,7 @@
     "primary_function": "Patient Care",
     "area_m2": 25.469836624804884,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3DMiP7aCj8JvIPwh9pgQc8",
@@ -86292,7 +86292,7 @@
     "primary_function": "Patient Care",
     "area_m2": 23.91951703489758,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3FeAca9PPC2wWXL3B2c0WL",
@@ -86323,7 +86323,7 @@
     "primary_function": "Staff",
     "area_m2": 6.31580874370411,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2s3H9oCaj5rABq4$sbt_wB",
@@ -86350,7 +86350,7 @@
     "primary_function": "Corridor",
     "area_m2": 36.68765046750195,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0SWu4WvFn9WxgpxlUdWRhz",
@@ -86389,7 +86389,7 @@
     "primary_function": "Staff",
     "area_m2": 30.082045739982277,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "37borEmvPCkBjCapQU4mkt",
@@ -86420,7 +86420,7 @@
     "primary_function": "Toilet",
     "area_m2": 12.192677771672606,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1nm_u3b1vAVxDbODNsEkpJ",
@@ -86451,7 +86451,7 @@
     "primary_function": "Staff",
     "area_m2": 17.20050229341723,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "306Ek_iLT069W9x7AOGU7c",
@@ -86482,7 +86482,7 @@
     "primary_function": "Staff",
     "area_m2": 16.943274695659056,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1nJ0omgVL80eLdK2vAxCdC",
@@ -86513,7 +86513,7 @@
     "primary_function": "Staff",
     "area_m2": 93.61854104045779,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1nJ0omgVL80eLdK2vAxCds",
@@ -86544,7 +86544,7 @@
     "primary_function": "Staff",
     "area_m2": 11.145559155847877,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2kGqIcXDT1quLjFlHdxf9L",
@@ -86575,7 +86575,7 @@
     "primary_function": "Staff",
     "area_m2": 18.147776217898354,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1nJ0omgVL80eLdK2vAxCdF",
@@ -86606,7 +86606,7 @@
     "primary_function": "Staff",
     "area_m2": 16.203011816367507,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1nJ0omgVL80eLdK2vAxCd2",
@@ -86637,7 +86637,7 @@
     "primary_function": "Meeting Room",
     "area_m2": 28.135485983919352,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1jvbNRqYX6Cxni7W76gAfj",
@@ -86668,7 +86668,7 @@
     "primary_function": "Meeting Room",
     "area_m2": 18.5889380434528,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1jvbNRqYX6Cxni7W76gAfI",
@@ -86699,7 +86699,7 @@
     "primary_function": "Pantry",
     "area_m2": 9.045910725137219,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1Q7acCRD5ADeUPNd_iVe7O",
@@ -86730,7 +86730,7 @@
     "primary_function": "Staff",
     "area_m2": 16.978311834856868,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0ptqHdNBfAVOFjkOD$jP13",
@@ -86761,7 +86761,7 @@
     "primary_function": "Staff",
     "area_m2": 16.45773815200664,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2llHrbaoj6IvdS8xb6L9jf",
@@ -86792,7 +86792,7 @@
     "primary_function": "Staff",
     "area_m2": 16.527043558191508,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1nJ0omgVL80eLdK2vAxCdX",
@@ -86823,7 +86823,7 @@
     "primary_function": "Staff",
     "area_m2": 15.600029663881287,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1ILGrmh$n7mx0p5PeFjkUz",
@@ -86854,7 +86854,7 @@
     "primary_function": "Staff",
     "area_m2": 15.549997839611024,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2s3H9oCaj5rABq4$sbtvDC",
@@ -86885,7 +86885,7 @@
     "primary_function": "Toilet",
     "area_m2": 11.787053496111184,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnE_",
@@ -86916,7 +86916,7 @@
     "primary_function": "Technical",
     "area_m2": 10.915424621663988,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "202tj5U0r8kB_UCpyiuB52",
@@ -86947,7 +86947,7 @@
     "primary_function": "Staff",
     "area_m2": 21.42634637793526,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2zT4W080j6PQuTwY0FTH4f",
@@ -86978,7 +86978,7 @@
     "primary_function": "Staff",
     "area_m2": 21.684865325456485,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnmm",
@@ -87009,7 +87009,7 @@
     "primary_function": "Toilet",
     "area_m2": 2.4315050777513534,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "202tj5U0r8kB_UCpyiuB5E",
@@ -87044,7 +87044,7 @@
     "primary_function": "Toilet",
     "area_m2": 3.2737201743293554,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "202tj5U0r8kB_UCpyiuB5Q",
@@ -87075,7 +87075,7 @@
     "primary_function": "Staff",
     "area_m2": 7.363474699435756,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1nJ0omgVL80eLdK2vAxCdk",
@@ -87106,7 +87106,7 @@
     "primary_function": "Pantry",
     "area_m2": 3.718944189604372,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1eJWXsrmbEWQs8oMggHnhx",
@@ -87133,7 +87133,7 @@
     "primary_function": "Corridor",
     "area_m2": 2.0812933675479144,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1eJWXsrmbEWQs8oMggHnhs",
@@ -87164,7 +87164,7 @@
     "primary_function": "Technical",
     "area_m2": 3.766337843379006,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1eJWXsrmbEWQs8oMggHnhr",
@@ -87195,7 +87195,7 @@
     "primary_function": "Staff",
     "area_m2": 17.497602939838544,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "202tj5U0r8kB_UCpyiuB5G",
@@ -87226,7 +87226,7 @@
     "primary_function": "Staff",
     "area_m2": 13.131201049080119,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2Mewjb1OnE39MBJJjQWYAM",
@@ -87265,7 +87265,7 @@
     "primary_function": "Sanitation",
     "area_m2": 47.88786795688793,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0D49qAShj1VeBssFjebQJh",
@@ -87296,7 +87296,7 @@
     "primary_function": "Toilet",
     "area_m2": 20.69105220353231,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1KWbue1PzBmA4MF27P1MvX",
@@ -87327,7 +87327,7 @@
     "primary_function": "Toilet",
     "area_m2": 21.878358122194186,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0Xmd20QAL34wWqAHqppGP6",
@@ -87358,7 +87358,7 @@
     "primary_function": "Toilet",
     "area_m2": 20.51105512236245,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2ZhoKCEijE6vE3wbMRBOqq",
@@ -87393,7 +87393,7 @@
     "primary_function": "Toilet",
     "area_m2": 36.85214003524743,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1eJWXsrmbEWQs8oMggHnd9",
@@ -87448,7 +87448,7 @@
     "primary_function": "Patient Care",
     "area_m2": 31.000813087448478,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2s3H9oCaj5rABq4$sbtvES",
@@ -87507,7 +87507,7 @@
     "primary_function": "Corridor",
     "area_m2": 49.78003687411547,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2KrtsoPRr8wRWOxYBcghBy",
@@ -87538,7 +87538,7 @@
     "primary_function": "Technical",
     "area_m2": 7.211610184051096,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0X_HHBnnLCbv3OsWw4p6yz",
@@ -87565,7 +87565,7 @@
     "primary_function": "Technical",
     "area_m2": 3.1571206937078387,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnok",
@@ -87596,7 +87596,7 @@
     "primary_function": "Storage",
     "area_m2": 20.684164074482396,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0QM6Bc$OX8wPOKoDvo0D4j",
@@ -87635,7 +87635,7 @@
     "primary_function": "Corridor",
     "area_m2": 39.79592593736015,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1oJRlPmv97Ge3I9G00A8WW",
@@ -87666,7 +87666,7 @@
     "primary_function": "Technical",
     "area_m2": 5.8271570487413555,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0QM6Bc$OX8wPOKoDvo0D5H",
@@ -87697,7 +87697,7 @@
     "primary_function": "Storage",
     "area_m2": 9.684652384836227,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1MJY4ZTWP5xhQPuCsz8iHl",
@@ -87732,7 +87732,7 @@
     "primary_function": "Patient Care",
     "area_m2": 18.62389977136627,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "19pl6IhATFnPfbElWTzgmr",
@@ -87771,7 +87771,7 @@
     "primary_function": "Patient Care",
     "area_m2": 22.01904119318351,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "19pl6IhATFnPfbElWTzgmm",
@@ -87802,7 +87802,7 @@
     "primary_function": "Assembly Room",
     "area_m2": 34.96830220683478,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "19pl6IhATFnPfbElWTzgm$",
@@ -87845,7 +87845,7 @@
     "primary_function": "Patient Care",
     "area_m2": 24.48153924336657,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1MJY4ZTWP5xhQPuCsz8iHY",
@@ -87884,7 +87884,7 @@
     "primary_function": "Patient Care",
     "area_m2": 12.174224745715037,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1dROv7rbnBtRXoO5QAg9o0",
@@ -87935,7 +87935,7 @@
     "primary_function": "Patient Care",
     "area_m2": 21.378172618104145,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1F8_I7wiL6XhQuK4cMo54j",
@@ -87966,7 +87966,7 @@
     "primary_function": "Changing Room",
     "area_m2": 10.081284504849464,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnm9",
@@ -87989,7 +87989,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 0.8671350167132914,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnoh",
@@ -88044,7 +88044,7 @@
     "primary_function": "Staff",
     "area_m2": 34.51073706429452,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0SgPA8YVn3AvrGaD_Vswn8",
@@ -88083,7 +88083,7 @@
     "primary_function": "Patient Care",
     "area_m2": 23.316089978441596,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1KWbue1PzBmA4MF27P1HDO",
@@ -88126,7 +88126,7 @@
     "primary_function": "Patient Care",
     "area_m2": 16.982614777749404,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0X_HHBnnLCbv3OsWw4p6yQ",
@@ -88181,7 +88181,7 @@
     "primary_function": "Corridor",
     "area_m2": 16.602110816398636,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2s3H9oCaj5rABq4$sbtvIQ",
@@ -88208,7 +88208,7 @@
     "primary_function": "Corridor",
     "area_m2": 3.3963651477824897,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "306Ek_iLT069W9x7AOGUDF",
@@ -88251,7 +88251,7 @@
     "primary_function": "Patient Care",
     "area_m2": 12.693720140028745,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9Sflxfy_",
@@ -88282,7 +88282,7 @@
     "primary_function": "Storage",
     "area_m2": 11.381695600925013,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2hnbbraSLBNObc9Sflxfyt",
@@ -88329,7 +88329,7 @@
     "primary_function": "Patient Care",
     "area_m2": 17.892092114081606,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1eJWXsrmbEWQs8oMggHngC",
@@ -88352,7 +88352,7 @@
     "primary_function": "Ventilation Shaft",
     "area_m2": 0.4062597972806543,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1S3xIwTef2zxAnUQq$Hzlv",
@@ -88399,7 +88399,7 @@
     "primary_function": "Staff",
     "area_m2": 41.7920567386318,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0F7F5brL995A$m$WcOlHbb",
@@ -88430,7 +88430,7 @@
     "primary_function": "Patient Care",
     "area_m2": 20.14062191126868,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0DmKpVRSn1Kulj_xa9oGyy",
@@ -88469,7 +88469,7 @@
     "primary_function": "Technical",
     "area_m2": 125.27169956942089,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0DmKpVRSn1Kulj_xa9oGoO",
@@ -88500,7 +88500,7 @@
     "primary_function": "No Access",
     "area_m2": 40.78358429833315,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1bkb3XH69BhhM2s$v0mIUy",
@@ -88535,7 +88535,7 @@
     "primary_function": "No Access",
     "area_m2": 283.8260589160491,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "1bkb3XH69BhhM2s$v0mIUv",
@@ -88566,7 +88566,7 @@
     "primary_function": "No Access",
     "area_m2": 82.6452799087856,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3wpgAzlv1CgAt8nQoCaqWW",
@@ -88613,7 +88613,7 @@
     "primary_function": "No Access",
     "area_m2": 184.83560715755448,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "02dvmbQ2L2N8qZLUlEEi0H",
@@ -88664,7 +88664,7 @@
     "primary_function": "No Access",
     "area_m2": 82.95631378656253,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2s3H9oCaj5rABq4$sbtvX2",
@@ -88715,7 +88715,7 @@
     "primary_function": "No Access",
     "area_m2": 194.17777400952764,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2_3y2KX5f5ofjabhmNrSqW",
@@ -88762,7 +88762,7 @@
     "primary_function": "No Access",
     "area_m2": 189.77490278915502,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "3wpgAzlv1CgAt8nQoCaqbB",
@@ -88821,7 +88821,7 @@
     "primary_function": "No Access",
     "area_m2": 83.95943574653938,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "202tj5U0r8kB_UCpyiuB54",
@@ -88852,7 +88852,7 @@
     "primary_function": "Staff",
     "area_m2": 22.32671237993054,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "2RuTGoKBXFDQkMuz9OEnmR",
@@ -88883,7 +88883,7 @@
     "primary_function": "Staff",
     "area_m2": 13.778703748248518,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   },
   {
     "ifc_guid": "0DmKpVRSn1Kulj_xa9oGYo",
@@ -88938,6 +88938,6 @@
     "primary_function": "Staircase",
     "area_m2": 30.53384747984819,
     "perimeter_cm": null,
-    "created_at": "2026-09-04T16:56:58.639808"
+    "created_at": "2026-09-04T17:17:28.040635"
   }
 ]
