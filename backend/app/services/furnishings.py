@@ -94,7 +94,6 @@ EXCLUDED_PATTERNS = [
     "corridor", "circulation", "hallway",
     "parking", "ramp",
     "airlock", "lobby", "transition",
-    "atrium",
     "basement",
     "waste",
     "technical", "plant room", "building-services",

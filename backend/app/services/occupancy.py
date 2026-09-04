@@ -29,7 +29,8 @@ ZERO_OCCUPANCY_KEYWORDS = [
     "cold storage",
     "basement",
     "airlock",
-    "atrium",
+    "main hall",
+    "entrance",
     "housekeeping",
     "cleaning",
     "underground",
@@ -91,6 +92,10 @@ DENSITY_RULES = [
     # Waiting / public
     (["waiting room", "main hall"],
      "waiting", 1/2.5, 1/1.5),
+
+    # Atrium / public concourse (open, moderate density)
+    (["atrium"],
+     "atrium", 1/5, 1/3),
 
     # Assembly / meeting / debrief
     (["assembly", "meeting", "conference", "debrief", "gathering"],

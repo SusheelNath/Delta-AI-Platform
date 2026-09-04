@@ -102,6 +102,10 @@ def _upsert_metrics(db: Session, ifc_guid: str, floor_id: str,
                                           density_occ["normal_occupancy"])
             occ["max_occupancy"] = max(occ["max_occupancy"],
                                        density_occ["max_occupancy"])
+        elif occ_class == "zero":
+            occ["normal_occupancy"] = 0
+            occ["max_occupancy"] = 0
+            occ["absolute_occupancy"] = 0
 
         metrics.normal_occupancy = occ["normal_occupancy"]
         metrics.max_occupancy = occ["max_occupancy"]

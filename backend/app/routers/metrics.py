@@ -71,6 +71,10 @@ def recompute_all_metrics(db: Session = Depends(get_db)):
                                               density_occ["normal_occupancy"])
                 occ["max_occupancy"] = max(occ["max_occupancy"],
                                            density_occ["max_occupancy"])
+            elif occ_class == "zero":
+                occ["normal_occupancy"] = 0
+                occ["max_occupancy"] = 0
+                occ["absolute_occupancy"] = 0
 
             occupiable = occ["normal_occupancy"] > 0
         else:
