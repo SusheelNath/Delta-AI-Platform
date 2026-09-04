@@ -174,10 +174,14 @@ export default function RoomDirectory() {
               </span>
               <span className="room-directory__group-name">{fn}</span>
               <span className="room-directory__group-meta">
-                <span className="room-directory__group-count">{fnPolygons.length}</span>
-                {totalOcc > 0 && (
-                  <span className="room-directory__group-occ">{totalOcc} occ</span>
-                )}
+                <span className="room-directory__group-col room-directory__group-col--rooms">
+                  <span className="room-directory__col-value">{fnPolygons.length}</span>
+                  <span className="room-directory__col-label">{fnPolygons.length === 1 ? 'room' : 'rooms'}</span>
+                </span>
+                <span className="room-directory__group-col room-directory__group-col--occ">
+                  <span className="room-directory__col-value">{totalOcc > 0 ? totalOcc.toLocaleString() : '—'}</span>
+                  <span className="room-directory__col-label">occ</span>
+                </span>
               </span>
             </button>
             {!collapsed && fnPolygons.map((poly) => (

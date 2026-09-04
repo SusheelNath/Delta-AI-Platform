@@ -27,7 +27,6 @@ ZERO_OCCUPANCY_KEYWORDS = [
     "ramp",
     "waste",
     "cold storage",
-    "ambulance",
     "basement",
     "airlock",
     "atrium",
@@ -59,6 +58,10 @@ DENSITY_RULES = [
      "clinical", 1/12, 1/8),
     (["nuclear-medicine", "nuclear medicine", "PET imaging"],
      "clinical", 1/20, 1/12),
+
+    # Ambulance / emergency vehicle workspace (large vehicle bays + staff)
+    (["ambulance"],
+     "ambulance", 1/25, 1/15),
 
     # Emergency department (high throughput)
     (["emergency"],

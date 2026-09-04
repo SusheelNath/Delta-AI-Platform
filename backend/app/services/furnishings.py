@@ -96,7 +96,6 @@ EXCLUDED_PATTERNS = [
     "airlock", "lobby", "transition",
     "atrium",
     "basement",
-    "ambulance",
     "waste",
     "technical", "plant room", "building-services",
     "coded technical",
