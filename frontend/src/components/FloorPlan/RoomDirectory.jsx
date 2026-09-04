@@ -176,7 +176,7 @@ export default function RoomDirectory() {
               <span className="room-directory__group-meta">
                 <span className="room-directory__group-col room-directory__group-col--rooms">
                   <span className="room-directory__col-value">{fnPolygons.length}</span>
-                  <span className="room-directory__col-label">{fnPolygons.length === 1 ? 'room' : 'rooms'}</span>
+                  <span className="room-directory__col-label">{fnPolygons.length === 1 ? 'unit' : 'units'}</span>
                 </span>
                 <span className="room-directory__group-col room-directory__group-col--occ">
                   <span className="room-directory__col-value">{totalOcc > 0 ? totalOcc.toLocaleString() : '—'}</span>
@@ -204,6 +204,7 @@ export default function RoomDirectory() {
 function PolygonCard({ polygon, isSelected, onClick, onDoubleClick, selectedRef }) {
   const area = polygon.area_m2 != null ? `${Number(polygon.area_m2).toFixed(1)} m\u00b2` : null;
   const occ = polygon.max_occupancy > 0 ? polygon.max_occupancy : null;
+  const setHoveredGuid = useStore((s) => s.setHoveredPolygonGuid);
 
   return (
     <div
@@ -211,6 +212,8 @@ function PolygonCard({ polygon, isSelected, onClick, onDoubleClick, selectedRef 
       className={`room-card ${isSelected ? 'room-card--selected' : ''}`}
       onClick={() => onClick(polygon)}
       onDoubleClick={() => onDoubleClick(polygon)}
+      onMouseEnter={() => setHoveredGuid(polygon.ifc_guid)}
+      onMouseLeave={() => setHoveredGuid(null)}
     >
       <div className="room-card__info">
         <span className="room-card__name">{polygon.space_name || polygon.ifc_guid}</span>
