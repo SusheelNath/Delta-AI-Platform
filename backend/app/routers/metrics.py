@@ -62,7 +62,7 @@ def recompute_all_metrics(db: Session = Depends(get_db)):
             if occ_class in ("elevator", "commercial", "changing",
                              "sterilization", "morgue", "emergency",
                              "radiotherapy", "assembly", "sanitary",
-                             "ambulance"):
+                             "ambulance", "storage"):
                 occ["normal_occupancy"] = density_occ["normal_occupancy"]
                 occ["max_occupancy"] = density_occ["max_occupancy"]
                 occ["absolute_occupancy"] = density_occ["max_occupancy"]

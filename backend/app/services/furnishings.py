@@ -344,7 +344,8 @@ FUNCTION_FURNISHING_RULES = [
     (["storage", "store room", "archive", "reserve"],
      [("shelving", 2), ("cabinet", 1)],
      {"min_area": 3,
-      "scale": {"shelving": {"per_m2": 6, "min": 1, "max": 12}}}),
+      "scale": {"shelving": {"per_m2": 6, "min": 1, "max": 30},
+                "cabinet": {"per_m2": 20, "min": 1, "max": 10}}}),
 
     # ═══════════════════ MORGUE ═══════════════════
     (["morgue", "incinerator"],
