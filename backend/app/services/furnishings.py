@@ -367,7 +367,9 @@ FUNCTION_FURNISHING_RULES = [
     (["toilet", "wc", "washroom", "sanitary", "sanitation", "ensuite",
       "shower / wash", "assisted bathroom", "bathing room"],
      [("toilet", 1), ("sink", 1)],
-     {"min_area": 2.0}),
+     {"min_area": 2.0,
+      "scale": {"toilet": {"per_m2": 6, "min": 1, "max": 20},
+                "sink": {"per_m2": 10, "min": 1, "max": 12}}}),
 
     (["shower"],
      [("shower", 1), ("sink", 1)],

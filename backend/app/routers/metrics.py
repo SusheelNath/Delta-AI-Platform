@@ -61,7 +61,7 @@ def recompute_all_metrics(db: Session = Depends(get_db)):
             # actual foot traffic.  Use density model values instead.
             if occ_class in ("elevator", "commercial", "changing",
                              "sterilization", "morgue", "emergency",
-                             "radiotherapy"):
+                             "radiotherapy", "assembly", "sanitary"):
                 occ["normal_occupancy"] = density_occ["normal_occupancy"]
                 occ["max_occupancy"] = density_occ["max_occupancy"]
                 occ["absolute_occupancy"] = density_occ["max_occupancy"]

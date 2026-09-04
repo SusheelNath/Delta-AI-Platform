@@ -92,7 +92,7 @@ def _upsert_metrics(db: Session, ifc_guid: str, floor_id: str,
         # actual foot traffic.  Use density model values instead.
         if occ_class in ("elevator", "commercial", "changing",
                          "sterilization", "morgue", "emergency",
-                         "radiotherapy"):
+                         "radiotherapy", "assembly", "sanitary"):
             occ["normal_occupancy"] = density_occ["normal_occupancy"]
             occ["max_occupancy"] = density_occ["max_occupancy"]
             occ["absolute_occupancy"] = density_occ["max_occupancy"]

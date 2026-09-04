@@ -35,7 +35,6 @@ ZERO_OCCUPANCY_KEYWORDS = [
     "cleaning",
     "underground",
     "evacuation",
-    "sanitation",
     "coded technical",
     "coded engineering",
 ]
@@ -109,7 +108,7 @@ DENSITY_RULES = [
      "laboratory", 1/15, 1/10),
 
     # Sanitary
-    (["toilet", "sanitary", "washroom", "shower", "WC"],
+    (["toilet", "sanitary", "sanitation", "washroom", "shower", "WC"],
      "sanitary", 1/4, 1/3),
 
     # Patient care + residency (on-call rooms etc.)
