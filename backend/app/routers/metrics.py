@@ -56,10 +56,12 @@ def recompute_all_metrics(db: Session = Depends(get_db)):
             density_occ = compute_occupancy(primary_function, area_m2, space_name)
             occ_class = density_occ["occupancy_class"]
 
-            # Elevator, facilities, and commercial furnishings are fixtures
-            # (panels, handrails, countertops, shelving) that don't reflect
+            # These space types have furnishings that are equipment/fixtures
+            # (panels, countertops, autoclaves, shelving) and don't reflect
             # actual foot traffic.  Use density model values instead.
-            if occ_class in ("elevator", "commercial", "changing"):
+            if occ_class in ("elevator", "commercial", "changing",
+                             "sterilization", "morgue", "emergency",
+                             "radiotherapy"):
                 occ["normal_occupancy"] = density_occ["normal_occupancy"]
                 occ["max_occupancy"] = density_occ["max_occupancy"]
                 occ["absolute_occupancy"] = density_occ["max_occupancy"]

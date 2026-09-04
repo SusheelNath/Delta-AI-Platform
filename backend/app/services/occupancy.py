@@ -26,8 +26,7 @@ ZERO_OCCUPANCY_KEYWORDS = [
     "circulation",
     "ramp",
     "waste",
-    "morgue",
-    "radiotherapy",
+    "cold storage",
     "ambulance",
     "basement",
     "airlock",
@@ -56,44 +55,62 @@ DENSITY_RULES = [
      "surgical", 1/25, 1/15),
     (["patient care", "patient room", "intensive-care", "neonatal", "dialysis"],
      "clinical", 1/12, 1/8),
-    (["endoscopy", "consultation", "examination", "clinical"],
+    (["endoscopy", "consultation", "examination", "check-up", "check up",
+      "dental", "clinical"],
      "clinical", 1/12, 1/8),
     (["nuclear-medicine", "nuclear medicine", "PET imaging"],
      "clinical", 1/20, 1/12),
 
-    # Staff / office
-    (["staff", "office", "bureau", "nursing station", "workroom"],
+    # Emergency department (high throughput)
+    (["emergency"],
+     "emergency", 1/15, 1/10),
+
+    # Radiotherapy (restricted but staffed)
+    (["radiotherapy"],
+     "radiotherapy", 1/20, 1/12),
+
+    # Sterilization (industrial process, multiple technicians)
+    (["sterilization", "sterilisation"],
+     "sterilization", 1/25, 1/15),
+
+    # Morgue / preparation (mortuary technicians)
+    (["morgue", "incinerator"],
+     "morgue", 1/30, 1/20),
+
+    # Changing rooms / locker rooms (before office/storage so name wins over fn)
+    (["changing", "locker room", "locker"],
+     "changing", 1/4, 1/2.5),
+
+    # Staff / office (must come AFTER specific name-based rules above)
+    (["staff", "office", "bureau", "nursing station", "workroom",
+      "nurse's office", "doctor's office"],
      "office", 1/10, 1/6),
 
     # Waiting / public
     (["waiting room", "main hall"],
      "waiting", 1/2.5, 1/1.5),
 
-    # Assembly
-    (["assembly", "meeting"],
+    # Assembly / meeting / debrief
+    (["assembly", "meeting", "conference", "debrief", "gathering"],
      "assembly", 1/2, 1/1.2),
 
     # Commercial
     (["restaurant", "cafeteria", "commercial"],
      "commercial", 1/3, 1/1.8),
 
-    # Storage / support
-    (["storage", "store room", "janitor", "locker", "pantry", "archive",
+    # Storage / support (no "locker" — locker rooms are changing, not storage)
+    (["storage", "store room", "janitor", "pantry", "archive",
       "cold / refrigerated", "dirty utility"],
      "storage", 1/20, 1/15),
 
     # Laboratory / specialist
-    (["laboratory", "dosimetry", "medical physics", "sterilisation",
+    (["laboratory", "dosimetry", "medical physics",
       "preparation room", "pharmacy"],
      "laboratory", 1/15, 1/10),
 
     # Sanitary
     (["toilet", "sanitary", "washroom", "shower", "WC"],
      "sanitary", 1/4, 1/3),
-
-    # Changing rooms
-    (["changing", "locker room"],
-     "changing", 1/4, 1/2.5),
 
     # Patient care + residency (on-call rooms etc.)
     (["residency"],

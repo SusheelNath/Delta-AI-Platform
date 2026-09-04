@@ -229,9 +229,10 @@ FUNCTION_FURNISHING_RULES = [
       ("visitor_chair", 1), ("nurse_call", 1)],
      {"min_area": 6}),
 
-    # ═══════════════════ CONSULTATION / EXAMINATION ═══════════════════
+    # ═══════════════════ CONSULTATION / EXAMINATION / CHECK-UP ═══════════════════
     (["consultation", "examination", "endoscopy procedure",
-      "triage room", "triage area", "dental"],
+      "triage room", "triage area", "dental", "check-up", "check up",
+      "checkup"],
      [("examination_table", 1), ("desk", 1), ("desk_chair", 1),
       ("visitor_chair", 2), ("cabinet", 1), ("sink", 1)],
      {"min_area": 8}),
@@ -277,8 +278,8 @@ FUNCTION_FURNISHING_RULES = [
       "scale": {"waiting_bench": {"per_m2": 8, "min": 2, "max": 12},
                 "visitor_chair": {"per_m2": 6, "min": 2, "max": 20}}}),
 
-    # ═══════════════════ MEETING / CONFERENCE ═══════════════════
-    (["meeting", "conference"],
+    # ═══════════════════ MEETING / CONFERENCE / DEBRIEF ═══════════════════
+    (["meeting", "conference", "debrief", "gathering"],
      [("table", 1), ("desk_chair", 6)],
      {"min_area": 10,
       "scale": {"desk_chair": {"per_m2": 4, "min": 4, "max": 24}}}),
@@ -310,7 +311,11 @@ FUNCTION_FURNISHING_RULES = [
     # ═══════════════════ STERILISATION ═══════════════════
     (["sterilisation", "sterilization", "sterile"],
      [("autoclave", 1), ("countertop", 2), ("shelving", 2), ("sink", 1)],
-     {"min_area": 6}),
+     {"min_area": 6,
+      "scale": {"autoclave": {"per_m2": 50, "min": 1, "max": 10},
+                "countertop": {"per_m2": 25, "min": 2, "max": 16},
+                "shelving": {"per_m2": 20, "min": 2, "max": 20},
+                "sink": {"per_m2": 60, "min": 1, "max": 8}}}),
 
     # ═══════════════════ DIRTY UTILITY ═══════════════════
     (["dirty utility"],
@@ -344,9 +349,13 @@ FUNCTION_FURNISHING_RULES = [
       "scale": {"shelving": {"per_m2": 6, "min": 1, "max": 12}}}),
 
     # ═══════════════════ MORGUE ═══════════════════
-    (["morgue"],
+    (["morgue", "incinerator"],
      [("countertop", 2), ("sink", 1), ("cabinet", 2), ("shelving", 2)],
-     {"min_area": 10}),
+     {"min_area": 10,
+      "scale": {"countertop": {"per_m2": 30, "min": 2, "max": 12},
+                "cabinet": {"per_m2": 30, "min": 2, "max": 10},
+                "shelving": {"per_m2": 20, "min": 2, "max": 15},
+                "sink": {"per_m2": 60, "min": 1, "max": 6}}}),
 
     # ═══════════════════ LOCKER / CHANGING ═══════════════════
     (["locker", "changing"],
@@ -382,7 +391,13 @@ FUNCTION_FURNISHING_RULES = [
     (["emergency-department clinical", "emergency"],
      [("examination_table", 1), ("monitor", 1), ("desk", 1), ("desk_chair", 1),
       ("cabinet", 1), ("sink", 1)],
-     {"min_area": 8}),
+     {"min_area": 8,
+      "scale": {"examination_table": {"per_m2": 25, "min": 1, "max": 30},
+                "monitor": {"per_m2": 30, "min": 1, "max": 25},
+                "desk": {"per_m2": 60, "min": 1, "max": 10},
+                "desk_chair": {"per_m2": 60, "min": 1, "max": 10},
+                "cabinet": {"per_m2": 40, "min": 1, "max": 15},
+                "sink": {"per_m2": 80, "min": 1, "max": 10}}}),
 
     # ═══════════════════ DEPARTMENT-SPECIFIC (unresolved) ═══════════════════
     # Generic fallback for coded department rooms with unknown exact function
