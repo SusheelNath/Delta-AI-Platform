@@ -132,13 +132,19 @@ export default function FloorPlanPanel() {
         const localByGuid = new Map(local.map((p) => [p.ifc_guid, p]));
         const serverGuids = new Set(serverPolygons.map((p) => p.ifc_guid));
         const localOnly = local.filter((p) => !serverGuids.has(p.ifc_guid));
-        // Merge server data with local edits (local wins when edited)
+        // Merge: local wins for geometry (vertices, edited), server always wins for metrics
+        const METRIC_KEYS = ['normal_occupancy', 'max_occupancy', 'absolute_occupancy',
+          'occupiable', 'used_area_m2', 'free_area_m2', 'area_m2'];
         const merged = serverPolygons.map((sp) => {
           const lp = localByGuid.get(sp.ifc_guid);
           if (!lp) return sp;
           if (lp.edited) {
-            // Local edits take priority — overlay local fields onto server base
-            return { ...sp, ...lp };
+            const base = { ...sp, ...lp };
+            // Server metrics always take priority (authoritative from space_metrics DB)
+            for (const k of METRIC_KEYS) {
+              if (sp[k] != null) base[k] = sp[k];
+            }
+            return base;
           }
           const extras = {};
           if (lp.worldVertices) extras.worldVertices = lp.worldVertices;

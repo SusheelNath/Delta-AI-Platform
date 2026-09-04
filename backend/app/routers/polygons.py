@@ -85,12 +85,27 @@ def _upsert_metrics(db: Session, ifc_guid: str, floor_id: str,
         ft_map = {ft.item_type: ft for ft in db.query(FurnishingType).all()}
         occ = compute_furnishing_occupancy(furnishings, ft_map, area_m2 or 0)
         density_occ = compute_occupancy(primary_function, area_m2, space_name)
+        occ_class = density_occ["occupancy_class"]
+
+        # Elevator and facilities furnishings are infrastructure fixtures
+        # (panels, handrails, HVAC units) that don't generate occupancy.
+        # Use density model values which reflect actual capacity.
+        if occ_class == "elevator":
+            occ["normal_occupancy"] = density_occ["normal_occupancy"]
+            occ["max_occupancy"] = density_occ["max_occupancy"]
+            occ["absolute_occupancy"] = density_occ["max_occupancy"]
+        elif occ_class == "facilities":
+            occ["normal_occupancy"] = max(occ["normal_occupancy"],
+                                          density_occ["normal_occupancy"])
+            occ["max_occupancy"] = max(occ["max_occupancy"],
+                                       density_occ["max_occupancy"])
+
         metrics.normal_occupancy = occ["normal_occupancy"]
         metrics.max_occupancy = occ["max_occupancy"]
         metrics.absolute_occupancy = occ["absolute_occupancy"]
         metrics.used_area_m2 = occ["used_area_m2"]
         metrics.free_area_m2 = occ["free_area_m2"]
-        metrics.occupancy_class = density_occ["occupancy_class"]
+        metrics.occupancy_class = occ_class
         metrics.occupiable = occ["normal_occupancy"] > 0
         metrics.furnishing_source = "furnishings"
     else:

@@ -161,12 +161,6 @@ export default function SpaceToolkit() {
             {s.absolute_occupancy > 0 && (
               <Row label="Absolute Occupancy" value={String(s.absolute_occupancy)} />
             )}
-            {s.occupancy_class && (
-              <Row label="Occupancy Class" value={s.occupancy_class.charAt(0).toUpperCase() + s.occupancy_class.slice(1)} />
-            )}
-            {s.furnishing_source && (
-              <Row label="Source" value={s.furnishing_source === 'furnishings' ? 'Furnishings' : 'Density Model'} />
-            )}
           </div>
         )}
 

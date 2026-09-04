@@ -70,6 +70,16 @@ FURNISHING_CATALOG = [
     ("countertop",          "furniture", "Countertop",            1.5, 0, 0),
     ("bedside_table",       "furniture", "Bedside Table",         0.3, 0, 0),
     ("curtain_divider",     "furniture", "Curtain Divider",       0.2, 0, 0),
+
+    # ── Elevator ──
+    ("elevator_panel",      "equipment", "Elevator Control Panel", 0.2, 0, 0),
+    ("handrail",            "fixture",   "Handrail",              0.1, 0, 0),
+    ("elevator_mirror",     "fixture",   "Elevator Mirror",       0.0, 0, 0),
+
+    # ── Facilities / MEP ──
+    ("hvac_unit",           "equipment", "HVAC Unit",             3.0, 0, 0),
+    ("electrical_panel",    "equipment", "Electrical Panel",      0.6, 0, 0),
+    ("pump",                "equipment", "Pump",                  1.0, 0, 0),
 ]
 
 
@@ -78,7 +88,6 @@ FURNISHING_CATALOG = [
 # ══════════════════════════════════════════════════════════════════════
 
 EXCLUDED_PATTERNS = [
-    "elevator", "lift",
     "staircase", "stairway", "stair ", "stair-core", "vertical circulation",
     "shaft", "vent shaft", "ventilation",
     "no access", "no acccess", "no infrastructure",
@@ -356,9 +365,13 @@ FUNCTION_FURNISHING_RULES = [
      {"min_area": 2}),
 
     # ═══════════════════ STAFF (generic catchall) ═══════════════════
-    (["staff room", "staff access"],
-     [("desk", 1), ("desk_chair", 1), ("cabinet", 1)],
-     {"min_area": 5}),
+    (["staff room", "staff access", "staff"],
+     [("desk", 1), ("desk_chair", 2), ("visitor_chair", 2), ("cabinet", 1),
+      ("countertop", 1), ("sink", 1)],
+     {"min_area": 5,
+      "scale": {"desk": {"per_m2": 10, "min": 1, "max": 8},
+                "desk_chair": {"per_m2": 8, "min": 2, "max": 12},
+                "visitor_chair": {"per_m2": 10, "min": 1, "max": 6}}}),
 
     # ═══════════════════ RESIDENCY / ON-CALL ═══════════════════
     (["residency", "on-call", "patient care + residency"],
@@ -403,6 +416,18 @@ FUNCTION_FURNISHING_RULES = [
     (["support/service space", "department support"],
      [("countertop", 1), ("cabinet", 1), ("shelving", 1)],
      {"min_area": 3}),
+
+    # ═══════════════════ ELEVATOR ═══════════════════
+    (["elevator", "lift"],
+     [("elevator_panel", 1), ("handrail", 2), ("elevator_mirror", 1)],
+     {"min_area": 4}),
+
+    # ═══════════════════ FACILITIES / MEP ═══════════════════
+    (["facilities", "facitilies", "hvac", "plant room", "building-services"],
+     [("hvac_unit", 1), ("electrical_panel", 1), ("shelving", 1), ("cabinet", 1)],
+     {"min_area": 8,
+      "scale": {"hvac_unit": {"per_m2": 15, "min": 1, "max": 6},
+                "electrical_panel": {"per_m2": 20, "min": 1, "max": 4}}}),
 
 ]
 
@@ -608,6 +633,12 @@ def compute_furnishing_occupancy(
         max_occ += ft.max_occ * f.quantity
 
     free_area = max(0, area_m2 - used_area)
+
+    # Rooms with only zero-occ furnishings (storage, equipment) still need
+    # at least 1 person to access them
+    if normal_occ == 0 and max_occ == 0 and area_m2 >= 2 and furnishings:
+        normal_occ = 1
+        max_occ = 1
 
     # Absolute occupancy: max_occ + standing people in remaining space
     egress_reserve = num_doors * EGRESS_RESERVE_PER_DOOR

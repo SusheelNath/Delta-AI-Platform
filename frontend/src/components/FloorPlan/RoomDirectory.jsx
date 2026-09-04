@@ -13,11 +13,9 @@ function getPolygonOverrides(polygon, floorId) {
   if (polygon.normal_occupancy != null) overrides.normal_occupancy = polygon.normal_occupancy;
   if (polygon.max_occupancy != null) overrides.max_occupancy = polygon.max_occupancy;
   if (polygon.absolute_occupancy != null) overrides.absolute_occupancy = polygon.absolute_occupancy;
-  if (polygon.occupancy_class) overrides.occupancy_class = polygon.occupancy_class;
   if (polygon.occupiable != null) overrides.occupiable = polygon.occupiable;
   if (polygon.used_area_m2 != null) overrides.used_area_m2 = polygon.used_area_m2;
   if (polygon.free_area_m2 != null) overrides.free_area_m2 = polygon.free_area_m2;
-  if (polygon.furnishing_source) overrides.furnishing_source = polygon.furnishing_source;
 
   const snapshot = useStore.getState().floorSnapshots[floorId];
   if (snapshot?.viewMatrix && snapshot?.projMatrix && polygon.vertices?.length >= 3) {
@@ -107,7 +105,14 @@ export default function RoomDirectory() {
     } catch {}
     try {
       const spaceData = await fetchSpaceByGuid(polygon.ifc_guid);
-      selectSpace(polygon.ifc_guid, { ...spaceData, ...overrides });
+      // API data is authoritative for metrics — don't let stale polygon overrides mask it
+      const METRIC_KEYS = ['normal_occupancy', 'max_occupancy', 'absolute_occupancy',
+        'occupiable', 'used_area_m2', 'free_area_m2'];
+      const safeOverrides = { ...overrides };
+      for (const k of METRIC_KEYS) {
+        if (spaceData[k] != null) delete safeOverrides[k];
+      }
+      selectSpace(polygon.ifc_guid, { ...spaceData, ...safeOverrides });
     } catch {
       selectSpace(polygon.ifc_guid, {
         ifc_guid: polygon.ifc_guid,

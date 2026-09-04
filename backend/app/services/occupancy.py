@@ -13,6 +13,7 @@ import re
 # If a function contains any of these (case-insensitive), occupancy = 0.
 ZERO_OCCUPANCY_KEYWORDS = [
     "no access",
+    "no infrastructure",
     "staircase",
     "stair ",
     "stair/",
@@ -21,8 +22,6 @@ ZERO_OCCUPANCY_KEYWORDS = [
     "technical",
     "vent",
     "shaft",
-    "elevator",
-    "lift",
     "corridor",
     "circulation",
     "ramp",
@@ -30,12 +29,8 @@ ZERO_OCCUPANCY_KEYWORDS = [
     "morgue",
     "radiotherapy",
     "ambulance",
-    "reception",
-    "facilities",
     "basement",
     "airlock",
-    "lobby",
-    "entrance",
     "atrium",
     "housekeeping",
     "cleaning",
@@ -107,6 +102,22 @@ DENSITY_RULES = [
     # Control rooms
     (["control room"],
      "office", 1/15, 1/10),
+
+    # Accessibility elevator (bed/wheelchair transport + staff + passengers)
+    (["accessibility elevator"],
+     "elevator", 1/2, 1/1),
+
+    # Visitor / standard elevator
+    (["elevator", "lift"],
+     "elevator", 1/3, 1/1.5),
+
+    # Facilities / plant rooms (technician access)
+    (["facilities", "facitilies"],
+     "facilities", 1/25, 1/15),
+
+    # Reception / entrance / lobby (public-facing)
+    (["reception", "entrance", "lobby"],
+     "reception", 1/4, 1/2),
 ]
 
 # Default fallback for unmatched functions (conservative)
@@ -183,6 +194,15 @@ def compute_occupancy(primary_function: str | None, area_m2: float | None,
                 "occupiable": True,
             }
 
+    # Too small to occupy (catches 0 m² rooms before density rules)
+    if area < 2:
+        return {
+            "normal_occupancy": 0,
+            "max_occupancy": 0,
+            "occupancy_class": "zero",
+            "occupiable": False,
+        }
+
     # Density-based rules
     for keywords, occ_class, normal_rate, max_rate in DENSITY_RULES:
         if normal_rate is None:
@@ -199,14 +219,6 @@ def compute_occupancy(primary_function: str | None, area_m2: float | None,
                 }
 
     # Default fallback
-    if area < 2:
-        return {
-            "normal_occupancy": 0,
-            "max_occupancy": 0,
-            "occupancy_class": "zero",
-            "occupiable": False,
-        }
-
     normal = max(1, math.floor(area * DEFAULT_NORMAL_PER_M2))
     maximum = max(1, math.ceil(area * DEFAULT_MAX_PER_M2))
     return {

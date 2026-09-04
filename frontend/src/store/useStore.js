@@ -2,6 +2,11 @@ import { create } from 'zustand';
 
 const POLYGONS_KEY = 'delta_floorPolygons';
 
+// Metric keys are server-computed (from space_metrics DB) and must never
+// be cached in localStorage — the server fetch + merge always provides them.
+const SERVER_METRIC_KEYS = ['normal_occupancy', 'max_occupancy', 'absolute_occupancy',
+  'occupiable', 'used_area_m2', 'free_area_m2', 'furnishing_source'];
+
 function loadPolygonsFromStorage() {
   try {
     const raw = localStorage.getItem(POLYGONS_KEY);
@@ -13,9 +18,16 @@ function loadPolygonsFromStorage() {
       if (clean.length !== data.H020.length) {
         data.H020 = clean.length > 0 ? clean : undefined;
         if (!data.H020) delete data.H020;
-        localStorage.setItem(POLYGONS_KEY, JSON.stringify(data));
       }
     }
+    // Strip cached metric values — these are always server-authoritative
+    for (const floorId of Object.keys(data)) {
+      if (!Array.isArray(data[floorId])) continue;
+      for (const p of data[floorId]) {
+        for (const k of SERVER_METRIC_KEYS) delete p[k];
+      }
+    }
+    localStorage.setItem(POLYGONS_KEY, JSON.stringify(data));
     return data;
   } catch { return {}; }
 }

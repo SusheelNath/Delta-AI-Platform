@@ -55,6 +55,20 @@ def recompute_all_metrics(db: Session = Depends(get_db)):
             # Determine class from density model for consistency
             density_occ = compute_occupancy(primary_function, area_m2, space_name)
             occ_class = density_occ["occupancy_class"]
+
+            # Elevator and facilities furnishings are infrastructure fixtures
+            # (panels, handrails, HVAC units) that don't generate occupancy.
+            # Use density model values which reflect actual capacity.
+            if occ_class == "elevator":
+                occ["normal_occupancy"] = density_occ["normal_occupancy"]
+                occ["max_occupancy"] = density_occ["max_occupancy"]
+                occ["absolute_occupancy"] = density_occ["max_occupancy"]
+            elif occ_class == "facilities":
+                occ["normal_occupancy"] = max(occ["normal_occupancy"],
+                                              density_occ["normal_occupancy"])
+                occ["max_occupancy"] = max(occ["max_occupancy"],
+                                           density_occ["max_occupancy"])
+
             occupiable = occ["normal_occupancy"] > 0
         else:
             density_occ = compute_occupancy(primary_function, area_m2, space_name)
