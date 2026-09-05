@@ -60,14 +60,6 @@ export default function SavedPolygonsOverlay({ floorId, onTooltipChange }) {
     }
   }, [selectSpace, floorId]);
 
-  const setEditingPolygon = useStore((s) => s.setEditingPolygon);
-
-  const handleDoubleClick = useCallback((e, polygon) => {
-    e.stopPropagation();
-    e.preventDefault();
-    setEditingPolygon({ ifc_guid: polygon.ifc_guid, floor_id: floorId });
-  }, [setEditingPolygon, floorId]);
-
   const handleMouseEnter = useCallback((e, polygon) => {
     setHoveredPolygonGuid(polygon.ifc_guid);
     const name = polygon.space_name || polygon.primary_function || polygon.ifc_guid;
@@ -133,7 +125,6 @@ export default function SavedPolygonsOverlay({ floorId, onTooltipChange }) {
             vectorEffect="non-scaling-stroke"
             style={{ cursor: isDrawing ? 'crosshair' : 'pointer', pointerEvents: isDrawing ? 'none' : 'all' }}
             onClick={(e) => handleClick(e, poly)}
-            onDoubleClick={(e) => handleDoubleClick(e, poly)}
             onMouseEnter={(e) => handleMouseEnter(e, poly)}
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}

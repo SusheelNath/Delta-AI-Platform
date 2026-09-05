@@ -110,7 +110,6 @@ export default function SpaceToolkit() {
           <button className="space-toolkit__close" onClick={handleClose} title="Close">&times;</button>
         </div>
         <h2 className="space-toolkit__name">{displayName}</h2>
-        <p className="space-toolkit__meta">{displayId}</p>
 
         {/* Badges */}
         <div className="space-toolkit__badges">
@@ -203,43 +202,73 @@ export default function SpaceToolkit() {
           Routing
         </button>
         {routingOpen && (
-          <div className="space-toolkit__section space-toolkit__section--nested">
+          <div className="space-toolkit__route-cards">
             {routing?.toElevator ? (
               <button
-                className={`space-toolkit__route-row ${activeRoute?.type === 'elevator' ? 'space-toolkit__route-row--active' : ''}`}
+                className={`space-toolkit__route-card ${activeRoute?.type === 'elevator' ? 'space-toolkit__route-card--active' : ''}`}
                 onClick={() => handleRouteClick('elevator')}
               >
-                <span className="space-toolkit__route-label">Nearest Elevator</span>
-                <span className="space-toolkit__route-value">
-                  {routing.toElevator.target.space_name || 'Elevator'}
-                  <span className="space-toolkit__route-dist">{routing.toElevator.distanceM.toFixed(1)} m</span>
+                <span className="space-toolkit__route-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <line x1="12" y1="3" x2="12" y2="21" />
+                    <polyline points="8 8 6 10 8 12" />
+                    <polyline points="16 12 18 14 16 16" />
+                  </svg>
                 </span>
+                <span className="space-toolkit__route-info">
+                  <span className="space-toolkit__route-name">{routing.toElevator.target.space_name || 'Elevator'}</span>
+                  <span className="space-toolkit__route-type">Nearest Elevator</span>
+                </span>
+                <span className="space-toolkit__route-dist">{routing.toElevator.distanceM.toFixed(1)} m</span>
               </button>
             ) : (
-              <div className="space-toolkit__row">
-                <span className="space-toolkit__row-label">Nearest Elevator</span>
-                <span className="space-toolkit__row-value">--</span>
+              <div className="space-toolkit__route-card space-toolkit__route-card--empty">
+                <span className="space-toolkit__route-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <line x1="12" y1="3" x2="12" y2="21" />
+                  </svg>
+                </span>
+                <span className="space-toolkit__route-info">
+                  <span className="space-toolkit__route-name">No elevator found</span>
+                  <span className="space-toolkit__route-type">Nearest Elevator</span>
+                </span>
               </div>
             )}
             {routing?.toStaircase ? (
               <button
-                className={`space-toolkit__route-row ${activeRoute?.type === 'staircase' ? 'space-toolkit__route-row--active' : ''}`}
+                className={`space-toolkit__route-card ${activeRoute?.type === 'staircase' ? 'space-toolkit__route-card--active' : ''}`}
                 onClick={() => handleRouteClick('staircase')}
               >
-                <span className="space-toolkit__route-label">Nearest Staircase</span>
-                <span className="space-toolkit__route-value">
-                  {routing.toStaircase.target.space_name || 'Staircase'}
-                  <span className="space-toolkit__route-dist">{routing.toStaircase.distanceM.toFixed(1)} m</span>
+                <span className="space-toolkit__route-icon space-toolkit__route-icon--stairs">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 18h4v-4h4v-4h4V6h4" />
+                  </svg>
                 </span>
+                <span className="space-toolkit__route-info">
+                  <span className="space-toolkit__route-name">{routing.toStaircase.target.space_name || 'Staircase'}</span>
+                  <span className="space-toolkit__route-type">Nearest Staircase</span>
+                </span>
+                <span className="space-toolkit__route-dist">{routing.toStaircase.distanceM.toFixed(1)} m</span>
               </button>
             ) : (
-              <div className="space-toolkit__row">
-                <span className="space-toolkit__row-label">Nearest Staircase</span>
-                <span className="space-toolkit__row-value">--</span>
+              <div className="space-toolkit__route-card space-toolkit__route-card--empty">
+                <span className="space-toolkit__route-icon space-toolkit__route-icon--stairs">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 18h4v-4h4v-4h4V6h4" />
+                  </svg>
+                </span>
+                <span className="space-toolkit__route-info">
+                  <span className="space-toolkit__route-name">No staircase found</span>
+                  <span className="space-toolkit__route-type">Nearest Staircase</span>
+                </span>
               </div>
             )}
           </div>
         )}
+
+        {/* Components Library — hidden (kept for future use) */}
       </div>
 
       {/* Footer action */}

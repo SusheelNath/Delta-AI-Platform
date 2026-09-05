@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import useStore from '../../store/useStore';
 import { getCategoryIndex } from '../../utils/colorScheme';
 import SavedPolygonsOverlay from './SavedPolygonsOverlay';
-import PolygonEditCard from './PolygonEditCard';
 
 const ZOOM_FACTOR = 0.85;
 const MIN_SCALE = 0.01;
@@ -15,7 +14,6 @@ export default function FloorPlanImage({ floorIdOverride }) {
   const activeFunctionFilters = useStore((s) => s.activeFunctionFilters);
   const searchQuery = useStore((s) => s.searchQuery);
   const selectedSpaceId = useStore((s) => s.selectedSpaceId);
-  const editingPolygon = useStore((s) => s.editingPolygon);
   const activeRoute = useStore((s) => s.activeRoute);
 
   const [transform, setTransform] = useState({ scale: 1, tx: 0, ty: 0 });
@@ -207,8 +205,6 @@ export default function FloorPlanImage({ floorIdOverride }) {
   }
 
   const isSearching = searchMatches !== null;
-  const showEditCard = editingPolygon != null && editingPolygon.floor_id === activeFloorId;
-
   return (
     <div
       ref={containerRef}
@@ -299,8 +295,6 @@ export default function FloorPlanImage({ floorIdOverride }) {
         </div>
       )}
 
-      {/* Polygon edit card (double-click to relabel) */}
-      {showEditCard && <PolygonEditCard />}
     </div>
   );
 }

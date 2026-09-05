@@ -53,6 +53,8 @@ export default function XeokitViewer() {
   const modelAABBRef = useRef(null);
 
   const setViewerReady = useStore((s) => s.setViewerReady);
+  const setLoadProgress = useStore((s) => s.setLoadProgress);
+  const setLoadStage = useStore((s) => s.setLoadStage);
   const selectSpace = useStore((s) => s.selectSpace);
   const clearSelection = useStore((s) => s.clearSelection);
   const floorVisibility = useStore((s) => s.floorVisibility);
@@ -204,6 +206,8 @@ export default function XeokitViewer() {
 
       if (!xktData) {
         setLoadStatus('Downloading 3D model (227 MB)...');
+        setLoadStage('Downloading 3D model...');
+        setLoadProgress(8);
         console.log('[Delta] Starting XKT download...');
 
         try {
@@ -226,6 +230,7 @@ export default function XeokitViewer() {
             if (total > 0) {
               const pct = Math.round((received / total) * 100);
               setLoadStatus(`Downloading 3D model... ${pct}%`);
+              setLoadProgress(8 + Math.round(pct * 0.72));
             }
           }
 
@@ -258,6 +263,8 @@ export default function XeokitViewer() {
 
       // ── Parse model ──
       setLoadStatus('Parsing geometry...');
+      setLoadStage('Parsing geometry...');
+      setLoadProgress(82);
 
       try {
         const model = xktLoader.load({ id: 'hospital', xkt: xktData, edges: true });
@@ -274,6 +281,8 @@ export default function XeokitViewer() {
           modelAABBRef.current = [...aabb];
 
           setLoadStatus('Colouring spaces...');
+          setLoadStage('Colouring spaces...');
+          setLoadProgress(88);
           hideStructuralElements(viewer);
           applyExclusions(viewer);
           buildStoreyMapping(viewer);
@@ -322,6 +331,8 @@ export default function XeokitViewer() {
             return elements;
           };
 
+          setLoadStage('Ready');
+          setLoadProgress(100);
           setLoading(false);
           setViewerReady(true);
         });

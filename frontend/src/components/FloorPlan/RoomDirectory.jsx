@@ -92,12 +92,6 @@ export default function RoomDirectory() {
     }
   }, [selectedSpaceId]);
 
-  const setEditingPolygon = useStore((s) => s.setEditingPolygon);
-
-  const handleCardDoubleClick = useCallback((polygon) => {
-    setEditingPolygon({ ifc_guid: polygon.ifc_guid, floor_id: activeFloorId });
-  }, [setEditingPolygon, activeFloorId]);
-
   const handleCardClick = useCallback(async (polygon) => {
     let overrides = {};
     try {
@@ -190,7 +184,6 @@ export default function RoomDirectory() {
                 polygon={poly}
                 isSelected={poly.ifc_guid === selectedSpaceId}
                 onClick={handleCardClick}
-                onDoubleClick={handleCardDoubleClick}
                 selectedRef={poly.ifc_guid === selectedSpaceId ? selectedRef : null}
               />
             ))}
@@ -201,7 +194,7 @@ export default function RoomDirectory() {
   );
 }
 
-function PolygonCard({ polygon, isSelected, onClick, onDoubleClick, selectedRef }) {
+function PolygonCard({ polygon, isSelected, onClick, selectedRef }) {
   const area = polygon.area_m2 != null ? `${Number(polygon.area_m2).toFixed(1)} m\u00b2` : null;
   const occ = polygon.max_occupancy > 0 ? polygon.max_occupancy : null;
   const setHoveredGuid = useStore((s) => s.setHoveredPolygonGuid);
@@ -211,7 +204,6 @@ function PolygonCard({ polygon, isSelected, onClick, onDoubleClick, selectedRef 
       ref={selectedRef}
       className={`room-card ${isSelected ? 'room-card--selected' : ''}`}
       onClick={() => onClick(polygon)}
-      onDoubleClick={() => onDoubleClick(polygon)}
       onMouseEnter={() => setHoveredGuid(polygon.ifc_guid)}
       onMouseLeave={() => setHoveredGuid(null)}
     >

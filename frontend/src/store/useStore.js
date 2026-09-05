@@ -66,6 +66,12 @@ const useStore = create((set, get) => ({
   // Viewer
   viewerReady: false,
 
+  // App-level loading
+  appReady: false,
+  dataReady: false,
+  loadProgress: 0,
+  loadStage: 'Initialising...',
+
   // Floor plan geometry (populated after model load)
   floorSpaceGeometry: {},   // { [floorId]: [{ id, x, z, w, d, name, categoryIndex }, ...] }
 
@@ -161,6 +167,11 @@ const useStore = create((set, get) => ({
   setViewerReady: (ready) => {
     set({ viewerReady: ready });
   },
+
+  setAppReady: (v) => set({ appReady: v }),
+  setDataReady: (v) => set({ dataReady: v }),
+  setLoadProgress: (p) => set((s) => ({ loadProgress: Math.max(s.loadProgress, p) })),
+  setLoadStage: (stage) => set({ loadStage: stage }),
 
   setFloorSpaceGeometry: (floorId, spaces) => {
     set((state) => ({

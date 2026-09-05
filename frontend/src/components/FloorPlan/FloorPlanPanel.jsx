@@ -4,7 +4,6 @@ import { fetchFloors, fetchFloorPolygons, syncPolygons, savePolygon } from '../.
 import { computePolygonMetrics } from '../../utils/unprojectPolygon';
 import RoomDirectory from './RoomDirectory';
 import FloorPlanImage from './FloorPlanImage';
-import PolygonEditCard from './PolygonEditCard';
 import './FloorPlanPanel.css';
 
 const FLOOR_LABELS = {
@@ -19,7 +18,6 @@ export default function FloorPlanPanel() {
   const setActiveFloor = useStore((s) => s.setActiveFloor);
   const showAllFloors = useStore((s) => s.showAllFloors);
   const clearSelection = useStore((s) => s.clearSelection);
-  const editingPolygon = useStore((s) => s.editingPolygon);
   const panelMode = useStore((s) => s.panelMode);
   const setPanelMode = useStore((s) => s.setPanelMode);
 
@@ -305,10 +303,6 @@ export default function FloorPlanPanel() {
         )}
       </div>
 
-      {/* Polygon edit card (double-click from list or plan) */}
-      {editingPolygon && editingPolygon.floor_id === activeFloorId && panelMode === 'list' && (
-        <PolygonEditCard />
-      )}
     </div>
   );
 }
