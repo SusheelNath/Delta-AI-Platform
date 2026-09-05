@@ -286,20 +286,7 @@ export default function FloorPlanPanel() {
             </div>
           </div>
         ) : (
-          <>
-            <FloorPlanImage />
-            {/* Compare button below plan */}
-            <button
-              className={`floorplan-panel__compare-text-btn ${compareMode ? 'floorplan-panel__compare-text-btn--active' : ''}`}
-              onClick={toggleCompareMode}
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <rect x="1" y="2" width="5" height="10" rx="1" stroke="currentColor" strokeWidth="1.2"/>
-                <rect x="8" y="2" width="5" height="10" rx="1" stroke="currentColor" strokeWidth="1.2"/>
-              </svg>
-              {compareMode ? 'Exit compare' : 'Compare floors'}
-            </button>
-          </>
+          <FloorPlanImage />
         )}
       </div>
 
