@@ -20,6 +20,16 @@ function loadPolygonsFromStorage() {
         if (!data.H020) delete data.H020;
       }
     }
+    // Keep only h040-prefixed polygons for H040 (purge BIM-imported ones)
+    if (data.H040 && Array.isArray(data.H040)) {
+      const clean = data.H040.filter((p) => p.ifc_guid?.startsWith('h040-'));
+      if (clean.length !== data.H040.length) {
+        data.H040 = clean.length > 0 ? clean : undefined;
+        if (!data.H040) delete data.H040;
+      }
+    }
+    // H050 (rooftop) has no polygons — purge any cached ones
+    delete data.H050;
     // Strip cached metric values — these are always server-authoritative
     for (const floorId of Object.keys(data)) {
       if (!Array.isArray(data[floorId])) continue;

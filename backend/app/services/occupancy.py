@@ -39,6 +39,13 @@ ZERO_OCCUPANCY_KEYWORDS = [
     "coded engineering",
 ]
 
+# ── Zero-override keywords ──
+# If a space name contains any of these, it is NOT zeroed even when a
+# ZERO_OCCUPANCY_KEYWORDS match exists (e.g. "Control Room + Technicals").
+ZERO_OVERRIDE_KEYWORDS = [
+    "control room",
+]
+
 # ── Density rules ──
 # Each rule: (keyword_list, occupancy_class, normal_per_m2, max_per_m2)
 # Matched in order; first match wins.
@@ -177,7 +184,10 @@ def compute_occupancy(primary_function: str | None, area_m2: float | None,
     area = area_m2 or 0.0
 
     # Zero-occupancy check (both polygon fields)
-    if _matches_any(fn, ZERO_OCCUPANCY_KEYWORDS) or (name and _matches_any(name, ZERO_OCCUPANCY_KEYWORDS)):
+    combined = fn + " " + name
+    has_zero_kw = _matches_any(fn, ZERO_OCCUPANCY_KEYWORDS) or (name and _matches_any(name, ZERO_OCCUPANCY_KEYWORDS))
+    has_override = _matches_any(combined, ZERO_OVERRIDE_KEYWORDS)
+    if has_zero_kw and not has_override:
         return {
             "normal_occupancy": 0,
             "max_occupancy": 0,
