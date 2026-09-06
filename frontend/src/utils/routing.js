@@ -1,11 +1,11 @@
 /**
- * Multi-source corridor routing with edge-disciplined navigation lines.
+ * Multi-source corridor routing with smooth navigation lines.
  *
  * 1. Finds ALL corridor entry points adjacent to the source room.
  * 2. Multi-source Dijkstra on corridor network — explores ALL reachable
  *    targets and picks the one nearest by straight-line distance from source.
- * 3. Navigation line traces polygon boundaries (edge-to-edge) instead of
- *    cutting through polygon interiors.
+ * 3. Navigation line: centroid-bridge waypoints → Chaikin corner cutting (×2)
+ *    → centripetal Catmull-Rom spline for cusp-free smooth curves.
  * 4. Fallback: full-adjacency Dijkstra if corridor routing finds nothing.
  *
  * Coordinates are in percentage space (0–100).
@@ -77,19 +77,8 @@ export function computeScaleFactor(polygons) {
 }
 
 // ---------------------------------------------------------------------------
-// Edge-disciplined path line helpers
+// Smooth path line helpers (Approach 5: centroid-bridge → Chaikin → centripetal CR)
 // ---------------------------------------------------------------------------
-
-/** Squared distance from point p to segment a–b. */
-function ptSegDistSq(p, a, b) {
-  const dx = b[0] - a[0], dy = b[1] - a[1];
-  const lenSq = dx * dx + dy * dy;
-  if (lenSq === 0) return (p[0] - a[0]) ** 2 + (p[1] - a[1]) ** 2;
-  let t = ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / lenSq;
-  t = Math.max(0, Math.min(1, t));
-  const cx = a[0] + t * dx, cy = a[1] + t * dy;
-  return (p[0] - cx) ** 2 + (p[1] - cy) ** 2;
-}
 
 /** Find bridge point — midpoint of the closest pair of edge midpoints. */
 function findBridgePoint(vertsA, vertsB) {
@@ -113,104 +102,118 @@ function findBridgePoint(vertsA, vertsB) {
 }
 
 /**
- * Trace the shorter boundary arc of a polygon from entryPt to exitPt.
- * Returns intermediate vertex coordinates (excluding the bridge points
- * themselves) that the line should pass through.
+ * Chaikin corner-cutting subdivision.
+ * Each iteration replaces sharp corners with two new points at the 25% and 75%
+ * positions along each segment, converging to a smooth quadratic B-spline.
+ * First and last points are preserved.
  */
-function traceBoundary(vertices, entryPt, exitPt) {
-  const n = vertices.length;
-  if (n < 3) return [];
-
-  // Find which edge each bridge point lies on
-  const findEdge = (pt) => {
-    let best = Infinity, idx = 0;
-    for (let i = 0; i < n; i++) {
-      const j = (i + 1) % n;
-      const d = ptSegDistSq(pt, vertices[i], vertices[j]);
-      if (d < best) { best = d; idx = i; }
-    }
-    return idx;
-  };
-
-  const entryEdge = findEdge(entryPt);
-  const exitEdge = findEdge(exitPt);
-
-  if (entryEdge === exitEdge) return []; // same edge — direct line
-
-  // CW: collect vertices from end-of-entry-edge to start-of-exit-edge
-  const cw = [];
-  let i = (entryEdge + 1) % n;
-  for (let safety = 0; safety <= n; safety++) {
-    if (i === (exitEdge + 1) % n) break;
-    cw.push(vertices[i]);
-    i = (i + 1) % n;
+function chaikinCut(points) {
+  if (points.length < 3) return points;
+  const result = [points[0]];
+  for (let i = 0; i < points.length - 1; i++) {
+    const [ax, ay] = points[i];
+    const [bx, by] = points[i + 1];
+    result.push([ax * 0.75 + bx * 0.25, ay * 0.75 + by * 0.25]);
+    result.push([ax * 0.25 + bx * 0.75, ay * 0.25 + by * 0.75]);
   }
-
-  // CCW: collect vertices from start-of-entry-edge back to end-of-exit-edge
-  const ccw = [];
-  i = entryEdge;
-  for (let safety = 0; safety <= n; safety++) {
-    if (i === exitEdge) break;
-    ccw.push(vertices[i]);
-    i = (i - 1 + n) % n;
-  }
-
-  // Pick the shorter arc
-  const arcLen = (pts) => {
-    if (pts.length === 0) return 0;
-    let len = 0, prev = entryPt;
-    for (const p of pts) {
-      len += Math.sqrt((p[0] - prev[0]) ** 2 + (p[1] - prev[1]) ** 2);
-      prev = p;
-    }
-    len += Math.sqrt((exitPt[0] - prev[0]) ** 2 + (exitPt[1] - prev[1]) ** 2);
-    return len;
-  };
-
-  return arcLen(cw) <= arcLen(ccw) ? cw : ccw;
+  result.push(points[points.length - 1]);
+  return result;
 }
 
 /**
- * Build the navigation path line with edge discipline.
- * - Source & destination: centroid → bridge (direct)
- * - Intermediate polygons: bridge_in → boundary trace → bridge_out
+ * Centripetal Catmull-Rom spline interpolation.
+ * Parameterises by sqrt(chord length) to eliminate cusps and
+ * self-intersections with unevenly spaced control points.
+ *
+ * @param {Array<[number,number]>} pts - control points
+ * @param {number} samplesPerSeg - sample count per segment
+ * @returns {Array<[number,number]>} - interpolated curve points
+ */
+function centripetalCR(pts, samplesPerSeg) {
+  if (pts.length < 2) return pts;
+  if (pts.length === 2) return pts;
+
+  // Extend with phantom points for first/last segment tangents
+  const P = [
+    [2 * pts[0][0] - pts[1][0], 2 * pts[0][1] - pts[1][1]],
+    ...pts,
+    [2 * pts[pts.length - 1][0] - pts[pts.length - 2][0],
+     2 * pts[pts.length - 1][1] - pts[pts.length - 2][1]],
+  ];
+
+  const result = [];
+  for (let i = 1; i < P.length - 2; i++) {
+    const p0 = P[i - 1], p1 = P[i], p2 = P[i + 1], p3 = P[i + 2];
+
+    // Centripetal parameterisation (alpha = 0.5)
+    const dist = (a, b) => Math.sqrt((b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2);
+    const t0 = 0;
+    const t1 = t0 + Math.sqrt(dist(p0, p1) || 0.001);
+    const t2 = t1 + Math.sqrt(dist(p1, p2) || 0.001);
+    const t3 = t2 + Math.sqrt(dist(p2, p3) || 0.001);
+
+    for (let s = 0; s < samplesPerSeg; s++) {
+      const t = t1 + (t2 - t1) * (s / samplesPerSeg);
+
+      const A1x = (t1 - t) / (t1 - t0) * p0[0] + (t - t0) / (t1 - t0) * p1[0];
+      const A1y = (t1 - t) / (t1 - t0) * p0[1] + (t - t0) / (t1 - t0) * p1[1];
+      const A2x = (t2 - t) / (t2 - t1) * p1[0] + (t - t1) / (t2 - t1) * p2[0];
+      const A2y = (t2 - t) / (t2 - t1) * p1[1] + (t - t1) / (t2 - t1) * p2[1];
+      const A3x = (t3 - t) / (t3 - t2) * p2[0] + (t - t2) / (t3 - t2) * p3[0];
+      const A3y = (t3 - t) / (t3 - t2) * p2[1] + (t - t2) / (t3 - t2) * p3[1];
+
+      const B1x = (t2 - t) / (t2 - t0) * A1x + (t - t0) / (t2 - t0) * A2x;
+      const B1y = (t2 - t) / (t2 - t0) * A1y + (t - t0) / (t2 - t0) * A2y;
+      const B2x = (t3 - t) / (t3 - t1) * A2x + (t - t1) / (t3 - t1) * A3x;
+      const B2y = (t3 - t) / (t3 - t1) * A2y + (t - t1) / (t3 - t1) * A3y;
+
+      result.push([
+        (t2 - t) / (t2 - t1) * B1x + (t - t1) / (t2 - t1) * B2x,
+        (t2 - t) / (t2 - t1) * B1y + (t - t1) / (t2 - t1) * B2y,
+      ]);
+    }
+  }
+  result.push(pts[pts.length - 1]);
+  return result;
+}
+
+/**
+ * Build smooth navigation path line.
+ * Pipeline: centroid-bridge waypoints → Chaikin (×2) → centripetal Catmull-Rom
+ *
+ * Waypoints: source centroid → bridge₁ → bridge₂ → ... → dest centroid
+ * Bridge-to-bridge keeps the path inside polygons; no corridor centroids.
+ * Chaikin pre-rounds corners.
+ * Centripetal CR produces a cusp-free flowing curve.
  */
 function computePathLine(path, centroidMap) {
   if (path.length === 0) return [];
   if (path.length === 1) return [centroidMap.get(path[0].ifc_guid)];
 
-  // Pre-compute all bridge points
+  // Pre-compute bridge points between consecutive polygons
   const bridges = [];
   for (let i = 0; i < path.length - 1; i++) {
     bridges.push(findBridgePoint(path[i].vertices, path[i + 1].vertices));
   }
 
-  if (path.length === 2) {
-    const pts = [centroidMap.get(path[0].ifc_guid)];
-    if (bridges[0]) pts.push(bridges[0]);
-    pts.push(centroidMap.get(path[1].ifc_guid));
-    return pts;
+  // Build bridge-to-bridge waypoint sequence (centroids only at endpoints)
+  const waypoints = [centroidMap.get(path[0].ifc_guid)];
+  for (let i = 0; i < bridges.length; i++) {
+    if (bridges[i]) waypoints.push(bridges[i]);
+  }
+  waypoints.push(centroidMap.get(path[path.length - 1].ifc_guid));
+
+  // Too few points for smoothing — return raw waypoints
+  if (waypoints.length < 3) return waypoints;
+
+  // Phase 1: Chaikin corner cutting (2 iterations)
+  let smoothed = waypoints;
+  for (let iter = 0; iter < 2; iter++) {
+    smoothed = chaikinCut(smoothed);
   }
 
-  // Source: centroid → first bridge
-  const points = [centroidMap.get(path[0].ifc_guid)];
-  if (bridges[0]) points.push(bridges[0]);
-
-  // Intermediate polygons: trace boundary from entry bridge to exit bridge
-  for (let i = 1; i < path.length - 1; i++) {
-    const entryBridge = bridges[i - 1];
-    const exitBridge = bridges[i];
-    if (entryBridge && exitBridge) {
-      const edgePts = traceBoundary(path[i].vertices, entryBridge, exitBridge);
-      for (const ep of edgePts) points.push(ep);
-    }
-    if (bridges[i]) points.push(bridges[i]);
-  }
-
-  // Destination: last bridge → centroid
-  points.push(centroidMap.get(path[path.length - 1].ifc_guid));
-
-  return points;
+  // Phase 2: Centripetal Catmull-Rom interpolation (8 samples per segment)
+  return centripetalCR(smoothed, 8);
 }
 
 // ---------------------------------------------------------------------------

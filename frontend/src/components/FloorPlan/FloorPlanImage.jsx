@@ -233,6 +233,45 @@ export default function FloorPlanImage({ floorIdOverride }) {
         {/* Saved polygon outlines */}
         <SavedPolygonsOverlay floorId={activeFloorId} onTooltipChange={setPolygonTooltip} />
 
+        {/* Route navigation — breathing dot trail */}
+        {activeRoute?.pathLine && activeRoute.pathLine.length >= 2 && (() => {
+          const pl = activeRoute.pathLine;
+          const pts = pl.map((p) => `${p[0]},${p[1]}`).join(' ');
+          return (
+            <svg
+              className="routing-line-overlay routing-line-overlay--breathe"
+              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 3 }}
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+            >
+              {/* Faint wide glow layer */}
+              <polyline
+                className="routing-line-overlay__glow"
+                points={pts}
+                fill="none"
+                stroke="rgba(79, 195, 254, 0.35)"
+                strokeWidth="5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeDasharray="2 8"
+                vectorEffect="non-scaling-stroke"
+              />
+              {/* Crisp bright dot layer */}
+              <polyline
+                className="routing-line-overlay__dots"
+                points={pts}
+                fill="none"
+                stroke="#4fc3fe"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeDasharray="2 8"
+                vectorEffect="non-scaling-stroke"
+              />
+            </svg>
+          );
+        })()}
+
         {/* Route waypoint labels */}
         {activeRoute?.waypoints?.map((wp) => (
           <span

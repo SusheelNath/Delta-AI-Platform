@@ -6,7 +6,7 @@ import { unprojectPolygon, earClipTriangulate, computePolygonMetrics } from '../
 import './XeokitViewer.css';
 
 let Viewer, XKTLoaderPlugin, NavCubePlugin, StoreyViewsPlugin, SectionPlanesPlugin;
-let XMesh, XReadableGeometry, XPhongMaterial, XEdgeMaterial;
+let XMesh, XReadableGeometry, XPhongMaterial, XbuildSphereGeometry;
 
 async function loadXeokit() {
   if (Viewer) return;
@@ -19,7 +19,7 @@ async function loadXeokit() {
   XMesh = sdk.Mesh;
   XReadableGeometry = sdk.ReadableGeometry;
   XPhongMaterial = sdk.PhongMaterial;
-  XEdgeMaterial = sdk.EdgeMaterial;
+  XbuildSphereGeometry = sdk.buildSphereGeometry;
 }
 
 const MEP_SPACE_CLASSES = new Set([
@@ -1124,6 +1124,7 @@ export default function XeokitViewer() {
         pickable: opts.pickable ?? false,
         clippable: false,
         collidable: false,
+        edges: false,
       });
     } catch (err) {
       console.warn('[Delta] Failed to create polygon mesh:', err);
@@ -1192,23 +1193,49 @@ export default function XeokitViewer() {
     };
   }, [activeFloorId, floorPolygons, snapshotMatrixKey, loading]);
 
-  // Route & selection highlights: orange start → blue path → green destination
-  const routeEdgeMatsRef = useRef(null); // lazily created EdgeMaterial instances
+  // Route & selection highlights: dark-focus BIM + blue corridors + nav line
+  const bimDarkenedRef = useRef(false);
+  const routeNavMeshesRef = useRef([]); // ground stripe + waypoint dots
+
   useEffect(() => {
+    const viewer = viewerRef.current;
+    const hasRoute = !!activeRoute?.path;
+
+    // ── BIM dark-focus: darken/restore all scene objects ──
+    if (viewer) {
+      if (hasRoute && !bimDarkenedRef.current) {
+        for (const obj of Object.values(viewer.scene.objects)) {
+          try { obj.colorize = [0.12, 0.12, 0.15]; obj.opacity = 0.6; } catch {}
+        }
+        bimDarkenedRef.current = true;
+      } else if (!hasRoute && bimDarkenedRef.current) {
+        const metaObjects = viewer.metaScene?.metaObjects;
+        for (const [id, obj] of Object.entries(viewer.scene.objects)) {
+          try {
+            const meta = metaObjects?.[id];
+            if (meta?.type === 'IfcSpace') {
+              const catIdx = getCategoryIndex(meta.name || '');
+              const active = catIdx < 0 || useStore.getState().activeFunctionFilters[catIdx];
+              obj.opacity = active ? 0.85 : 0.08;
+              obj.colorize = active ? getColorForFunction(meta.name || '') : [0.15, 0.15, 0.18];
+            } else {
+              obj.colorize = null; obj.opacity = 1.0;
+            }
+          } catch {}
+        }
+        bimDarkenedRef.current = false;
+      }
+    }
+
+    // ── Clean up previous nav meshes ──
+    for (const m of routeNavMeshesRef.current) { try { m.destroy(); } catch {} }
+    routeNavMeshesRef.current = [];
+
+    // ── Build route guid set ──
     const routeStartGuid = activeRoute?.path?.[0]?.ifc_guid || null;
     const routePathGuids = activeRoute?.path ? new Set(activeRoute.path.map((p) => p.ifc_guid)) : null;
 
-    // Lazily create shared EdgeMaterial instances for route glow
-    const v = viewerRef.current;
-    if (XEdgeMaterial && v && !routeEdgeMatsRef.current) {
-      routeEdgeMatsRef.current = {
-        source: new XEdgeMaterial(v.scene, { edgeColor: [1.0, 0.62, 0.26], edgeAlpha: 0.9, edgeWidth: 3 }),
-        corridor: new XEdgeMaterial(v.scene, { edgeColor: [0.39, 0.67, 1.0], edgeAlpha: 0.85, edgeWidth: 2 }),
-        dest: new XEdgeMaterial(v.scene, { edgeColor: [0.20, 0.83, 0.60], edgeAlpha: 0.9, edgeWidth: 3 }),
-      };
-    }
-    const edgeMats = routeEdgeMatsRef.current;
-
+    // ── Apply colors to overlay polygon meshes ──
     for (const [guid, mesh] of savedMeshesRef.current) {
       const isHoverOrSelect = hoveredPolygonGuid === guid || selectedSpaceId === guid;
       const isRouteStart = routeStartGuid === guid;
@@ -1216,37 +1243,183 @@ export default function XeokitViewer() {
       const isRoutePath = routePathGuids?.has(guid) && !isRouteStart && !isRouteTarget;
       try {
         if (isRouteStart) {
-          mesh.material.alpha = 0.55;
-          mesh.material.diffuse = [0.91, 0.44, 0.20];
-          mesh.material.emissive = [0.45, 0.18, 0.04];
-          mesh.edges = true;
-          if (edgeMats) mesh.edgeMaterial = edgeMats.source;
+          mesh.material.alpha = 0.65;
+          mesh.material.diffuse = [0.95, 0.30, 0.10];
+          mesh.material.emissive = [0.70, 0.20, 0.05];
         } else if (isRouteTarget) {
-          mesh.material.alpha = 0.55;
-          mesh.material.diffuse = [0.20, 0.83, 0.60];
-          mesh.material.emissive = [0.06, 0.35, 0.18];
-          mesh.edges = true;
-          if (edgeMats) mesh.edgeMaterial = edgeMats.dest;
+          mesh.material.alpha = 0.65;
+          mesh.material.diffuse = [0.10, 0.90, 0.60];
+          mesh.material.emissive = [0.05, 0.50, 0.30];
         } else if (isRoutePath) {
-          mesh.material.alpha = 0.38;
+          mesh.material.alpha = 0.45;
           mesh.material.diffuse = [0.25, 0.58, 1.0];
-          mesh.material.emissive = [0.06, 0.18, 0.45];
-          mesh.edges = true;
-          if (edgeMats) mesh.edgeMaterial = edgeMats.corridor;
+          mesh.material.emissive = [0.08, 0.22, 0.55];
         } else if (isHoverOrSelect) {
           mesh.material.alpha = 0.45;
           mesh.material.diffuse = [1.0, 0.55, 0.2];
           mesh.material.emissive = [0.4, 0.15, 0.0];
-          mesh.edges = false;
         } else {
           mesh.material.alpha = 0.01;
           mesh.material.diffuse = [0, 0, 0];
           mesh.material.emissive = [0, 0, 0];
-          mesh.edges = false;
         }
       } catch {}
     }
-  }, [hoveredPolygonGuid, selectedSpaceId, activeRoute]);
+
+    // ── Create nav meshes: ground stripe, breadcrumb dots, polygon glow borders ──
+    if (!viewer || !hasRoute || !activeRoute?.pathLine || activeRoute.pathLine.length < 2) return;
+    if (!activeFloorId) return;
+
+    const snapshot = useStore.getState().floorSnapshots[activeFloorId];
+    if (!snapshot?.viewMatrix || !snapshot?.projMatrix) return;
+
+    const geomData = useStore.getState().floorSpaceGeometry;
+    const spaces = geomData[activeFloorId] || [];
+    const maxYTop = spaces.length > 0 ? Math.max(...spaces.map(s => s.yTop || s.y || 0)) : 0;
+    const planeY = maxYTop + 0.10;
+
+    // Unproject pathLine → 3D world coords
+    const worldPath = unprojectPolygon(activeRoute.pathLine, snapshot.viewMatrix, snapshot.projMatrix, planeY);
+    if (!worldPath || worldPath.length < 2) return;
+
+    // ── (a) Faint ground stripe ──
+    const HALF_W = 0.05;
+    const stripPos = [];
+    const stripIdx = [];
+    for (let i = 0; i < worldPath.length; i++) {
+      const [x, y, z] = worldPath[i];
+      let dx, dz;
+      if (i < worldPath.length - 1) { dx = worldPath[i + 1][0] - x; dz = worldPath[i + 1][2] - z; }
+      else { dx = x - worldPath[i - 1][0]; dz = z - worldPath[i - 1][2]; }
+      const len = Math.sqrt(dx * dx + dz * dz) || 1;
+      const px = -dz / len * HALF_W, pz = dx / len * HALF_W;
+      stripPos.push(x + px, y, z + pz, x - px, y, z - pz);
+      if (i < worldPath.length - 1) {
+        const b = i * 2;
+        stripIdx.push(b, b + 1, b + 2, b + 1, b + 3, b + 2);
+      }
+    }
+    try {
+      routeNavMeshesRef.current.push(new XMesh(viewer.scene, {
+        geometry: new XReadableGeometry(viewer.scene, { positions: new Float32Array(stripPos), indices: stripIdx, primitive: 'triangles' }),
+        material: new XPhongMaterial(viewer.scene, { diffuse: [0.25, 0.65, 1.0], emissive: [0.12, 0.35, 0.65], alpha: 0.35, backfaces: true }),
+        pickable: false, clippable: false, collidable: false, edges: false,
+      }));
+    } catch {}
+
+    // ── (b) Breadcrumb dot chain — spheres every ~0.4m along path ──
+    if (XbuildSphereGeometry) {
+      const DOT_SPACING = 0.4;
+      const dotPlaneY = planeY + 0.12;
+      let accumulated = 0;
+      for (let i = 1; i < worldPath.length; i++) {
+        const [ax, ay, az] = worldPath[i - 1];
+        const [bx, , bz] = worldPath[i];
+        const segDx = bx - ax, segDz = bz - az;
+        const segLen = Math.sqrt(segDx * segDx + segDz * segDz);
+        if (segLen < 0.001) continue;
+        const dirX = segDx / segLen, dirZ = segDz / segLen;
+        let pos = DOT_SPACING - accumulated;
+        while (pos <= segLen) {
+          const cx = ax + dirX * pos, cz = az + dirZ * pos;
+          try {
+            const sg = XbuildSphereGeometry({ center: [cx, dotPlaneY, cz], radius: 0.06, heightSegments: 8, widthSegments: 8 });
+            routeNavMeshesRef.current.push(new XMesh(viewer.scene, {
+              geometry: new XReadableGeometry(viewer.scene, sg),
+              material: new XPhongMaterial(viewer.scene, { diffuse: [0.40, 0.85, 1.0], emissive: [0.25, 0.60, 0.90], alpha: 0.9 }),
+              pickable: false, clippable: false, collidable: false, edges: false,
+            }));
+          } catch {}
+          pos += DOT_SPACING;
+        }
+        accumulated = segLen - (pos - DOT_SPACING);
+      }
+
+      // Start + end marker spheres (larger)
+      for (const [pt, color, emis] of [
+        [worldPath[0], [0.95, 0.50, 0.15], [0.65, 0.28, 0.06]],
+        [worldPath[worldPath.length - 1], [0.10, 0.90, 0.60], [0.05, 0.55, 0.30]],
+      ]) {
+        try {
+          const sg = XbuildSphereGeometry({ center: [pt[0], dotPlaneY + 0.05, pt[2]], radius: 0.12, heightSegments: 10, widthSegments: 10 });
+          routeNavMeshesRef.current.push(new XMesh(viewer.scene, {
+            geometry: new XReadableGeometry(viewer.scene, sg),
+            material: new XPhongMaterial(viewer.scene, { diffuse: color, emissive: emis, alpha: 0.95 }),
+            pickable: false, clippable: false, collidable: false, edges: false,
+          }));
+        } catch {}
+      }
+    }
+
+    // ── (c) Polygon glow borders — outline line mesh + quad-strip halo ──
+    const polygons = useStore.getState().floorPolygons[activeFloorId] || [];
+    const borderPlaneY = maxYTop + 0.12;
+    const BORDER_HALF_W = 0.04;
+
+    for (const [guid] of savedMeshesRef.current) {
+      const isStart = routeStartGuid === guid;
+      const isTarget = activeRoute?.targetGuid === guid;
+      const isPath = routePathGuids?.has(guid) && !isStart && !isTarget;
+      if (!isStart && !isTarget && !isPath) continue;
+
+      const poly = polygons.find((p) => p.ifc_guid === guid);
+      if (!poly?.vertices || poly.vertices.length < 3) continue;
+
+      const borderColor = isStart ? [1.0, 0.62, 0.26] : isTarget ? [0.20, 0.90, 0.60] : [0.35, 0.70, 1.0];
+      const borderEmis = isStart ? [0.70, 0.35, 0.10] : isTarget ? [0.10, 0.60, 0.35] : [0.18, 0.40, 0.70];
+      const glowColor = isStart ? [1.0, 0.50, 0.15] : isTarget ? [0.15, 0.80, 0.50] : [0.25, 0.55, 0.95];
+      const glowEmis = isStart ? [0.55, 0.25, 0.05] : isTarget ? [0.06, 0.45, 0.25] : [0.10, 0.30, 0.55];
+
+      // Close the polygon loop
+      const verts2D = [...poly.vertices, poly.vertices[0]];
+      const worldVerts = unprojectPolygon(verts2D, snapshot.viewMatrix, snapshot.projMatrix, borderPlaneY);
+      if (!worldVerts || worldVerts.length < 4) continue;
+
+      // (c1) Crisp outline — primitive 'lines'
+      const linePos = [];
+      const lineIdx = [];
+      for (let i = 0; i < worldVerts.length; i++) {
+        linePos.push(worldVerts[i][0], worldVerts[i][1], worldVerts[i][2]);
+        if (i < worldVerts.length - 1) { lineIdx.push(i, i + 1); }
+      }
+      try {
+        routeNavMeshesRef.current.push(new XMesh(viewer.scene, {
+          geometry: new XReadableGeometry(viewer.scene, { positions: new Float32Array(linePos), indices: lineIdx, primitive: 'lines' }),
+          material: new XPhongMaterial(viewer.scene, { diffuse: borderColor, emissive: borderEmis, alpha: 0.9, backfaces: true }),
+          pickable: false, clippable: false, collidable: false, edges: false,
+        }));
+      } catch {}
+
+      // (c2) Soft glow halo — quad-strip border
+      const haloPos = [];
+      const haloIdx = [];
+      for (let i = 0; i < worldVerts.length; i++) {
+        const [x, y, z] = worldVerts[i];
+        // Direction to next vertex
+        const next = worldVerts[(i + 1) % worldVerts.length];
+        const prev = worldVerts[(i - 1 + worldVerts.length) % worldVerts.length];
+        // Average perpendicular for smooth corners
+        const d1x = next[0] - x, d1z = next[2] - z;
+        const d2x = x - prev[0], d2z = z - prev[2];
+        const avgDx = d1x + d2x, avgDz = d1z + d2z;
+        const avgLen = Math.sqrt(avgDx * avgDx + avgDz * avgDz) || 1;
+        const nx = -avgDz / avgLen * BORDER_HALF_W;
+        const nz = avgDx / avgLen * BORDER_HALF_W;
+        haloPos.push(x + nx, y, z + nz, x - nx, y, z - nz);
+        if (i < worldVerts.length - 1) {
+          const b = i * 2;
+          haloIdx.push(b, b + 1, b + 2, b + 1, b + 3, b + 2);
+        }
+      }
+      try {
+        routeNavMeshesRef.current.push(new XMesh(viewer.scene, {
+          geometry: new XReadableGeometry(viewer.scene, { positions: new Float32Array(haloPos), indices: haloIdx, primitive: 'triangles' }),
+          material: new XPhongMaterial(viewer.scene, { diffuse: glowColor, emissive: glowEmis, alpha: 0.45, backfaces: true }),
+          pickable: false, clippable: false, collidable: false, edges: false,
+        }));
+      } catch {}
+    }
+  }, [hoveredPolygonGuid, selectedSpaceId, activeRoute, activeFloorId]);
 
 
   return (

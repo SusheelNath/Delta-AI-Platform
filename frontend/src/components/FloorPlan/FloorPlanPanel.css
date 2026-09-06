@@ -412,14 +412,24 @@
   margin-top: 1px;
 }
 
-/* ── Route navigation line ── */
-.routing-line-overlay__line {
-  animation: route-flow 1.0s linear infinite;
+/* ── Route navigation line — breathing dot trail ── */
+.routing-line-overlay__glow {
+  animation: route-dot-flow 1.2s linear infinite;
+}
+.routing-line-overlay__dots {
+  animation: route-dot-flow 1.2s linear infinite;
+}
+.routing-line-overlay--breathe {
+  animation: route-breathe 2s ease-in-out infinite;
 }
 
-@keyframes route-flow {
+@keyframes route-dot-flow {
   from { stroke-dashoffset: 0; }
-  to   { stroke-dashoffset: -32; }
+  to   { stroke-dashoffset: -20; }
+}
+@keyframes route-breathe {
+  0%, 100% { opacity: 0.5; }
+  50%      { opacity: 1.0; }
 }
 
 /* ── Route waypoint labels ── */
