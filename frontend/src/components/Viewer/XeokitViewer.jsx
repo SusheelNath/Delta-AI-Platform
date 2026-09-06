@@ -67,6 +67,7 @@ export default function XeokitViewer() {
   const modelRef = useRef(null);
   const highlightedRef = useRef(null);
   const modelAABBRef = useRef(null);
+  const floorAABBCache = useRef(new Map()); // floorId → { xMin, zMin, xMax, zMax, yAvg }
 
   const setViewerReady = useStore((s) => s.setViewerReady);
   const setLoadProgress = useStore((s) => s.setLoadProgress);
@@ -927,11 +928,20 @@ export default function XeokitViewer() {
     const spaces = geometry[floorId];
     if (!spaces || spaces.length === 0) return;
 
-    const xMin = Math.min(...spaces.map(s => s.x));
-    const zMin = Math.min(...spaces.map(s => s.z));
-    const xMax = Math.max(...spaces.map(s => s.x + s.w));
-    const zMax = Math.max(...spaces.map(s => s.z + s.d));
-    const yAvg = spaces.reduce((sum, s) => sum + (s.y || 0), 0) / spaces.length;
+    let aabb = floorAABBCache.current.get(floorId);
+    if (!aabb) {
+      let xMin = Infinity, zMin = Infinity, xMax = -Infinity, zMax = -Infinity, ySum = 0;
+      for (const s of spaces) {
+        if (s.x < xMin) xMin = s.x;
+        if (s.z < zMin) zMin = s.z;
+        if (s.x + s.w > xMax) xMax = s.x + s.w;
+        if (s.z + s.d > zMax) zMax = s.z + s.d;
+        ySum += s.y || 0;
+      }
+      aabb = { xMin, zMin, xMax, zMax, yAvg: ySum / spaces.length };
+      floorAABBCache.current.set(floorId, aabb);
+    }
+    const { xMin, zMin, xMax, zMax, yAvg } = aabb;
 
     const cx = (xMin + xMax) / 2;
     const cz = (zMin + zMax) / 2;

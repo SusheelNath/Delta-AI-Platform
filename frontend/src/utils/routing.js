@@ -26,6 +26,40 @@ const STAIRCASE_TARGET_RE = /stair/i;
 // Adjacency graph cache — avoids O(n²) rebuild when polygon set unchanged
 let _adjCache = null; // { key, fullAdj, corrAdj }
 
+// Binary min-heap for O(log n) Dijkstra priority queue
+class MinHeap {
+  constructor() { this._data = []; }
+  get size() { return this._data.length; }
+  push(item) {
+    this._data.push(item);
+    let i = this._data.length - 1;
+    while (i > 0) {
+      const p = (i - 1) >> 1;
+      if (this._data[p].cost <= this._data[i].cost) break;
+      [this._data[p], this._data[i]] = [this._data[i], this._data[p]];
+      i = p;
+    }
+  }
+  pop() {
+    const top = this._data[0];
+    const last = this._data.pop();
+    if (this._data.length > 0) {
+      this._data[0] = last;
+      let i = 0;
+      while (true) {
+        let smallest = i;
+        const l = 2 * i + 1, r = 2 * i + 2;
+        if (l < this._data.length && this._data[l].cost < this._data[smallest].cost) smallest = l;
+        if (r < this._data.length && this._data[r].cost < this._data[smallest].cost) smallest = r;
+        if (smallest === i) break;
+        [this._data[smallest], this._data[i]] = [this._data[i], this._data[smallest]];
+        i = smallest;
+      }
+    }
+    return top;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Geometry helpers
 // ---------------------------------------------------------------------------
@@ -288,15 +322,12 @@ function dijkstraToCorridor(fullAdj, byGuid, centroidMap, startGuid) {
   const dist = new Map();
   const parent = new Map();
   const visited = new Set();
-  const pq = [{ guid: startGuid, cost: 0 }];
+  const pq = new MinHeap();
+  pq.push({ guid: startGuid, cost: 0 });
   dist.set(startGuid, 0);
 
-  while (pq.length > 0) {
-    let minIdx = 0;
-    for (let i = 1; i < pq.length; i++) {
-      if (pq[i].cost < pq[minIdx].cost) minIdx = i;
-    }
-    const { guid: current, cost: currentCost } = pq.splice(minIdx, 1)[0];
+  while (pq.size > 0) {
+    const { guid: current, cost: currentCost } = pq.pop();
     if (visited.has(current)) continue;
     visited.add(current);
 
@@ -366,19 +397,15 @@ function findRouteViaCorridors(fullAdj, corrAdj, byGuid, centroidMap, startGuid,
   const dist = new Map();
   const parent = new Map();
   const visited = new Set();
-  const pq = [];
+  const pq = new MinHeap();
 
   for (const [guid, entry] of entries) {
     dist.set(guid, entry.cost);
     pq.push({ guid, cost: entry.cost });
   }
 
-  while (pq.length > 0) {
-    let minIdx = 0;
-    for (let i = 1; i < pq.length; i++) {
-      if (pq[i].cost < pq[minIdx].cost) minIdx = i;
-    }
-    const { guid: current, cost: currentCost } = pq.splice(minIdx, 1)[0];
+  while (pq.size > 0) {
+    const { guid: current, cost: currentCost } = pq.pop();
     if (visited.has(current)) continue;
     visited.add(current);
 
@@ -439,16 +466,13 @@ function findRouteFallback(fullAdj, byGuid, centroidMap, startGuid, isTargetFn) 
   const dist = new Map();
   const parent = new Map();
   const visited = new Set();
-  const pq = [{ guid: startGuid, cost: 0 }];
+  const pq = new MinHeap();
+  pq.push({ guid: startGuid, cost: 0 });
   dist.set(startGuid, 0);
 
   // Run full Dijkstra
-  while (pq.length > 0) {
-    let minIdx = 0;
-    for (let i = 1; i < pq.length; i++) {
-      if (pq[i].cost < pq[minIdx].cost) minIdx = i;
-    }
-    const { guid: current, cost: currentCost } = pq.splice(minIdx, 1)[0];
+  while (pq.size > 0) {
+    const { guid: current, cost: currentCost } = pq.pop();
     if (visited.has(current)) continue;
     visited.add(current);
 

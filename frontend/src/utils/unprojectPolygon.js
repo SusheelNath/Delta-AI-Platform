@@ -88,6 +88,10 @@ function unprojectToPlane(pctX, pctY, invVP, planeY) {
   return [p0[0] + t * dir[0], planeY, p0[2] + t * dir[2]];
 }
 
+// Cache last inverted VP matrix — same matrices are passed for all polygons on a floor
+let _lastVPKey = null;
+let _lastInvVP = null;
+
 /**
  * Convert 2D polygon vertices (percentage coords) to 3D world coordinates.
  * @param {Array<[number, number]>} vertices - [[leftPct, topPct], ...]
@@ -97,9 +101,18 @@ function unprojectToPlane(pctX, pctY, invVP, planeY) {
  * @returns {Array<[number, number, number]>|null} - [[x, y, z], ...] world coords
  */
 export function unprojectPolygon(vertices, viewMatrix, projMatrix, planeY) {
-  const vp = multiplyMatrix4(projMatrix, viewMatrix);
-  const invVP = invertMatrix4(vp);
-  if (!invVP) return null;
+  // Cache inverted VP — same view/proj are passed for all polygons on a floor
+  const vpKey = viewMatrix[0].toFixed(6) + viewMatrix[12].toFixed(6) + projMatrix[0].toFixed(6) + projMatrix[5].toFixed(6);
+  let invVP;
+  if (_lastVPKey === vpKey) {
+    invVP = _lastInvVP;
+  } else {
+    const vp = multiplyMatrix4(projMatrix, viewMatrix);
+    invVP = invertMatrix4(vp);
+    if (!invVP) return null;
+    _lastVPKey = vpKey;
+    _lastInvVP = invVP;
+  }
 
   const worldVertices = [];
   for (const [pctX, pctY] of vertices) {
