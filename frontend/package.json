@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@picovoice/porcupine-web": "^4.0.1",
+    "@picovoice/web-voice-processor": "^4.0.10",
     "@xeokit/xeokit-sdk": "^2.6.5",
     "mapbox-gl": "^3.29.0",
     "react": "^18.2.0",

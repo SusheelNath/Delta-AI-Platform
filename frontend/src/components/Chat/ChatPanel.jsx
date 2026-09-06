@@ -2,9 +2,9 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import useStore from '../../store/useStore';
 import { streamChat, transcribeAudio, speakText } from '../../api/client';
 import {
-  startWakeWordListener,
-  createAudioRecorder,
+  createVoiceManager,
   playAudio,
+  stripSubmitPhrase,
 } from '../../utils/voiceManager';
 import './ChatPanel.css';
 
@@ -36,12 +36,11 @@ export default function ChatPanel() {
   const abortRef = useRef(null);
 
   // Voice refs
-  const recorderRef = useRef(null);
-  const wakeStopRef = useRef(null);
+  const voiceManagerRef = useRef(null);
   const voiceActiveRef = useRef(false);
   const prevGeneratingRef = useRef(false);
 
-  // Keep ref in sync so callbacks always see latest value
+  // Keep ref in sync
   useEffect(() => {
     voiceActiveRef.current = voiceActive;
   }, [voiceActive]);
@@ -80,24 +79,60 @@ export default function ChatPanel() {
     };
   }, []);
 
-  // ── Wake-word listener (always on) ──
+  // ── Single unified voice manager (created once on mount) ──
   useEffect(() => {
-    const stop = startWakeWordListener(
-      () => {
+    const mgr = createVoiceManager({
+      onWake: () => {
         if (!voiceActiveRef.current) activateVoice();
       },
-      () => {
+      onStop: () => {
         if (voiceActiveRef.current) deactivateVoice();
       },
-    );
-    wakeStopRef.current = stop;
-    return () => stop();
+      onInterim: (text) => {
+        setInput(text);
+      },
+      onSubmit: (audioBlob, webSpeechText) => {
+        handleVoiceSubmit(audioBlob, webSpeechText);
+      },
+      onClear: () => {
+        setInput('');
+        // If generating, also cancel the in-flight request
+        if (abortRef.current) {
+          abortRef.current.abort();
+          abortRef.current = null;
+        }
+        useStore.getState().setGenerating(false);
+      },
+      onError: (err) => {
+        console.warn('[Voice] Error:', err);
+      },
+    });
+    mgr.start();
+    voiceManagerRef.current = mgr;
+
+    return () => mgr.destroy();
   }, []);
 
-  // ── Post-generation: announce result if voice is active ──
+  // ── Post-generation: play follow-up prompt then return to listening ──
   useEffect(() => {
     if (prevGeneratingRef.current && !isGenerating && voiceActiveRef.current) {
-      announceResult();
+      (async () => {
+        try {
+          voiceManagerRef.current?.mute();
+          const audio = await speakText('', 'followup');
+          await playAudio(audio);
+          await new Promise((r) => setTimeout(r, 700));
+        } catch (_) {
+          /* non-critical */
+        } finally {
+          voiceManagerRef.current?.unmute();
+        }
+        if (voiceActiveRef.current) {
+          setInput('');
+          setVoiceState('listening');
+          voiceManagerRef.current?.setMode('listening');
+        }
+      })();
     }
     prevGeneratingRef.current = isGenerating;
   }, [isGenerating]);
@@ -109,91 +144,72 @@ export default function ChatPanel() {
     setVoiceState('greeting');
 
     try {
+      voiceManagerRef.current?.mute();
       const audio = await speakText('', 'greeting');
       await playAudio(audio);
+      // Grace period — mic still picks up speaker residue after audio ends
+      await new Promise((r) => setTimeout(r, 700));
     } catch (err) {
       console.warn('[Voice] Greeting TTS failed:', err);
+    } finally {
+      voiceManagerRef.current?.unmute();
     }
 
-    // After greeting, start listening
+    // After greeting, switch to listening mode and clear any leaked text
     if (voiceActiveRef.current) {
+      setInput('');
       setVoiceState('listening');
-      startListening();
+      voiceManagerRef.current?.setMode('listening');
     }
   }, [setVoiceActive, setVoiceState]);
 
-  const deactivateVoice = useCallback(() => {
+  const deactivateVoice = useCallback(async () => {
+    voiceManagerRef.current?.setMode('idle');
+    voiceManagerRef.current?.mute();
+    try {
+      const audio = await speakText('', 'goodbye');
+      await playAudio(audio);
+    } catch (_) {
+      /* non-critical */
+    } finally {
+      voiceManagerRef.current?.unmute();
+    }
     setVoiceActive(false);
     setVoiceState('idle');
-    if (recorderRef.current) {
-      recorderRef.current.stop().catch(() => {});
-      recorderRef.current = null;
-    }
+    setInput('');
   }, [setVoiceActive, setVoiceState]);
 
-  // ── Recording & transcription ──
+  // ── Voice submit (triggered by "Send") ──
 
-  const startListening = useCallback(() => {
-    const recorder = createAudioRecorder();
-    recorderRef.current = recorder;
-    recorder.start(() => {
-      // Silence detected — process the audio
-      handleVoiceCapture();
-    }).catch((err) => {
-      console.error('[Voice] Mic access denied:', err);
-      deactivateVoice();
-    });
-  }, []);
-
-  const handleVoiceCapture = useCallback(async () => {
-    if (!recorderRef.current) return;
-    const blob = await recorderRef.current.stop();
-    recorderRef.current = null;
-
+  const handleVoiceSubmit = useCallback(async (audioBlob, webSpeechText) => {
     if (!voiceActiveRef.current) return;
 
+    setInput(webSpeechText);
     setVoiceState('processing');
 
-    try {
-      const { text } = await transcribeAudio(blob);
-      if (!text || text.trim() === '') {
-        // No speech detected — resume listening
-        if (voiceActiveRef.current) {
-          setVoiceState('listening');
-          startListening();
-        }
-        return;
-      }
+    let finalText = webSpeechText;
 
-      // Show transcription in input, then auto-submit
-      setInput(text);
-      handleSend(text);
-    } catch (err) {
-      console.error('[Voice] Transcription error:', err);
+    // Verify with Whisper (Groq → local fallback)
+    if (audioBlob && audioBlob.size > 0) {
+      try {
+        const { text: whisperText } = await transcribeAudio(audioBlob);
+        if (whisperText && whisperText.trim()) {
+          finalText = stripSubmitPhrase(whisperText);
+          setInput(finalText);
+        }
+      } catch (err) {
+        console.warn('[Voice] Whisper verification failed, using Web Speech text:', err);
+      }
+    }
+
+    if (finalText) {
+      handleSend(finalText);
+    } else {
+      // Empty — go back to listening
       if (voiceActiveRef.current) {
         setVoiceState('listening');
-        startListening();
+        voiceManagerRef.current?.setMode('listening');
       }
-    }
-  }, [setVoiceState]);
-
-  // ── Announce result after generation completes ──
-
-  const announceResult = useCallback(async () => {
-    if (!voiceActiveRef.current) return;
-    setVoiceState('announcing');
-
-    try {
-      const announcingAudio = await speakText('', 'announcing');
-      await playAudio(announcingAudio);
-    } catch (err) {
-      console.warn('[Voice] Announcing TTS failed:', err);
-    }
-
-    // Loop back to listening for follow-up questions
-    if (voiceActiveRef.current) {
-      setVoiceState('listening');
-      startListening();
     }
   }, [setVoiceState]);
 
@@ -218,15 +234,26 @@ export default function ChatPanel() {
     addMessage(userMsg);
     setInput('');
 
-    // Play voice acknowledgment if voice is active
+    // Play voice phrases if voice is active: acknowledge then announce
     const voiceOn = voiceActiveRef.current;
     if (voiceOn) {
-      setVoiceState('acknowledging');
+      voiceManagerRef.current?.mute();
       try {
+        // "One moment, please."
+        setVoiceState('acknowledging');
         const ackAudio = await speakText('', 'acknowledging');
         await playAudio(ackAudio);
+        await new Promise((r) => setTimeout(r, 400));
+
+        // "Here is what I found."
+        setVoiceState('announcing');
+        const annAudio = await speakText('', 'announcing');
+        await playAudio(annAudio);
+        await new Promise((r) => setTimeout(r, 700));
       } catch (_) {
         /* non-critical */
+      } finally {
+        voiceManagerRef.current?.unmute();
       }
       setVoiceState('processing');
     }
@@ -355,10 +382,10 @@ export default function ChatPanel() {
           <span className="chat-panel__voice-dot" />
           <span className="chat-panel__voice-label">
             {voiceState === 'greeting' && 'Delta is greeting...'}
-            {voiceState === 'listening' && 'Listening...'}
-            {voiceState === 'processing' && 'Processing speech...'}
-            {voiceState === 'acknowledging' && 'Acknowledged'}
-            {voiceState === 'announcing' && 'Speaking response...'}
+            {voiceState === 'listening' && 'Listening... say "Send" to send'}
+            {voiceState === 'processing' && 'Verifying transcription...'}
+            {voiceState === 'acknowledging' && 'One moment, please...'}
+            {voiceState === 'announcing' && 'Here is what I found...'}
           </span>
           <button className="chat-panel__voice-stop" onClick={deactivateVoice}>
             End
@@ -409,7 +436,7 @@ export default function ChatPanel() {
             className="chat-panel__input"
             placeholder={
               voiceActive && voiceState === 'listening'
-                ? 'Listening... speak now'
+                ? 'Listening... speak now, say "Send" to send'
                 : selectedSpace
                   ? `Ask about ${selectedSpace.space_name || 'this space'}...`
                   : 'Ask Delta about any space...'
@@ -424,7 +451,6 @@ export default function ChatPanel() {
             title={voiceActive ? 'Deactivate voice (or say "Stop Delta")' : 'Activate voice (or say "Hi Delta")'}
             onClick={handleMicToggle}
           >
-            {/* Mic icon — filled when active */}
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               {voiceActive ? (
                 <>
