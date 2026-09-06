@@ -6,7 +6,7 @@ import { unprojectPolygon, earClipTriangulate, computePolygonMetrics } from '../
 import './XeokitViewer.css';
 
 let Viewer, XKTLoaderPlugin, NavCubePlugin, StoreyViewsPlugin, SectionPlanesPlugin;
-let XMesh, XReadableGeometry, XPhongMaterial, XbuildSphereGeometry;
+let XMesh, XReadableGeometry, XPhongMaterial, XbuildSphereGeometry, XDirLight;
 
 async function loadXeokit() {
   if (Viewer) return;
@@ -20,6 +20,7 @@ async function loadXeokit() {
   XReadableGeometry = sdk.ReadableGeometry;
   XPhongMaterial = sdk.PhongMaterial;
   XbuildSphereGeometry = sdk.buildSphereGeometry;
+  XDirLight = sdk.DirLight;
 }
 
 const MEP_SPACE_CLASSES = new Set([
@@ -143,26 +144,51 @@ export default function XeokitViewer() {
         pbrEnabled: false,
       });
 
-      viewer.scene.canvas.canvas.style.background = '#0a1628';
-      viewer.scene.canvas.backgroundColor = [10/255, 22/255, 40/255];
+      viewer.scene.canvas.canvas.style.background = 'transparent';
+      viewer.scene.canvas.backgroundColor = [8/255, 14/255, 26/255];
       viewer.camera.projection = 'perspective';
       viewer.camera.perspective.near = 1.0;
 
-
-      // ── SAO (Scalable Ambient Occlusion) — adds depth shadows ──
+      // ── SAO (Scalable Ambient Occlusion) — enhanced depth ──
       viewer.scene.sao.enabled = true;
-      viewer.scene.sao.intensity = 0.2;
+      viewer.scene.sao.intensity = 0.35;
       viewer.scene.sao.bias = 0.5;
-      viewer.scene.sao.scale = 800;
+      viewer.scene.sao.scale = 600;
       viewer.scene.sao.minResolution = 0.0;
-      viewer.scene.sao.kernelRadius = 100;
+      viewer.scene.sao.kernelRadius = 80;
       viewer.scene.sao.blendFactor = 1.0;
 
-      // ── Reduce ambient light ──
+      // ── Warm ambient light ──
       for (const light of Object.values(viewer.scene.lights)) {
         if (light.type === 'AmbientLight') {
-          light.intensity = 0.65;
+          light.intensity = 0.45;
+          light.color = [1.0, 0.96, 0.92];
         }
+      }
+
+      // ── Three-point studio lighting ──
+      if (XDirLight) {
+        new XDirLight(viewer.scene, {
+          id: 'keyLight',
+          dir: [0.6, -0.8, -0.6],
+          color: [1.0, 0.95, 0.88],
+          intensity: 0.7,
+          space: 'view',
+        });
+        new XDirLight(viewer.scene, {
+          id: 'fillLight',
+          dir: [-0.6, -0.3, -0.5],
+          color: [0.75, 0.85, 1.0],
+          intensity: 0.4,
+          space: 'view',
+        });
+        new XDirLight(viewer.scene, {
+          id: 'rimLight',
+          dir: [0.1, -0.6, 0.8],
+          color: [1.0, 0.70, 0.45],
+          intensity: 0.25,
+          space: 'view',
+        });
       }
 
       // ── Edge material — disabled (no black outlines) ──
@@ -184,16 +210,31 @@ export default function XeokitViewer() {
       viewer.scene.xrayMaterial.edges = false;
 
       if (navCubeCanvasRef.current) {
-        new NavCubePlugin(viewer, {
+        const navCube = new NavCubePlugin(viewer, {
           canvasElement: navCubeCanvasRef.current,
           visible: true,
-          color: '#1a2030',
-          frontColor: '#2d3548',
-          backColor: '#161b26',
-          edgeColor: '#E77133',
-          highColor: '#E77133',
+          color: '#0e1522',
+          frontColor: '#121a2a',
+          backColor: '#0b1018',
+          leftColor: '#0e1420',
+          rightColor: '#0e1420',
+          topColor: '#141e30',
+          bottomColor: '#0a0e18',
+          hoverColor: 'rgba(231, 113, 51, 0.30)',
+          textColor: '#ffffff',
+          highColor: '#f5944e',
           shadowVisible: false,
+          cameraFlyDuration: 0.4,
+          fitVisible: false,
         });
+        // Hack internal scene edge material — config edgeColor is not wired up
+        try {
+          const ncScene = navCube._navCubeScene;
+          if (ncScene && ncScene.edgeMaterial) {
+            ncScene.edgeMaterial.edgeColor = [0.91, 0.44, 0.20];
+            ncScene.edgeMaterial.edgeAlpha = 1.0;
+          }
+        } catch (_) { /* non-critical */ }
       }
 
       const xktLoader = new XKTLoaderPlugin(viewer);
@@ -1425,7 +1466,7 @@ export default function XeokitViewer() {
   return (
     <div className="xeokit-viewer">
       <canvas ref={canvasRef} className="xeokit-viewer__canvas" />
-      <canvas ref={navCubeCanvasRef} className="xeokit-viewer__navcube" width="200" height="200" />
+      <canvas ref={navCubeCanvasRef} className="xeokit-viewer__navcube" width="360" height="360" />
 
       {loading && (
         <div className="xeokit-viewer__overlay">

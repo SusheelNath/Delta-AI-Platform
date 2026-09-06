@@ -151,29 +151,37 @@
   color: #d49a78;
 }
 
-/* ── Input area ── */
-.chat-panel__input-area {
+/* ── Input tray — sunken recessed container ── */
+.chat-panel__input-tray {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.25);
+  border-top: 2px solid transparent;
+  border-image: linear-gradient(90deg, rgba(231, 113, 51, 0.05), rgba(231, 113, 51, 0.6), rgba(231, 113, 51, 0.05)) 1;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* ── Input row ── */
+.chat-panel__input-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 14px 12px;
-  border-top: 1px solid rgba(231, 113, 51, 0.1);
-  background: linear-gradient(0deg, #10151f 0%, #0c1019 100%);
-  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.25);
+  padding: 10px 12px 14px;
 }
 
 .chat-panel__input {
   flex: 1;
-  height: 40px;
-  padding: 0 14px;
-  background: #0c1019;
-  border: 1px solid rgba(231, 113, 51, 0.12);
-  border-radius: 10px;
+  height: 42px;
+  padding: 0 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 22px;
   color: #e2e8f0;
   font-size: 13px;
   outline: none;
-  transition: all 0.15s ease;
-  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
 }
 
 .chat-panel__input::placeholder {
@@ -181,9 +189,9 @@
 }
 
 .chat-panel__input:focus {
-  border-color: rgba(231, 113, 51, 0.5);
-  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.3), 0 0 10px rgba(231, 113, 51, 0.1);
-  background: #131820;
+  border-color: rgba(231, 113, 51, 0.35);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 3px rgba(231, 113, 51, 0.08);
 }
 
 .chat-panel__mic-btn {
@@ -192,10 +200,10 @@
   justify-content: center;
   width: 34px;
   height: 34px;
-  border: 1px solid rgba(231, 113, 51, 0.12);
-  border-radius: 6px;
-  background: #131820;
-  color: #8892a5;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #5a6478;
   transition: all 0.15s ease;
   flex-shrink: 0;
   opacity: 0.4;
@@ -206,8 +214,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border: none;
   border-radius: 50%;
   background: linear-gradient(135deg, #E77133 0%, #c95a1f 100%);
@@ -215,13 +223,13 @@
   transition: all 0.15s ease;
   flex-shrink: 0;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(231, 113, 51, 0.25);
+  box-shadow: 0 2px 10px rgba(231, 113, 51, 0.3);
 }
 
 .chat-panel__send-btn:hover {
   background: linear-gradient(135deg, #f07d3f 0%, #d46425 100%);
-  box-shadow: 0 4px 14px rgba(231, 113, 51, 0.35);
-  transform: scale(1.05);
+  box-shadow: 0 4px 16px rgba(231, 113, 51, 0.4);
+  transform: scale(1.06);
 }
 
 /* ── Stop button ── */
@@ -229,10 +237,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   border: 1px solid #e74c3c;
-  border-radius: 6px;
+  border-radius: 50%;
   background: rgba(231, 76, 60, 0.12);
   color: #e74c3c;
   transition: all 0.12s ease;
@@ -243,6 +251,7 @@
 .chat-panel__stop-btn:hover {
   background: rgba(231, 76, 60, 0.25);
 }
+
 
 /* ── Typing indicator ── */
 .chat-panel__typing {

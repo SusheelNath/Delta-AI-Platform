@@ -2,26 +2,46 @@
   position: relative;
   width: 100%;
   height: 100%;
-  background: radial-gradient(ellipse at 50% 50%, #0f1a2e 0%, #0a1222 60%, #080e1a 100%);
+  background: linear-gradient(180deg, #111d33 0%, #0c1525 35%, #080e1a 70%, #060a12 100%);
   overflow: hidden;
+}
+
+/* Radial glow behind model */
+.xeokit-viewer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(30, 60, 120, 0.12) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 1;
 }
 
 .xeokit-viewer__canvas {
   width: 100%;
   height: 100%;
   display: block;
+  position: relative;
+  z-index: 0;
 }
 
-/* NavCube */
+/* NavCube — floating, no box */
 .xeokit-viewer__navcube {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 14px;
+  right: 14px;
   width: 120px;
   height: 120px;
   pointer-events: all;
-  border-radius: 8px;
+  border-radius: 0;
   opacity: 0.85;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  transition: opacity 0.3s ease;
+}
+
+.xeokit-viewer__navcube:hover {
+  opacity: 1;
 }
 
 /* Loading / Error overlay */

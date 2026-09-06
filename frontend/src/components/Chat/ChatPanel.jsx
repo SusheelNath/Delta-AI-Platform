@@ -5,7 +5,7 @@ import './ChatPanel.css';
 
 const WELCOME_MESSAGE = {
   role: 'delta',
-  text: 'Hello! I\'m Delta AI. Ask me about any space, floor, or facility in the hospital \u2014 or click a room in the 3D view and ask me about it.',
+  text: 'Hello! I\'m Delta AI. Ask me about any space, floor, facility in the hospital, or click a room in the 3D view and ask me about it.',
   time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
 };
 
@@ -204,44 +204,47 @@ export default function ChatPanel() {
           </div>
         )}
 
+
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <div className="chat-panel__input-area">
-        <input
-          ref={inputRef}
-          type="text"
-          className="chat-panel__input"
-          placeholder={selectedSpace ? `Ask about ${selectedSpace.space_name || 'this space'}...` : 'Ask Delta...'}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={isGenerating}
-        />
-        <button
-          className="chat-panel__mic-btn"
-          title="Voice input coming in Phase 3"
-          disabled
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M8 1a2.5 2.5 0 0 0-2.5 2.5v4a2.5 2.5 0 0 0 5 0v-4A2.5 2.5 0 0 0 8 1z" stroke="currentColor" strokeWidth="1.2"/>
-            <path d="M3.5 7v.5a4.5 4.5 0 0 0 9 0V7M8 12v2.5M5.5 14.5h5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-          </svg>
-        </button>
-        {isGenerating ? (
-          <button className="chat-panel__stop-btn" onClick={handleStop} title="Stop generating">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <rect x="2" y="2" width="10" height="10" rx="2" fill="currentColor"/>
-            </svg>
-          </button>
-        ) : (
-          <button className="chat-panel__send-btn" onClick={handleSend} title="Send message">
+      {/* Input tray */}
+      <div className="chat-panel__input-tray">
+        <div className="chat-panel__input-row">
+          <input
+            ref={inputRef}
+            type="text"
+            className="chat-panel__input"
+            placeholder={selectedSpace ? `Ask about ${selectedSpace.space_name || 'this space'}...` : 'Ask Delta about any space...'}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={isGenerating}
+          />
+          <button
+            className="chat-panel__mic-btn"
+            title="Voice input coming in Phase 3"
+            disabled
+          >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M14 2L7 9M14 2l-4.5 12L7 9 2 7.5 14 2z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M8 1a2.5 2.5 0 0 0-2.5 2.5v4a2.5 2.5 0 0 0 5 0v-4A2.5 2.5 0 0 0 8 1z" stroke="currentColor" strokeWidth="1.2"/>
+              <path d="M3.5 7v.5a4.5 4.5 0 0 0 9 0V7M8 12v2.5M5.5 14.5h5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
             </svg>
           </button>
-        )}
+          {isGenerating ? (
+            <button className="chat-panel__stop-btn" onClick={handleStop} title="Stop generating">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <rect x="2" y="2" width="10" height="10" rx="2" fill="currentColor"/>
+              </svg>
+            </button>
+          ) : (
+            <button className="chat-panel__send-btn" onClick={handleSend} title="Send message">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M14 2L7 9M14 2l-4.5 12L7 9 2 7.5 14 2z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
