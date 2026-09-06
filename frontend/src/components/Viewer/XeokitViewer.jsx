@@ -6,7 +6,7 @@ import { unprojectPolygon, earClipTriangulate, computePolygonMetrics } from '../
 import './XeokitViewer.css';
 
 let Viewer, XKTLoaderPlugin, NavCubePlugin, StoreyViewsPlugin, SectionPlanesPlugin;
-let XMesh, XReadableGeometry, XPhongMaterial;
+let XMesh, XReadableGeometry, XPhongMaterial, XEdgeMaterial;
 
 async function loadXeokit() {
   if (Viewer) return;
@@ -19,6 +19,7 @@ async function loadXeokit() {
   XMesh = sdk.Mesh;
   XReadableGeometry = sdk.ReadableGeometry;
   XPhongMaterial = sdk.PhongMaterial;
+  XEdgeMaterial = sdk.EdgeMaterial;
 }
 
 const MEP_SPACE_CLASSES = new Set([
@@ -164,10 +165,9 @@ export default function XeokitViewer() {
         }
       }
 
-      // ── Edge material — black outlines on geometry boundaries ──
-      viewer.scene.edgeMaterial.edgeColor = [0, 0, 0];
-      viewer.scene.edgeMaterial.edgeAlpha = 0.4;
-      viewer.scene.edgeMaterial.edgeWidth = 1;
+      // ── Edge material — disabled (no black outlines) ──
+      viewer.scene.edgeMaterial.edgeAlpha = 0;
+      viewer.scene.edgeMaterial.edgeWidth = 0;
 
       // Highlight material (primary selection)
       viewer.scene.highlightMaterial.fill = true;
@@ -181,9 +181,7 @@ export default function XeokitViewer() {
       viewer.scene.xrayMaterial.fill = true;
       viewer.scene.xrayMaterial.fillAlpha = 0.05;
       viewer.scene.xrayMaterial.fillColor = [0.6, 0.6, 0.7];
-      viewer.scene.xrayMaterial.edges = true;
-      viewer.scene.xrayMaterial.edgeAlpha = 0.25;
-      viewer.scene.xrayMaterial.edgeColor = [0.4, 0.4, 0.5];
+      viewer.scene.xrayMaterial.edges = false;
 
       if (navCubeCanvasRef.current) {
         new NavCubePlugin(viewer, {
@@ -267,7 +265,7 @@ export default function XeokitViewer() {
       setLoadProgress(82);
 
       try {
-        const model = xktLoader.load({ id: 'hospital', xkt: xktData, edges: true });
+        const model = xktLoader.load({ id: 'hospital', xkt: xktData, edges: false });
         modelRef.current = model;
 
         model.on('loaded', () => {
@@ -1194,30 +1192,57 @@ export default function XeokitViewer() {
     };
   }, [activeFloorId, floorPolygons, snapshotMatrixKey, loading]);
 
-  // Show orange fill on hover/selection, blue for route target/path, near-invisible otherwise
+  // Route & selection highlights: orange start → blue path → green destination
+  const routeEdgeMatsRef = useRef(null); // lazily created EdgeMaterial instances
   useEffect(() => {
+    const routeStartGuid = activeRoute?.path?.[0]?.ifc_guid || null;
     const routePathGuids = activeRoute?.path ? new Set(activeRoute.path.map((p) => p.ifc_guid)) : null;
+
+    // Lazily create shared EdgeMaterial instances for route glow
+    const v = viewerRef.current;
+    if (XEdgeMaterial && v && !routeEdgeMatsRef.current) {
+      routeEdgeMatsRef.current = {
+        source: new XEdgeMaterial(v.scene, { edgeColor: [1.0, 0.62, 0.26], edgeAlpha: 0.9, edgeWidth: 3 }),
+        corridor: new XEdgeMaterial(v.scene, { edgeColor: [0.39, 0.67, 1.0], edgeAlpha: 0.85, edgeWidth: 2 }),
+        dest: new XEdgeMaterial(v.scene, { edgeColor: [0.20, 0.83, 0.60], edgeAlpha: 0.9, edgeWidth: 3 }),
+      };
+    }
+    const edgeMats = routeEdgeMatsRef.current;
+
     for (const [guid, mesh] of savedMeshesRef.current) {
       const isHoverOrSelect = hoveredPolygonGuid === guid || selectedSpaceId === guid;
+      const isRouteStart = routeStartGuid === guid;
       const isRouteTarget = activeRoute?.targetGuid === guid;
-      const isRoutePath = routePathGuids?.has(guid);
+      const isRoutePath = routePathGuids?.has(guid) && !isRouteStart && !isRouteTarget;
       try {
-        if (isRouteTarget) {
-          mesh.material.alpha = 0.45;
-          mesh.material.diffuse = [0.22, 0.55, 0.99];
-          mesh.material.emissive = [0.05, 0.15, 0.4];
+        if (isRouteStart) {
+          mesh.material.alpha = 0.55;
+          mesh.material.diffuse = [0.91, 0.44, 0.20];
+          mesh.material.emissive = [0.45, 0.18, 0.04];
+          mesh.edges = true;
+          if (edgeMats) mesh.edgeMaterial = edgeMats.source;
+        } else if (isRouteTarget) {
+          mesh.material.alpha = 0.55;
+          mesh.material.diffuse = [0.20, 0.83, 0.60];
+          mesh.material.emissive = [0.06, 0.35, 0.18];
+          mesh.edges = true;
+          if (edgeMats) mesh.edgeMaterial = edgeMats.dest;
         } else if (isRoutePath) {
-          mesh.material.alpha = 0.2;
-          mesh.material.diffuse = [0.22, 0.55, 0.99];
-          mesh.material.emissive = [0.02, 0.08, 0.2];
+          mesh.material.alpha = 0.38;
+          mesh.material.diffuse = [0.25, 0.58, 1.0];
+          mesh.material.emissive = [0.06, 0.18, 0.45];
+          mesh.edges = true;
+          if (edgeMats) mesh.edgeMaterial = edgeMats.corridor;
         } else if (isHoverOrSelect) {
           mesh.material.alpha = 0.45;
           mesh.material.diffuse = [1.0, 0.55, 0.2];
           mesh.material.emissive = [0.4, 0.15, 0.0];
+          mesh.edges = false;
         } else {
           mesh.material.alpha = 0.01;
           mesh.material.diffuse = [0, 0, 0];
           mesh.material.emissive = [0, 0, 0];
+          mesh.edges = false;
         }
       } catch {}
     }
@@ -1257,22 +1282,7 @@ export default function XeokitViewer() {
       )}
 
 
-      {/* Save button */}
-      <button
-        className="xeokit-viewer__save-btn"
-        onClick={handleFullSave}
-        disabled={saving}
-        title="Save all polygon data to backend, backup, and GitHub"
-      >
-        {saving ? 'Saving...' : 'SAVE'}
-      </button>
-
-      {/* Save result toast */}
-      {saveResult && (
-        <div className={`xeokit-viewer__save-toast ${saveResult.ok ? 'xeokit-viewer__save-toast--ok' : 'xeokit-viewer__save-toast--err'}`}>
-          {saveResult.msg}
-        </div>
-      )}
+      {/* Save button — hidden (kept for future use) */}
 
       {/* Polygon hover tooltip */}
       {polygonTooltip && (

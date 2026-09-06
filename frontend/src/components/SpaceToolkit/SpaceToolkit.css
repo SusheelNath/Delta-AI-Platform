@@ -475,22 +475,34 @@
   letter-spacing: 0.5px;
 }
 
-.space-toolkit__route-dist {
+.space-toolkit__route-metrics {
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.space-toolkit__route-dist {
   font-size: 11px;
   font-weight: 700;
   color: #58a6ff;
-  background: rgba(56, 139, 253, 0.12);
-  border: 1px solid rgba(56, 139, 253, 0.25);
-  padding: 3px 8px;
-  border-radius: 10px;
   font-variant-numeric: tabular-nums;
 }
 
+.space-toolkit__route-time {
+  font-size: 9px;
+  font-weight: 500;
+  color: #8b949e;
+  letter-spacing: 0.2px;
+}
+
 .space-toolkit__route-card--active .space-toolkit__route-dist {
-  background: rgba(56, 139, 253, 0.25);
-  border-color: rgba(56, 139, 253, 0.45);
   color: #a5d6ff;
+}
+
+.space-toolkit__route-card--active .space-toolkit__route-time {
+  color: #a7f3d0;
 }
 
 .space-toolkit__ask-btn {

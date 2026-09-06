@@ -14,9 +14,10 @@
   height: 42px;
   min-height: 42px;
   padding: 0 16px;
-  background: #0d1117;
-  border-bottom: 1px solid #2d3548;
+  background: linear-gradient(180deg, #10151f 0%, #0d1117 100%);
+  border-bottom: 2px solid rgba(231, 113, 51, 0.25);
   z-index: 10;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
 }
 
 .app-header__brand {
@@ -28,12 +29,13 @@
 .app-header__icon {
   font-size: 16px;
   color: #E77133;
+  filter: drop-shadow(0 0 6px rgba(231, 113, 51, 0.5));
 }
 
 .app-header__title {
   font-size: 18px;
   font-weight: 600;
-  color: #e2e8f0;
+  color: #f0f4f8;
   letter-spacing: 0.5px;
 }
 
@@ -64,6 +66,7 @@
   border-right: 1px solid #2d3548;
 }
 
+
 .app-viewer-panel {
   position: relative;
   display: flex;
@@ -73,6 +76,7 @@
   border-right: 1px solid #2d3548;
   overflow: hidden;
 }
+
 
 .app-viewer-container {
   position: relative;

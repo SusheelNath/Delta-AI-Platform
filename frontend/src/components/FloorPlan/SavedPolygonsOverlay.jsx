@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import useStore from '../../store/useStore';
 import { fetchSpaceByGuid } from '../../api/client';
 import { computePolygonMetrics } from '../../utils/unprojectPolygon';
@@ -36,6 +36,17 @@ export default function SavedPolygonsOverlay({ floorId, onTooltipChange }) {
   const selectSpace = useStore((s) => s.selectSpace);
   const mappingMode = useStore((s) => s.mappingMode);
   const isDrawing = useStore((s) => s.mappingMode && s.pendingPolygonVertices.length > 0);
+
+  // Build position map for gradient intensity along route path (Option C)
+  const routePathMap = useMemo(() => {
+    if (!activeRoute?.path) return null;
+    const map = new Map();
+    const len = activeRoute.path.length;
+    activeRoute.path.forEach((p, i) => {
+      map.set(p.ifc_guid, len > 1 ? i / (len - 1) : 0);
+    });
+    return map;
+  }, [activeRoute]);
 
   const handleClick = useCallback(async (e, polygon) => {
     e.stopPropagation();
@@ -85,6 +96,9 @@ export default function SavedPolygonsOverlay({ floorId, onTooltipChange }) {
 
   if (polygons.length === 0) return null;
 
+  const routeStartGuid = activeRoute?.path?.[0]?.ifc_guid || null;
+  const hasRoute = !!routePathMap;
+
   return (
     <svg
       className="saved-polygons-overlay"
@@ -96,32 +110,63 @@ export default function SavedPolygonsOverlay({ floorId, onTooltipChange }) {
         const pts = poly.vertices.map((v) => `${v[0]},${v[1]}`).join(' ');
         const isSelected = selectedSpaceId === poly.ifc_guid;
         const isHovered = hoveredPolygonGuid === poly.ifc_guid;
-        const isEdited = poly.edited === true;
-        const isAssigned = poly.space_name && poly.space_name !== 'Unassigned';
 
-        // Check if this polygon is part of the active route
+        // Route role detection
+        const isRouteStart = routeStartGuid === poly.ifc_guid;
         const isRouteTarget = activeRoute?.targetGuid === poly.ifc_guid;
-        const isRoutePath = activeRoute?.path?.some((p) => p.ifc_guid === poly.ifc_guid);
+        const routeT = routePathMap?.get(poly.ifc_guid);
+        const isRouteMid = routeT !== undefined && !isRouteStart && !isRouteTarget;
 
-        // Blue for routing, orange for hover/select, transparent otherwise
-        const fill = isRouteTarget ? 'rgba(56, 139, 253, 0.35)'
-          : isRoutePath ? 'rgba(56, 139, 253, 0.15)'
-          : isSelected ? 'rgba(255, 140, 50, 0.35)'
-          : isHovered ? 'rgba(255, 140, 50, 0.25)'
-          : 'transparent';
-        const stroke = isRouteTarget ? '#79b8ff'
-          : isRoutePath ? 'rgba(56, 139, 253, 0.4)'
-          : isSelected || isHovered ? '#FFB366'
-          : 'transparent';
+        let fill, stroke, sw, className = 'saved-polygon';
+
+        if (isRouteStart) {
+          // Source — warm amber with pulsing border
+          fill = 'rgba(255, 159, 67, 0.45)';
+          stroke = '#ff9f43';
+          sw = '2.5';
+        } else if (isRouteTarget) {
+          // Destination — vivid emerald
+          fill = 'rgba(52, 211, 153, 0.55)';
+          stroke = '#34d399';
+          sw = '3';
+        } else if (isRouteMid) {
+          // Corridor gradient ribbon: orange-tinted blue → pure electric blue
+          const r = Math.round(120 - routeT * 41);    // 120 → 79
+          const g = Math.round(140 + routeT * 32);    // 140 → 172
+          const b = 255;
+          const fillOp = (0.30 + routeT * 0.20).toFixed(2);
+          const strokeOp = (0.50 + routeT * 0.50).toFixed(2);
+          fill = `rgba(${r}, ${g}, ${b}, ${fillOp})`;
+          stroke = `rgba(${r}, ${g}, ${b}, ${strokeOp})`;
+          sw = '2';
+          className += ' saved-polygon--route-mid';
+        } else if (hasRoute) {
+          // Dark-focus: dim all non-route polygons
+          fill = 'rgba(0, 0, 0, 0.03)';
+          stroke = 'transparent';
+          sw = '0.25';
+        } else if (isSelected) {
+          fill = 'rgba(255, 140, 50, 0.35)';
+          stroke = '#FFB366';
+          sw = '0.4';
+        } else if (isHovered) {
+          fill = 'rgba(255, 140, 50, 0.25)';
+          stroke = '#FFB366';
+          sw = '0.25';
+        } else {
+          fill = 'transparent';
+          stroke = 'transparent';
+          sw = '0.25';
+        }
 
         return (
           <polygon
             key={poly.ifc_guid}
             points={pts}
-            className={`saved-polygon ${isSelected ? 'saved-polygon--selected' : ''} ${isHovered ? 'saved-polygon--hovered' : ''}`}
+            className={className}
             fill={fill}
             stroke={stroke}
-            strokeWidth={isSelected ? '0.4' : '0.25'}
+            strokeWidth={sw}
             vectorEffect="non-scaling-stroke"
             style={{ cursor: isDrawing ? 'crosshair' : 'pointer', pointerEvents: isDrawing ? 'none' : 'all' }}
             onClick={(e) => handleClick(e, poly)}

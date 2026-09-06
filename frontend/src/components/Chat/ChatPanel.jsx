@@ -175,19 +175,27 @@ export default function ChatPanel() {
 
       {/* Messages */}
       <div className="chat-panel__messages">
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`chat-panel__message chat-panel__message--${msg.role}`}
-          >
-            <div className="chat-panel__bubble">
-              <p className="chat-panel__bubble-text">{msg.text}</p>
-              {msg.time && (
-                <span className="chat-panel__bubble-time">{msg.time}</span>
+        {messages.map((msg, i) => {
+          const prev = messages[i - 1];
+          const showDivider = i > 0 && msg.role === 'user' && prev?.role === 'delta';
+          return (
+            <React.Fragment key={i}>
+              {showDivider && (
+                <div className="chat-panel__divider">
+                  <span className="chat-panel__divider-text">{msg.time}</span>
+                </div>
               )}
-            </div>
-          </div>
-        ))}
+              <div className={`chat-panel__message chat-panel__message--${msg.role}`}>
+                <div className="chat-panel__bubble">
+                  <p className="chat-panel__bubble-text">{msg.text}</p>
+                  {msg.time && (
+                    <span className="chat-panel__bubble-time">{msg.time}</span>
+                  )}
+                </div>
+              </div>
+            </React.Fragment>
+          );
+        })}
 
         {/* Typing indicator while generating */}
         {isGenerating && messages.length > 0 && messages[messages.length - 1]?.text === '' && (

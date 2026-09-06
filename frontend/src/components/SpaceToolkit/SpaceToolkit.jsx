@@ -84,7 +84,9 @@ export default function SpaceToolkit() {
         path: data.path,
         targetGuid: data.target.ifc_guid,
         centroids: data.centroids,
+        pathLine: data.pathLine,
         distanceM: data.distanceM,
+        waypoints: data.waypoints,
       });
     }
   };
@@ -220,7 +222,10 @@ export default function SpaceToolkit() {
                   <span className="space-toolkit__route-name">{routing.toElevator.target.space_name || 'Elevator'}</span>
                   <span className="space-toolkit__route-type">Nearest Elevator</span>
                 </span>
-                <span className="space-toolkit__route-dist">{routing.toElevator.distanceM.toFixed(1)} m</span>
+                <span className="space-toolkit__route-metrics">
+                  <span className="space-toolkit__route-dist">{routing.toElevator.distanceM.toFixed(1)} m</span>
+                  <span className="space-toolkit__route-time">{routing.toElevator.distanceM < 72 ? `~${Math.max(5, Math.round(routing.toElevator.distanceM / 1.2 / 5) * 5)} sec` : `~${Math.max(1, Math.round(routing.toElevator.distanceM / 72))} min`}</span>
+                </span>
               </button>
             ) : (
               <div className="space-toolkit__route-card space-toolkit__route-card--empty">
@@ -250,7 +255,10 @@ export default function SpaceToolkit() {
                   <span className="space-toolkit__route-name">{routing.toStaircase.target.space_name || 'Staircase'}</span>
                   <span className="space-toolkit__route-type">Nearest Staircase</span>
                 </span>
-                <span className="space-toolkit__route-dist">{routing.toStaircase.distanceM.toFixed(1)} m</span>
+                <span className="space-toolkit__route-metrics">
+                  <span className="space-toolkit__route-dist">{routing.toStaircase.distanceM.toFixed(1)} m</span>
+                  <span className="space-toolkit__route-time">{routing.toStaircase.distanceM < 72 ? `~${Math.max(5, Math.round(routing.toStaircase.distanceM / 1.2 / 5) * 5)} sec` : `~${Math.max(1, Math.round(routing.toStaircase.distanceM / 72))} min`}</span>
+                </span>
               </button>
             ) : (
               <div className="space-toolkit__route-card space-toolkit__route-card--empty">

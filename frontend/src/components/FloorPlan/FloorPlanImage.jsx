@@ -227,43 +227,22 @@ export default function FloorPlanImage({ floorIdOverride }) {
           alt="Floor plan"
           className="floor-plan-image__img"
           draggable={false}
-          style={isSearching ? { filter: 'brightness(0.6)' } : undefined}
+          style={isSearching ? { filter: 'brightness(0.6)' } : activeRoute ? { filter: 'brightness(0.35)' } : undefined}
         />
 
         {/* Saved polygon outlines */}
         <SavedPolygonsOverlay floorId={activeFloorId} onTooltipChange={setPolygonTooltip} />
 
-        {/* Routing navigation line */}
-        {activeRoute?.centroids && activeRoute.centroids.length >= 2 && (
-          <svg
-            className="routing-line-overlay"
-            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
-            viewBox="0 0 100 100"
-            preserveAspectRatio="none"
+        {/* Route waypoint labels */}
+        {activeRoute?.waypoints?.map((wp) => (
+          <span
+            key={wp.guid}
+            className={`floor-plan-image__route-label ${wp.isDestination ? 'floor-plan-image__route-label--dest' : ''}`}
+            style={{ left: `${wp.centroid[0]}%`, top: `${wp.centroid[1]}%` }}
           >
-            <polyline
-              points={activeRoute.centroids.map((c) => `${c[0]},${c[1]}`).join(' ')}
-              fill="none"
-              stroke="#388bfd"
-              strokeWidth="0.35"
-              vectorEffect="non-scaling-stroke"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeDasharray="4 2"
-            />
-            {/* Start dot */}
-            <circle cx={activeRoute.centroids[0][0]} cy={activeRoute.centroids[0][1]} r="0.5" fill="#388bfd" />
-            {/* End dot */}
-            <circle
-              cx={activeRoute.centroids[activeRoute.centroids.length - 1][0]}
-              cy={activeRoute.centroids[activeRoute.centroids.length - 1][1]}
-              r="0.6"
-              fill="#79b8ff"
-              stroke="#388bfd"
-              strokeWidth="0.15"
-            />
-          </svg>
-        )}
+            {wp.isDestination ? wp.name : `via ${wp.name}`}
+          </span>
+        ))}
 
         {/* Search-matched labels */}
         {isSearching && spacePositions.map((sp) => {
@@ -287,6 +266,21 @@ export default function FloorPlanImage({ floorIdOverride }) {
           {polygonTooltip.area && <div className="saved-polygon__tooltip-area">{polygonTooltip.area}</div>}
         </div>
       )}
+
+      {/* Route distance & travel time badge */}
+      {activeRoute?.distanceM != null && (() => {
+        const secs = Math.round(activeRoute.distanceM / 1.2);
+        const timeStr = secs < 60
+          ? `~${Math.max(5, Math.round(secs / 5) * 5)} sec walk`
+          : `~${Math.max(1, Math.round(secs / 60))} min walk`;
+        return (
+          <div className="floor-plan-image__route-badge">
+            <span className="floor-plan-image__route-badge-dist">{activeRoute.distanceM.toFixed(1)} m</span>
+            <span className="floor-plan-image__route-badge-sep" />
+            <span className="floor-plan-image__route-badge-time">{timeStr}</span>
+          </div>
+        );
+      })()}
 
       {/* Search result count */}
       {isSearching && (

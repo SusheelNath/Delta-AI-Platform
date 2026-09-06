@@ -178,15 +178,19 @@ export default function RoomDirectory() {
                 </span>
               </span>
             </button>
-            {!collapsed && fnPolygons.map((poly) => (
-              <PolygonCard
-                key={poly.ifc_guid}
-                polygon={poly}
-                isSelected={poly.ifc_guid === selectedSpaceId}
-                onClick={handleCardClick}
-                selectedRef={poly.ifc_guid === selectedSpaceId ? selectedRef : null}
-              />
-            ))}
+            <div className={`room-directory__group-body ${collapsed ? 'room-directory__group-body--collapsed' : ''}`}>
+              <div className="room-directory__group-body-inner">
+                {fnPolygons.map((poly) => (
+                  <PolygonCard
+                    key={poly.ifc_guid}
+                    polygon={poly}
+                    isSelected={poly.ifc_guid === selectedSpaceId}
+                    onClick={handleCardClick}
+                    selectedRef={poly.ifc_guid === selectedSpaceId ? selectedRef : null}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
         );
       })}

@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #0c1528;
+  background: #0a1220;
 }
 
 /* ══════════════════════════════════════
@@ -10,25 +10,25 @@
    ══════════════════════════════════════ */
 .floorplan-panel__hero {
   padding: 16px 16px 12px;
-  background: #101d32;
-  border-bottom: 1px solid #243a58;
+  background: linear-gradient(180deg, rgba(231, 113, 51, 0.04) 0%, #0d1626 100%);
+  border-bottom: 1px solid rgba(231, 113, 51, 0.1);
 }
 
 .floorplan-panel__hero-select {
   width: 100%;
   height: 38px;
   padding: 0 12px;
-  border: 1px solid #2e4a6e;
+  border: 1px solid rgba(231, 113, 51, 0.2);
   border-radius: 8px;
-  background: #152640;
+  background: #111e32;
   color: #ffffff;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   outline: none;
-  transition: border-color 0.15s;
+  transition: all 0.15s ease;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg width='12' height='7' viewBox='0 0 12 7' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2394a3b8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='7' viewBox='0 0 12 7' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23E77133' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
   padding-right: 32px;
@@ -36,7 +36,8 @@
 
 .floorplan-panel__hero-select:hover,
 .floorplan-panel__hero-select:focus {
-  border-color: #E77133;
+  border-color: rgba(231, 113, 51, 0.5);
+  box-shadow: 0 0 10px rgba(231, 113, 51, 0.1);
 }
 
 .floorplan-panel__hero-stats {
@@ -60,7 +61,7 @@
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background: #101d32;
+  background: #0d1626;
 }
 
 .floorplan-panel__search-icon {
@@ -72,13 +73,13 @@
   flex: 1;
   height: 30px;
   padding: 0 10px;
-  border: 1px solid #243a58;
+  border: 1px solid rgba(231, 113, 51, 0.12);
   border-radius: 8px;
-  background: #152640;
+  background: #111e32;
   color: #f0f4f8;
   font-size: 12px;
   outline: none;
-  transition: border-color 0.15s ease;
+  transition: all 0.15s ease;
 }
 
 .floorplan-panel__search-input::placeholder {
@@ -86,8 +87,9 @@
 }
 
 .floorplan-panel__search-input:focus {
-  border-color: #E77133;
-  background: #1a2d4a;
+  border-color: rgba(231, 113, 51, 0.5);
+  background: #15253c;
+  box-shadow: 0 0 8px rgba(231, 113, 51, 0.1);
 }
 
 .floorplan-panel__search-clear {
@@ -98,7 +100,7 @@
   height: 20px;
   border: none;
   border-radius: 50%;
-  background: #2e4a6e;
+  background: #263e5a;
   color: #c8d5e4;
   cursor: pointer;
   flex-shrink: 0;
@@ -106,7 +108,7 @@
 }
 
 .floorplan-panel__search-clear:hover {
-  background: #3a5a82;
+  background: #304e72;
   color: #ffffff;
 }
 
@@ -117,8 +119,8 @@
   display: flex;
   align-items: center;
   padding: 6px 16px 10px;
-  background: #101d32;
-  border-bottom: 1px solid #243a58;
+  background: #0d1626;
+  border-bottom: 1px solid rgba(231, 113, 51, 0.08);
   border-radius: 8px;
   overflow: hidden;
   gap: 0;
@@ -131,8 +133,8 @@
   gap: 5px;
   flex: 1;
   height: 30px;
-  border: 1px solid #2e4a6e;
-  background: #152640;
+  border: 1px solid #263e5a;
+  background: #111e32;
   color: #94a3b8;
   font-size: 11px;
   font-weight: 500;
@@ -151,7 +153,7 @@
 
 .floorplan-panel__seg-btn:hover {
   color: #f0f4f8;
-  background: #1a2d4a;
+  background: #15253c;
 }
 
 .floorplan-panel__seg-btn--active {
@@ -176,8 +178,8 @@
   width: 100%;
   padding: 8px;
   border: none;
-  border-top: 1px solid #243a58;
-  background: #101d32;
+  border-top: 1px solid #1e3048;
+  background: #0d1626;
   color: #94a3b8;
   font-size: 11px;
   font-weight: 500;
@@ -187,7 +189,7 @@
 
 .floorplan-panel__compare-text-btn:hover {
   color: #f0f4f8;
-  background: #152640;
+  background: #111e32;
 }
 
 .floorplan-panel__compare-text-btn--active {
@@ -212,23 +214,23 @@
 
 .floorplan-panel__compare-divider {
   width: 1px;
-  background: #243a58;
+  background: #1e3048;
   flex-shrink: 0;
 }
 
 .floorplan-panel__compare-selector {
   padding: 6px 8px;
-  border-bottom: 1px solid #243a58;
-  background: #101d32;
+  border-bottom: 1px solid #1e3048;
+  background: #0d1626;
 }
 
 .floorplan-panel__compare-dropdown {
   width: 100%;
   height: 26px;
   padding: 0 8px;
-  border: 1px solid #2e4a6e;
+  border: 1px solid #263e5a;
   border-radius: 6px;
-  background: #152640;
+  background: #111e32;
   color: #f0f4f8;
   font-size: 11px;
   cursor: pointer;
@@ -312,7 +314,7 @@
   left: 50%;
   transform: translateX(-50%);
   background: rgba(12, 21, 40, 0.9);
-  border: 1px solid #2e4a6e;
+  border: 1px solid #263e5a;
   border-radius: 12px;
   padding: 4px 12px;
   font-size: 11px;
@@ -328,15 +330,20 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #7b8ca1;
+  color: #94a3b8;
   font-size: 12px;
   gap: 10px;
+}
+
+.floor-plan-image__empty svg,
+.floor-plan-image__empty p {
+  color: #94a3b8;
 }
 
 .floor-plan-image__spinner {
   width: 24px;
   height: 24px;
-  border: 2px solid #2e4a6e;
+  border: 2px solid #263e5a;
   border-top-color: #E77133;
   border-radius: 50%;
   animation: fp-spin 0.8s linear infinite;
@@ -405,6 +412,89 @@
   margin-top: 1px;
 }
 
+/* ── Route navigation line ── */
+.routing-line-overlay__line {
+  animation: route-flow 1.0s linear infinite;
+}
+
+@keyframes route-flow {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: -32; }
+}
+
+/* ── Route waypoint labels ── */
+.floor-plan-image__route-label {
+  position: absolute;
+  transform: translate(-50%, -120%);
+  font-size: 9px;
+  font-weight: 600;
+  color: #c8dcff;
+  background: rgba(0, 0, 0, 0.85);
+  padding: 3px 9px 3px 12px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 4;
+  border: 1px solid rgba(79, 172, 254, 0.40);
+  border-left: 3px solid #4facfe;
+  letter-spacing: 0.3px;
+  box-shadow: 0 0 12px rgba(79, 172, 254, 0.20);
+  text-shadow: 0 0 6px rgba(79, 172, 254, 0.40);
+}
+
+.floor-plan-image__route-label--dest {
+  font-weight: 700;
+  font-size: 10px;
+  color: #a7f3d0;
+  border-color: rgba(52, 211, 153, 0.55);
+  border-left: 3px solid #34d399;
+  background: rgba(0, 0, 0, 0.88);
+  box-shadow: 0 0 16px rgba(52, 211, 153, 0.30);
+  text-shadow: 0 0 8px rgba(52, 211, 153, 0.50);
+}
+
+/* ── Route distance & time badge ── */
+.floor-plan-image__route-badge {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: rgba(0, 0, 0, 0.88);
+  border: 1px solid rgba(79, 172, 254, 0.45);
+  border-radius: 20px;
+  padding: 5px 16px;
+  z-index: 5;
+  pointer-events: none;
+  box-shadow: 0 0 20px rgba(79, 172, 254, 0.18), 0 2px 8px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(6px);
+}
+
+.floor-plan-image__route-badge-dist {
+  font-size: 12px;
+  font-weight: 700;
+  color: #4facfe;
+  letter-spacing: 0.3px;
+  text-shadow: 0 0 8px rgba(79, 172, 254, 0.40);
+}
+
+.floor-plan-image__route-badge-sep {
+  width: 1px;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.15);
+  margin: 0 10px;
+}
+
+.floor-plan-image__route-badge-time {
+  font-size: 11px;
+  font-weight: 500;
+  color: #a7f3d0;
+  letter-spacing: 0.2px;
+  text-shadow: 0 0 6px rgba(52, 211, 153, 0.35);
+}
+
 /* ── Mapping hint ── */
 .floor-plan-image__mapping-hint {
   position: absolute;
@@ -432,7 +522,7 @@
   right: 12px;
   background: rgba(12, 21, 40, 0.96);
   backdrop-filter: blur(12px);
-  border: 1px solid #2e4a6e;
+  border: 1px solid #263e5a;
   border-radius: 10px;
   padding: 14px 16px;
   width: 280px;
@@ -488,9 +578,9 @@
 .match-confirm-card__input {
   height: 28px;
   padding: 0 8px;
-  border: 1px solid #2e4a6e;
+  border: 1px solid #263e5a;
   border-radius: 6px;
-  background: #152640;
+  background: #111e32;
   color: #f0f4f8;
   font-size: 12px;
   font-weight: 500;
@@ -584,8 +674,8 @@
 }
 
 .match-confirm-card__btn--next {
-  background: #152640;
-  border-color: #2e4a6e;
+  background: #111e32;
+  border-color: #263e5a;
   color: #c8d5e4;
 }
 
@@ -596,7 +686,7 @@
 
 .match-confirm-card__btn--cancel {
   background: transparent;
-  border-color: #2e4a6e;
+  border-color: #263e5a;
   color: #7b8ca1;
 }
 
