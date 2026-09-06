@@ -118,6 +118,10 @@ const useStore = create((set, get) => ({
   messages: [],
   isGenerating: false,
 
+  // Voice (STT / TTS)
+  voiceActive: false,
+  voiceState: 'idle', // 'idle' | 'greeting' | 'listening' | 'acknowledging' | 'processing' | 'announcing'
+
   // ── Actions ──
 
   setFloors: (floors) => {
@@ -308,6 +312,9 @@ const useStore = create((set, get) => ({
   },
 
   setGenerating: (v) => set({ isGenerating: v }),
+
+  setVoiceActive: (v) => set({ voiceActive: v, voiceState: v ? 'greeting' : 'idle' }),
+  setVoiceState: (s) => set({ voiceState: s }),
 
   appendToLastMessage: (token) => {
     set((state) => {

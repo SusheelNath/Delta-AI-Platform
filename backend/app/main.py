@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import init_db
-from app.routers import floors, spaces, chat, exclusions, export, polygons, metrics, furnishings
+from app.routers import floors, spaces, chat, exclusions, export, polygons, metrics, furnishings, voice
 
 app = FastAPI(
     title="Delta Intelligence Platform",
@@ -26,6 +26,7 @@ app.include_router(export.router)
 app.include_router(polygons.router, prefix="/api")
 app.include_router(metrics.router, prefix="/api")
 app.include_router(furnishings.router, prefix="/api")
+app.include_router(voice.router, prefix="/api")
 
 
 @app.on_event("startup")

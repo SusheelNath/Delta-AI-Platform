@@ -1,6 +1,11 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import useStore from '../../store/useStore';
-import { streamChat } from '../../api/client';
+import { streamChat, transcribeAudio, speakText } from '../../api/client';
+import {
+  startWakeWordListener,
+  createAudioRecorder,
+  playAudio,
+} from '../../utils/voiceManager';
 import './ChatPanel.css';
 
 const WELCOME_MESSAGE = {
@@ -19,12 +24,29 @@ export default function ChatPanel() {
   const selectedSpaceId = useStore((s) => s.selectedSpaceId);
   const selectedSpace = useStore((s) => s.selectedSpace);
 
+  // Voice state
+  const voiceActive = useStore((s) => s.voiceActive);
+  const voiceState = useStore((s) => s.voiceState);
+  const setVoiceActive = useStore((s) => s.setVoiceActive);
+  const setVoiceState = useStore((s) => s.setVoiceState);
+
   const [input, setInput] = useState('');
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const abortRef = useRef(null);
 
-  // Add welcome message on first render
+  // Voice refs
+  const recorderRef = useRef(null);
+  const wakeStopRef = useRef(null);
+  const voiceActiveRef = useRef(false);
+  const prevGeneratingRef = useRef(false);
+
+  // Keep ref in sync so callbacks always see latest value
+  useEffect(() => {
+    voiceActiveRef.current = voiceActive;
+  }, [voiceActive]);
+
+  // ── Welcome message ──
   const welcomeSent = useRef(false);
   useEffect(() => {
     if (!welcomeSent.current && messages.length === 0) {
@@ -33,12 +55,12 @@ export default function ChatPanel() {
     }
   }, []);
 
-  // Auto-scroll
+  // ── Auto-scroll ──
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Expose input ref for MetadataCard "Ask Delta" prefill
+  // ── Expose input ref for MetadataCard "Ask Delta" prefill ──
   useEffect(() => {
     window.__deltaInputRef = inputRef;
     window.__deltaSetInput = setInput;
@@ -48,7 +70,7 @@ export default function ChatPanel() {
     };
   }, []);
 
-  // Abort in-flight stream on unmount
+  // ── Abort in-flight stream on unmount ──
   useEffect(() => {
     return () => {
       if (abortRef.current) {
@@ -58,6 +80,125 @@ export default function ChatPanel() {
     };
   }, []);
 
+  // ── Wake-word listener (always on) ──
+  useEffect(() => {
+    const stop = startWakeWordListener(
+      () => {
+        if (!voiceActiveRef.current) activateVoice();
+      },
+      () => {
+        if (voiceActiveRef.current) deactivateVoice();
+      },
+    );
+    wakeStopRef.current = stop;
+    return () => stop();
+  }, []);
+
+  // ── Post-generation: announce result if voice is active ──
+  useEffect(() => {
+    if (prevGeneratingRef.current && !isGenerating && voiceActiveRef.current) {
+      announceResult();
+    }
+    prevGeneratingRef.current = isGenerating;
+  }, [isGenerating]);
+
+  // ── Voice activation / deactivation ──
+
+  const activateVoice = useCallback(async () => {
+    setVoiceActive(true);
+    setVoiceState('greeting');
+
+    try {
+      const audio = await speakText('', 'greeting');
+      await playAudio(audio);
+    } catch (err) {
+      console.warn('[Voice] Greeting TTS failed:', err);
+    }
+
+    // After greeting, start listening
+    if (voiceActiveRef.current) {
+      setVoiceState('listening');
+      startListening();
+    }
+  }, [setVoiceActive, setVoiceState]);
+
+  const deactivateVoice = useCallback(() => {
+    setVoiceActive(false);
+    setVoiceState('idle');
+    if (recorderRef.current) {
+      recorderRef.current.stop().catch(() => {});
+      recorderRef.current = null;
+    }
+  }, [setVoiceActive, setVoiceState]);
+
+  // ── Recording & transcription ──
+
+  const startListening = useCallback(() => {
+    const recorder = createAudioRecorder();
+    recorderRef.current = recorder;
+    recorder.start(() => {
+      // Silence detected — process the audio
+      handleVoiceCapture();
+    }).catch((err) => {
+      console.error('[Voice] Mic access denied:', err);
+      deactivateVoice();
+    });
+  }, []);
+
+  const handleVoiceCapture = useCallback(async () => {
+    if (!recorderRef.current) return;
+    const blob = await recorderRef.current.stop();
+    recorderRef.current = null;
+
+    if (!voiceActiveRef.current) return;
+
+    setVoiceState('processing');
+
+    try {
+      const { text } = await transcribeAudio(blob);
+      if (!text || text.trim() === '') {
+        // No speech detected — resume listening
+        if (voiceActiveRef.current) {
+          setVoiceState('listening');
+          startListening();
+        }
+        return;
+      }
+
+      // Show transcription in input, then auto-submit
+      setInput(text);
+      handleSend(text);
+    } catch (err) {
+      console.error('[Voice] Transcription error:', err);
+      if (voiceActiveRef.current) {
+        setVoiceState('listening');
+        startListening();
+      }
+    }
+  }, [setVoiceState]);
+
+  // ── Announce result after generation completes ──
+
+  const announceResult = useCallback(async () => {
+    if (!voiceActiveRef.current) return;
+    setVoiceState('announcing');
+
+    try {
+      const announcingAudio = await speakText('', 'announcing');
+      await playAudio(announcingAudio);
+    } catch (err) {
+      console.warn('[Voice] Announcing TTS failed:', err);
+    }
+
+    // Loop back to listening for follow-up questions
+    if (voiceActiveRef.current) {
+      setVoiceState('listening');
+      startListening();
+    }
+  }, [setVoiceState]);
+
+  // ── Stop generation ──
+
   const handleStop = useCallback(() => {
     if (abortRef.current) {
       abortRef.current.abort();
@@ -66,8 +207,10 @@ export default function ChatPanel() {
     setGenerating(false);
   }, [setGenerating]);
 
-  const handleSend = useCallback(async () => {
-    const text = input.trim();
+  // ── Send message ──
+
+  const handleSend = useCallback(async (overrideText) => {
+    const text = (overrideText || input).trim();
     if (!text || isGenerating) return;
 
     const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -75,7 +218,20 @@ export default function ChatPanel() {
     addMessage(userMsg);
     setInput('');
 
-    // Create the placeholder assistant message for streaming into
+    // Play voice acknowledgment if voice is active
+    const voiceOn = voiceActiveRef.current;
+    if (voiceOn) {
+      setVoiceState('acknowledging');
+      try {
+        const ackAudio = await speakText('', 'acknowledging');
+        await playAudio(ackAudio);
+      } catch (_) {
+        /* non-critical */
+      }
+      setVoiceState('processing');
+    }
+
+    // Create placeholder for streaming
     const deltaMsg = { role: 'delta', text: '', time: '' };
     addMessage(deltaMsg);
     setGenerating(true);
@@ -84,11 +240,9 @@ export default function ChatPanel() {
     abortRef.current = abortController;
 
     try {
-      // Build conversation from current messages + this new user message
-      // (exclude the empty delta placeholder we just added)
       const currentMessages = useStore.getState().messages;
       const conversation = currentMessages.filter(
-        (m, i) => i < currentMessages.length - 1 // exclude the empty streaming placeholder
+        (m, i) => i < currentMessages.length - 1,
       );
 
       const reader = await streamChat(conversation, selectedSpaceId, abortController.signal);
@@ -99,8 +253,8 @@ export default function ChatPanel() {
         const { value, done } = await reader.read();
         if (done) break;
 
-        const text = decoder.decode(value, { stream: true });
-        const lines = text.split('\n');
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
 
         for (const line of lines) {
           if (!line.startsWith('data: ')) continue;
@@ -111,10 +265,8 @@ export default function ChatPanel() {
             continue;
           }
 
-          // Set timestamp on first token
           if (firstToken) {
             firstToken = false;
-            // Update the timestamp of the streaming message
             const msgs = useStore.getState().messages;
             const last = msgs[msgs.length - 1];
             if (last && last.role === 'delta' && last.text === '') {
@@ -134,7 +286,6 @@ export default function ChatPanel() {
         appendToLastMessage('\n\n_(stopped)_');
       } else {
         console.error('Chat error:', err);
-        // If the placeholder is still empty, put the error there
         const msgs = useStore.getState().messages;
         const last = msgs[msgs.length - 1];
         if (last && last.role === 'delta' && last.text === '') {
@@ -153,7 +304,17 @@ export default function ChatPanel() {
       setGenerating(false);
       abortRef.current = null;
     }
-  }, [input, isGenerating, addMessage, appendToLastMessage, setGenerating, selectedSpaceId]);
+  }, [input, isGenerating, addMessage, appendToLastMessage, setGenerating, selectedSpaceId, setVoiceState]);
+
+  // ── Mic button click ──
+
+  const handleMicToggle = useCallback(() => {
+    if (voiceActive) {
+      deactivateVoice();
+    } else {
+      activateVoice();
+    }
+  }, [voiceActive, activateVoice, deactivateVoice]);
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -161,6 +322,11 @@ export default function ChatPanel() {
       handleSend();
     }
   };
+
+  // Derive mic button CSS modifier
+  const micModifier = voiceActive
+    ? `chat-panel__mic-btn--${voiceState}`
+    : '';
 
   return (
     <div className="chat-panel">
@@ -180,6 +346,23 @@ export default function ChatPanel() {
           <span className="chat-panel__context-value">
             {selectedSpace.space_name || selectedSpace.id}
           </span>
+        </div>
+      )}
+
+      {/* Voice status bar */}
+      {voiceActive && (
+        <div className="chat-panel__voice-bar">
+          <span className="chat-panel__voice-dot" />
+          <span className="chat-panel__voice-label">
+            {voiceState === 'greeting' && 'Delta is greeting...'}
+            {voiceState === 'listening' && 'Listening...'}
+            {voiceState === 'processing' && 'Processing speech...'}
+            {voiceState === 'acknowledging' && 'Acknowledged'}
+            {voiceState === 'announcing' && 'Speaking response...'}
+          </span>
+          <button className="chat-panel__voice-stop" onClick={deactivateVoice}>
+            End
+          </button>
         </div>
       )}
 
@@ -214,7 +397,6 @@ export default function ChatPanel() {
           </div>
         )}
 
-
         <div ref={messagesEndRef} />
       </div>
 
@@ -225,20 +407,36 @@ export default function ChatPanel() {
             ref={inputRef}
             type="text"
             className="chat-panel__input"
-            placeholder={selectedSpace ? `Ask about ${selectedSpace.space_name || 'this space'}...` : 'Ask Delta about any space...'}
+            placeholder={
+              voiceActive && voiceState === 'listening'
+                ? 'Listening... speak now'
+                : selectedSpace
+                  ? `Ask about ${selectedSpace.space_name || 'this space'}...`
+                  : 'Ask Delta about any space...'
+            }
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={isGenerating}
           />
           <button
-            className="chat-panel__mic-btn"
-            title="Voice input coming in Phase 3"
-            disabled
+            className={`chat-panel__mic-btn ${micModifier}`}
+            title={voiceActive ? 'Deactivate voice (or say "Stop Delta")' : 'Activate voice (or say "Hi Delta")'}
+            onClick={handleMicToggle}
           >
+            {/* Mic icon — filled when active */}
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M8 1a2.5 2.5 0 0 0-2.5 2.5v4a2.5 2.5 0 0 0 5 0v-4A2.5 2.5 0 0 0 8 1z" stroke="currentColor" strokeWidth="1.2"/>
-              <path d="M3.5 7v.5a4.5 4.5 0 0 0 9 0V7M8 12v2.5M5.5 14.5h5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+              {voiceActive ? (
+                <>
+                  <path d="M8 1a2.5 2.5 0 0 0-2.5 2.5v4a2.5 2.5 0 0 0 5 0v-4A2.5 2.5 0 0 0 8 1z" fill="currentColor"/>
+                  <path d="M3.5 7v.5a4.5 4.5 0 0 0 9 0V7M8 12v2.5M5.5 14.5h5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                </>
+              ) : (
+                <>
+                  <path d="M8 1a2.5 2.5 0 0 0-2.5 2.5v4a2.5 2.5 0 0 0 5 0v-4A2.5 2.5 0 0 0 8 1z" stroke="currentColor" strokeWidth="1.2"/>
+                  <path d="M3.5 7v.5a4.5 4.5 0 0 0 9 0V7M8 12v2.5M5.5 14.5h5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                </>
+              )}
             </svg>
           </button>
           {isGenerating ? (
@@ -248,7 +446,7 @@ export default function ChatPanel() {
               </svg>
             </button>
           ) : (
-            <button className="chat-panel__send-btn" onClick={handleSend} title="Send message">
+            <button className="chat-panel__send-btn" onClick={() => handleSend()} title="Send message">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <path d="M14 2L7 9M14 2l-4.5 12L7 9 2 7.5 14 2z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>

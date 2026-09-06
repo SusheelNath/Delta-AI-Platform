@@ -262,3 +262,54 @@ export async function fullSavePolygons(polygons) {
   invalidateCache(`${BASE}/floors/`);
   return data;
 }
+
+// ── Voice (STT / TTS) ───────────────────────────────────────────
+
+/**
+ * Send recorded audio to the backend for Whisper transcription.
+ * POST /api/voice/transcribe
+ * @param {Blob} audioBlob - webm/opus audio from MediaRecorder
+ * @returns {Promise<{text: string}>}
+ */
+export async function transcribeAudio(audioBlob) {
+  const formData = new FormData();
+  formData.append('audio', audioBlob, 'recording.webm');
+  formData.append('language', 'en');
+  const res = await fetch(`${BASE}/voice/transcribe`, {
+    method: 'POST',
+    body: formData,
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Transcription failed: ${text}`);
+  }
+  return res.json();
+}
+
+/**
+ * Request TTS audio from the backend (XTTS-v2).
+ * POST /api/voice/speak
+ * @param {string} text      - text to synthesize
+ * @param {string|null} cannedKey - "greeting" | "acknowledging" | "announcing"
+ * @returns {Promise<ArrayBuffer>} WAV audio bytes
+ */
+export async function speakText(text, cannedKey = null) {
+  const res = await fetch(`${BASE}/voice/speak`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, canned_key: cannedKey }),
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`TTS failed: ${errText}`);
+  }
+  return res.arrayBuffer();
+}
+
+/**
+ * Check voice model availability on the backend.
+ * GET /api/voice/status
+ */
+export async function getVoiceStatus() {
+  return request(`${BASE}/voice/status`, 60000);
+}
