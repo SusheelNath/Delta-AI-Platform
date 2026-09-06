@@ -99,6 +99,15 @@ export default function SavedPolygonsOverlay({ floorId, onTooltipChange }) {
   const routeStartGuid = activeRoute?.path?.[0]?.ifc_guid || null;
   const hasRoute = !!routePathMap;
 
+  // Cache points strings — only recomputed when polygon vertices change
+  const pointsCache = useMemo(() => {
+    const cache = new Map();
+    for (const poly of polygons) {
+      cache.set(poly.ifc_guid, poly.vertices.map((v) => `${v[0]},${v[1]}`).join(' '));
+    }
+    return cache;
+  }, [polygons]);
+
   return (
     <svg
       className="saved-polygons-overlay"
@@ -107,7 +116,7 @@ export default function SavedPolygonsOverlay({ floorId, onTooltipChange }) {
       preserveAspectRatio="none"
     >
       {polygons.map((poly) => {
-        const pts = poly.vertices.map((v) => `${v[0]},${v[1]}`).join(' ');
+        const pts = pointsCache.get(poly.ifc_guid);
         const isSelected = selectedSpaceId === poly.ifc_guid;
         const isHovered = hoveredPolygonGuid === poly.ifc_guid;
 

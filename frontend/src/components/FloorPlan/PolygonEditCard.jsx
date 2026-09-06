@@ -6,7 +6,7 @@ export default function PolygonEditCard() {
   const editingPolygon = useStore((s) => s.editingPolygon);
   const setEditingPolygon = useStore((s) => s.setEditingPolygon);
   const updatePolygonInFloor = useStore((s) => s.updatePolygonInFloor);
-  const floorPolygons = useStore((s) => s.floorPolygons);
+  const editFloorPolygons = useStore((s) => s.editingPolygon ? (s.floorPolygons[s.editingPolygon.floor_id] || []) : []);
 
   const [editName, setEditName] = useState('');
   const [editFunction, setEditFunction] = useState('');
@@ -15,8 +15,7 @@ export default function PolygonEditCard() {
   // Load current values when editing polygon changes
   useEffect(() => {
     if (!editingPolygon) return;
-    const polys = floorPolygons[editingPolygon.floor_id] || [];
-    const poly = polys.find((p) => p.ifc_guid === editingPolygon.ifc_guid);
+    const poly = editFloorPolygons.find((p) => p.ifc_guid === editingPolygon.ifc_guid);
     if (poly) {
       setEditName(poly.space_name || '');
       setEditFunction(poly.primary_function || '');
@@ -28,8 +27,7 @@ export default function PolygonEditCard() {
     setSaving(true);
 
     const { ifc_guid, floor_id } = editingPolygon;
-    const polys = floorPolygons[floor_id] || [];
-    const poly = polys.find((p) => p.ifc_guid === ifc_guid);
+    const poly = editFloorPolygons.find((p) => p.ifc_guid === ifc_guid);
 
     const newName = editName.trim() || 'Unassigned';
     const newFn = editFunction.trim() || 'Unassigned';
@@ -48,7 +46,7 @@ export default function PolygonEditCard() {
 
     setSaving(false);
     setEditingPolygon(null);
-  }, [editingPolygon, editName, editFunction, floorPolygons, updatePolygonInFloor, setEditingPolygon]);
+  }, [editingPolygon, editName, editFunction, editFloorPolygons, updatePolygonInFloor, setEditingPolygon]);
 
   const handleCancel = useCallback(() => {
     setEditingPolygon(null);
@@ -66,8 +64,7 @@ export default function PolygonEditCard() {
 
   if (!editingPolygon) return null;
 
-  const polys = floorPolygons[editingPolygon.floor_id] || [];
-  const poly = polys.find((p) => p.ifc_guid === editingPolygon.ifc_guid);
+  const poly = editFloorPolygons.find((p) => p.ifc_guid === editingPolygon.ifc_guid);
   if (!poly) return null;
 
   return (

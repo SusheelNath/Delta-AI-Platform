@@ -20,9 +20,11 @@ export default function FloorPlanImage({ floorIdOverride }) {
   const [imgDims, setImgDims] = useState(null); // { w, h } once decoded
   const [polygonTooltip, setPolygonTooltip] = useState(null); // { name, area, x, y }
   const containerRef = useRef(null);
+  const transformElRef = useRef(null);
   const isPanning = useRef(false);
   const panStart = useRef({ x: 0, y: 0 });
   const didPan = useRef(false);
+  const rafId = useRef(0);
 
   const snapshot = activeFloorId ? floorSnapshots[activeFloorId] : null;
   const imageUrl = snapshot?.imageUrl || null;
@@ -111,7 +113,19 @@ export default function FloorPlanImage({ floorIdOverride }) {
       const dy = e.clientY - panStart.current.y;
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) didPan.current = true;
       panStart.current = { x: e.clientX, y: e.clientY };
-      setTransform((prev) => ({ ...prev, tx: prev.tx + dx, ty: prev.ty + dy }));
+      // Apply CSS transform directly for zero-lag panning, defer React state
+      setTransform((prev) => {
+        const next = { ...prev, tx: prev.tx + dx, ty: prev.ty + dy };
+        if (transformElRef.current) {
+          cancelAnimationFrame(rafId.current);
+          rafId.current = requestAnimationFrame(() => {
+            if (transformElRef.current) {
+              transformElRef.current.style.transform = `translate(${next.tx}px, ${next.ty}px) scale(${next.scale})`;
+            }
+          });
+        }
+        return next;
+      });
     }
   }, []);
 
@@ -216,6 +230,7 @@ export default function FloorPlanImage({ floorIdOverride }) {
       onDoubleClick={handleDoubleClick}
     >
       <div
+        ref={transformElRef}
         className="floor-plan-image__transform"
         style={{
           transform: `translate(${transform.tx}px, ${transform.ty}px) scale(${transform.scale})`,

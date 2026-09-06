@@ -42,12 +42,16 @@ function loadPolygonsFromStorage() {
   } catch { return {}; }
 }
 
+let _saveTimer = null;
 function savePolygonsToStorage(floorPolygons) {
-  try {
-    localStorage.setItem(POLYGONS_KEY, JSON.stringify(floorPolygons));
-  } catch (err) {
-    console.warn('[Delta] Failed to save polygons to localStorage:', err);
-  }
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(() => {
+    try {
+      localStorage.setItem(POLYGONS_KEY, JSON.stringify(floorPolygons));
+    } catch (err) {
+      console.warn('[Delta] Failed to save polygons to localStorage:', err);
+    }
+  }, 1000);
 }
 
 const useStore = create((set, get) => ({

@@ -48,6 +48,16 @@ export default function ChatPanel() {
     };
   }, []);
 
+  // Abort in-flight stream on unmount
+  useEffect(() => {
+    return () => {
+      if (abortRef.current) {
+        abortRef.current.abort();
+        abortRef.current = null;
+      }
+    };
+  }, []);
+
   const handleStop = useCallback(() => {
     if (abortRef.current) {
       abortRef.current.abort();

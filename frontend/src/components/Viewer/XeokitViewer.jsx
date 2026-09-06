@@ -32,6 +32,20 @@ const MEP_SPACE_CLASSES = new Set([
   'Transition / circulation',
 ]);
 
+function throttle(fn, ms) {
+  let last = 0, timer = null;
+  return function (...args) {
+    const now = Date.now();
+    clearTimeout(timer);
+    if (now - last >= ms) {
+      last = now;
+      fn.apply(this, args);
+    } else {
+      timer = setTimeout(() => { last = Date.now(); fn.apply(this, args); }, ms - (now - last));
+    }
+  };
+}
+
 let cachedXKT = null;
 
 let cachedExclusions = null;
@@ -445,13 +459,17 @@ export default function XeokitViewer() {
 
       // ── Hover handler: pointer cursor + tooltip over polygon meshes ──
       const canvasEl = viewer.scene.canvas.canvas;
-      viewer.cameraControl.on('hover', (e) => {
+      let lastHoveredGuid = null;
+
+      const processHover = throttle((e) => {
         if (!e || !e.entity) return;
         const id = e.entity.id;
         if (id.startsWith('polygon-')) {
-          canvasEl.style.cursor = 'pointer';
           const ifcGuid = id.slice('polygon-'.length);
-          useStore.getState().setHoveredPolygonGuid(ifcGuid);
+          if (ifcGuid !== lastHoveredGuid) {
+            lastHoveredGuid = ifcGuid;
+            useStore.getState().setHoveredPolygonGuid(ifcGuid);
+          }
           const floorId = useStore.getState().activeFloorId;
           const polygons = floorId ? (useStore.getState().floorPolygons[floorId] || []) : [];
           const poly = polygons.find((p) => p.ifc_guid === ifcGuid);
@@ -463,14 +481,31 @@ export default function XeokitViewer() {
               y: e.canvasPos[1] - 10,
             });
           }
-        } else {
+        } else if (lastHoveredGuid !== null) {
+          lastHoveredGuid = null;
           useStore.getState().setHoveredPolygonGuid(null);
           setPolygonTooltip(null);
         }
+      }, 60);
+
+      viewer.cameraControl.on('hover', (e) => {
+        if (!e || !e.entity) {
+          if (lastHoveredGuid !== null) {
+            lastHoveredGuid = null;
+            useStore.getState().setHoveredPolygonGuid(null);
+            setPolygonTooltip(null);
+          }
+          canvasEl.style.cursor = '';
+          return;
+        }
+        const id = e.entity.id;
+        canvasEl.style.cursor = id.startsWith('polygon-') ? 'pointer' : '';
+        processHover(e);
       });
 
       viewer.cameraControl.on('hoverOut', () => {
         canvasEl.style.cursor = '';
+        lastHoveredGuid = null;
         useStore.getState().setHoveredPolygonGuid(null);
         setPolygonTooltip(null);
       });
@@ -1175,7 +1210,7 @@ export default function XeokitViewer() {
 
   // ── Render ALL saved floor polygons as pickable 3D meshes ──
   const savedMeshesRef = useRef(new Map()); // ifcGuid → mesh
-  const floorPolygons = useStore((s) => s.floorPolygons);
+  const floorPolygons = useStore((s) => s.activeFloorId ? (s.floorPolygons[s.activeFloorId] || []) : []);
   const hoveredPolygonGuid = useStore((s) => s.hoveredPolygonGuid);
   const floorSnapshots = useStore((s) => s.floorSnapshots);
   const activeRoute = useStore((s) => s.activeRoute);
@@ -1188,19 +1223,22 @@ export default function XeokitViewer() {
     return snap.viewMatrix[12].toFixed(4) + '|' + snap.viewMatrix[14].toFixed(4) + '|' + snap.projMatrix[0].toFixed(4);
   }, [activeFloorId, floorSnapshots]);
 
-  // Create meshes once per floor (invisible by default)
+  // Create meshes once per floor — delta updates when only polygons change
+  const prevMeshStateRef = useRef({ floorId: null, matrixKey: null });
+
   useEffect(() => {
     const viewer = viewerRef.current;
-    for (const mesh of savedMeshesRef.current.values()) {
-      try { mesh.destroy(); } catch {}
+    if (!viewer || !activeFloorId || !snapshotMatrixKey) {
+      // Tear down everything if prerequisites missing
+      for (const mesh of savedMeshesRef.current.values()) {
+        try { mesh.destroy(); } catch {}
+      }
+      savedMeshesRef.current.clear();
+      prevMeshStateRef.current = { floorId: null, matrixKey: null };
+      return;
     }
-    savedMeshesRef.current.clear();
 
-    if (!viewer || !activeFloorId || !snapshotMatrixKey) return;
-
-    const polygons = floorPolygons[activeFloorId] || [];
-    if (polygons.length === 0) return;
-
+    const polygons = floorPolygons;
     const snapshot = useStore.getState().floorSnapshots[activeFloorId];
     if (!snapshot?.viewMatrix || !snapshot?.projMatrix) return;
 
@@ -1210,19 +1248,61 @@ export default function XeokitViewer() {
       ? Math.max(...spaces.map(s => s.yTop || s.y || 0))
       : 0;
 
-    for (const poly of polygons) {
-      if (!poly.vertices || poly.vertices.length < 3) continue;
-      // Always compute fresh world vertices from current snapshot matrices
-      // to ensure 3D meshes stay aligned with the current camera/snapshot state
-      const mesh = createPolygonMesh(viewer, poly.vertices, snapshot.viewMatrix, snapshot.projMatrix, maxYTop, {
-        id: `polygon-${poly.ifc_guid}`,
-        pickable: true,
-        alpha: 0.01,
-        diffuse: [0, 0, 0],
-        emissive: [0, 0, 0],
-      });
-      if (mesh) {
-        savedMeshesRef.current.set(poly.ifc_guid, mesh);
+    const floorOrMatrixChanged = prevMeshStateRef.current.floorId !== activeFloorId
+      || prevMeshStateRef.current.matrixKey !== snapshotMatrixKey;
+
+    if (floorOrMatrixChanged) {
+      // Full rebuild — floor or camera matrix changed
+      for (const mesh of savedMeshesRef.current.values()) {
+        try { mesh.destroy(); } catch {}
+      }
+      savedMeshesRef.current.clear();
+
+      for (const poly of polygons) {
+        if (!poly.vertices || poly.vertices.length < 3) continue;
+        const mesh = createPolygonMesh(viewer, poly.vertices, snapshot.viewMatrix, snapshot.projMatrix, maxYTop, {
+          id: `polygon-${poly.ifc_guid}`,
+          pickable: true,
+          alpha: 0.01,
+          diffuse: [0, 0, 0],
+          emissive: [0, 0, 0],
+        });
+        if (mesh) {
+          savedMeshesRef.current.set(poly.ifc_guid, mesh);
+        }
+      }
+      prevMeshStateRef.current = { floorId: activeFloorId, matrixKey: snapshotMatrixKey };
+    } else {
+      // Delta update — only polygons changed, same floor/matrix
+      const newGuids = new Set(polygons.map(p => p.ifc_guid));
+      const oldGuids = new Set(savedMeshesRef.current.keys());
+
+      // Remove deleted polygons
+      for (const guid of oldGuids) {
+        if (!newGuids.has(guid)) {
+          try { savedMeshesRef.current.get(guid).destroy(); } catch {}
+          savedMeshesRef.current.delete(guid);
+        }
+      }
+
+      // Add new or recreate modified polygons
+      for (const poly of polygons) {
+        if (!poly.vertices || poly.vertices.length < 3) continue;
+        if (oldGuids.has(poly.ifc_guid) && !poly.edited) continue; // unchanged
+        // Destroy old if exists
+        if (savedMeshesRef.current.has(poly.ifc_guid)) {
+          try { savedMeshesRef.current.get(poly.ifc_guid).destroy(); } catch {}
+        }
+        const mesh = createPolygonMesh(viewer, poly.vertices, snapshot.viewMatrix, snapshot.projMatrix, maxYTop, {
+          id: `polygon-${poly.ifc_guid}`,
+          pickable: true,
+          alpha: 0.01,
+          diffuse: [0, 0, 0],
+          emissive: [0, 0, 0],
+        });
+        if (mesh) {
+          savedMeshesRef.current.set(poly.ifc_guid, mesh);
+        }
       }
     }
 
@@ -1237,6 +1317,7 @@ export default function XeokitViewer() {
   // Route & selection highlights: dark-focus BIM + blue corridors + nav line
   const bimDarkenedRef = useRef(false);
   const routeNavMeshesRef = useRef([]); // ground stripe + waypoint dots
+  const meshStateRef = useRef(new Map()); // guid → 'start'|'target'|'path'|'hover'|'default'
 
   useEffect(() => {
     const viewer = viewerRef.current;
@@ -1276,26 +1357,36 @@ export default function XeokitViewer() {
     const routeStartGuid = activeRoute?.path?.[0]?.ifc_guid || null;
     const routePathGuids = activeRoute?.path ? new Set(activeRoute.path.map((p) => p.ifc_guid)) : null;
 
-    // ── Apply colors to overlay polygon meshes ──
+    // ── Apply colors to overlay polygon meshes (skip unchanged) ──
     for (const [guid, mesh] of savedMeshesRef.current) {
-      const isHoverOrSelect = hoveredPolygonGuid === guid || selectedSpaceId === guid;
       const isRouteStart = routeStartGuid === guid;
       const isRouteTarget = activeRoute?.targetGuid === guid;
       const isRoutePath = routePathGuids?.has(guid) && !isRouteStart && !isRouteTarget;
+      const isHoverOrSelect = hoveredPolygonGuid === guid || selectedSpaceId === guid;
+
+      const newState = isRouteStart ? 'start'
+        : isRouteTarget ? 'target'
+        : isRoutePath ? 'path'
+        : isHoverOrSelect ? 'hover'
+        : 'default';
+
+      if (meshStateRef.current.get(guid) === newState) continue;
+      meshStateRef.current.set(guid, newState);
+
       try {
-        if (isRouteStart) {
+        if (newState === 'start') {
           mesh.material.alpha = 0.65;
           mesh.material.diffuse = [0.95, 0.30, 0.10];
           mesh.material.emissive = [0.70, 0.20, 0.05];
-        } else if (isRouteTarget) {
+        } else if (newState === 'target') {
           mesh.material.alpha = 0.65;
           mesh.material.diffuse = [0.10, 0.90, 0.60];
           mesh.material.emissive = [0.05, 0.50, 0.30];
-        } else if (isRoutePath) {
+        } else if (newState === 'path') {
           mesh.material.alpha = 0.45;
           mesh.material.diffuse = [0.25, 0.58, 1.0];
           mesh.material.emissive = [0.08, 0.22, 0.55];
-        } else if (isHoverOrSelect) {
+        } else if (newState === 'hover') {
           mesh.material.alpha = 0.45;
           mesh.material.diffuse = [1.0, 0.55, 0.2];
           mesh.material.emissive = [0.4, 0.15, 0.0];
@@ -1348,13 +1439,16 @@ export default function XeokitViewer() {
       }));
     } catch {}
 
-    // ── (b) Breadcrumb dot chain — spheres every ~0.4m along path ──
+    // ── (b) Breadcrumb dot chain — single batched mesh ──
     if (XbuildSphereGeometry) {
       const DOT_SPACING = 0.4;
       const dotPlaneY = planeY + 0.12;
+
+      // Collect all dot center positions
+      const dotCenters = [];
       let accumulated = 0;
       for (let i = 1; i < worldPath.length; i++) {
-        const [ax, ay, az] = worldPath[i - 1];
+        const [ax, , az] = worldPath[i - 1];
         const [bx, , bz] = worldPath[i];
         const segDx = bx - ax, segDz = bz - az;
         const segLen = Math.sqrt(segDx * segDx + segDz * segDz);
@@ -1362,18 +1456,45 @@ export default function XeokitViewer() {
         const dirX = segDx / segLen, dirZ = segDz / segLen;
         let pos = DOT_SPACING - accumulated;
         while (pos <= segLen) {
-          const cx = ax + dirX * pos, cz = az + dirZ * pos;
-          try {
-            const sg = XbuildSphereGeometry({ center: [cx, dotPlaneY, cz], radius: 0.06, heightSegments: 8, widthSegments: 8 });
-            routeNavMeshesRef.current.push(new XMesh(viewer.scene, {
-              geometry: new XReadableGeometry(viewer.scene, sg),
-              material: new XPhongMaterial(viewer.scene, { diffuse: [0.40, 0.85, 1.0], emissive: [0.25, 0.60, 0.90], alpha: 0.9 }),
-              pickable: false, clippable: false, collidable: false, edges: false,
-            }));
-          } catch {}
+          dotCenters.push([ax + dirX * pos, dotPlaneY, az + dirZ * pos]);
           pos += DOT_SPACING;
         }
         accumulated = segLen - (pos - DOT_SPACING);
+      }
+
+      if (dotCenters.length > 0) {
+        // Build one sphere template at the origin
+        const template = XbuildSphereGeometry({ center: [0, 0, 0], radius: 0.06, heightSegments: 6, widthSegments: 6 });
+        const tPos = template.positions;
+        const tIdx = template.indices;
+        const vertsPerSphere = tPos.length / 3;
+
+        // Merge all spheres into one geometry buffer
+        const allPos = new Float32Array(dotCenters.length * tPos.length);
+        const allIdx = new Uint32Array(dotCenters.length * tIdx.length);
+
+        for (let d = 0; d < dotCenters.length; d++) {
+          const [cx, cy, cz] = dotCenters[d];
+          const posOff = d * tPos.length;
+          const idxOff = d * tIdx.length;
+          const vertOff = d * vertsPerSphere;
+          for (let v = 0; v < tPos.length; v += 3) {
+            allPos[posOff + v] = tPos[v] + cx;
+            allPos[posOff + v + 1] = tPos[v + 1] + cy;
+            allPos[posOff + v + 2] = tPos[v + 2] + cz;
+          }
+          for (let j = 0; j < tIdx.length; j++) {
+            allIdx[idxOff + j] = tIdx[j] + vertOff;
+          }
+        }
+
+        try {
+          routeNavMeshesRef.current.push(new XMesh(viewer.scene, {
+            geometry: new XReadableGeometry(viewer.scene, { positions: allPos, indices: allIdx, primitive: 'triangles' }),
+            material: new XPhongMaterial(viewer.scene, { diffuse: [0.40, 0.85, 1.0], emissive: [0.25, 0.60, 0.90], alpha: 0.9 }),
+            pickable: false, clippable: false, collidable: false, edges: false,
+          }));
+        } catch {}
       }
 
       // Start + end marker spheres (larger)

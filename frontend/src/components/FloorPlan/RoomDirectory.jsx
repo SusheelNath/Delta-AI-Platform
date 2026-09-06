@@ -40,16 +40,13 @@ export default function RoomDirectory() {
   const searchQuery = useStore((s) => s.searchQuery);
   const selectedSpaceId = useStore((s) => s.selectedSpaceId);
   const selectSpace = useStore((s) => s.selectSpace);
-  const floorPolygons = useStore((s) => s.floorPolygons);
+  const activeFloorPolygons = useStore((s) => s.activeFloorId ? (s.floorPolygons[s.activeFloorId] || []) : []);
 
   const [collapsedGroups, setCollapsedGroups] = useState(new Set());
   const initializedFloorRef = useRef(null);
   const selectedRef = useRef(null);
 
-  const polygons = useMemo(() => {
-    if (!activeFloorId) return [];
-    return floorPolygons[activeFloorId] || [];
-  }, [activeFloorId, floorPolygons]);
+  const polygons = activeFloorPolygons;
 
   const filtered = useMemo(() => {
     if (!searchQuery || searchQuery.trim().length === 0) return polygons;

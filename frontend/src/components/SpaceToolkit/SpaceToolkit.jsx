@@ -12,7 +12,7 @@ export default function SpaceToolkit() {
   const drawerOpen = useStore((s) => s.drawerOpen);
   const toggleDrawer = useStore((s) => s.toggleDrawer);
   const activeFloorId = useStore((s) => s.activeFloorId);
-  const floorPolygons = useStore((s) => s.floorPolygons);
+  const activeFloorPolygons = useStore((s) => s.activeFloorId ? (s.floorPolygons[s.activeFloorId] || []) : []);
   const setActiveRoute = useStore((s) => s.setActiveRoute);
   const clearActiveRoute = useStore((s) => s.clearActiveRoute);
   const activeRoute = useStore((s) => s.activeRoute);
@@ -42,10 +42,9 @@ export default function SpaceToolkit() {
   // Compute routing when dropdown opens
   const routing = useMemo(() => {
     if (!routingOpen || !selectedSpaceId || !activeFloorId) return null;
-    const polygons = floorPolygons[activeFloorId] || [];
-    if (polygons.length === 0) return null;
-    return computeRouting(polygons, selectedSpaceId);
-  }, [routingOpen, selectedSpaceId, activeFloorId, floorPolygons]);
+    if (activeFloorPolygons.length === 0) return null;
+    return computeRouting(activeFloorPolygons, selectedSpaceId);
+  }, [routingOpen, selectedSpaceId, activeFloorId, activeFloorPolygons]);
 
   // Clear route when dropdown closes
   useEffect(() => {

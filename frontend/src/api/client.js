@@ -5,13 +5,39 @@
 
 const BASE = '/api';
 
-async function request(url) {
-  const res = await fetch(url);
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`API ${res.status}: ${text}`);
+const _cache = new Map();
+const _inflight = new Map();
+
+async function request(url, ttl = 30000) {
+  // Return cached response if fresh
+  const cached = _cache.get(url);
+  if (cached && Date.now() - cached.time < ttl) {
+    return cached.data;
   }
-  return res.json();
+  // Deduplicate in-flight requests to the same URL
+  if (_inflight.has(url)) {
+    return _inflight.get(url);
+  }
+  const promise = fetch(url).then(async (res) => {
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`API ${res.status}: ${text}`);
+    }
+    const data = await res.json();
+    _cache.set(url, { data, time: Date.now() });
+    return data;
+  }).finally(() => {
+    _inflight.delete(url);
+  });
+  _inflight.set(url, promise);
+  return promise;
+}
+
+/** Invalidate cached responses for a URL prefix (e.g. after mutations). */
+export function invalidateCache(prefix) {
+  for (const key of _cache.keys()) {
+    if (key.startsWith(prefix || '')) _cache.delete(key);
+  }
 }
 
 /**
@@ -95,7 +121,9 @@ export async function updateSpace(ifcGuid, { space_name, primary_function }) {
     const text = await res.text();
     throw new Error(`API ${res.status}: ${text}`);
   }
-  return res.json();
+  const data = await res.json();
+  invalidateCache(`${BASE}/spaces/`);
+  return data;
 }
 
 /**
@@ -117,7 +145,9 @@ export async function savePolygon(ifcGuid, vertices, floorId, computedAreaM2 = n
     const text = await res.text();
     throw new Error(`API ${res.status}: ${text}`);
   }
-  return res.json();
+  const data = await res.json();
+  invalidateCache(`${BASE}/floors/`);
+  return data;
 }
 
 /**
@@ -139,7 +169,9 @@ export async function syncPolygons(polygons) {
     body: JSON.stringify(polygons),
   });
   if (!res.ok) return null;
-  return res.json();
+  const data = await res.json();
+  invalidateCache(`${BASE}/floors/`);
+  return data;
 }
 
 /**
@@ -156,7 +188,9 @@ export async function saveFloorPolygons(floorId, polygons) {
     const text = await res.text();
     throw new Error(`API ${res.status}: ${text}`);
   }
-  return res.json();
+  const data = await res.json();
+  invalidateCache(`${BASE}/floors/`);
+  return data;
 }
 
 /**
@@ -171,7 +205,9 @@ export async function deletePolygon(ifcGuid) {
     const text = await res.text();
     throw new Error(`API ${res.status}: ${text}`);
   }
-  return res.json();
+  const data = await res.json();
+  invalidateCache(`${BASE}/floors/`);
+  return data;
 }
 
 /**
@@ -222,5 +258,7 @@ export async function fullSavePolygons(polygons) {
     const text = await res.text();
     throw new Error(`API ${res.status}: ${text}`);
   }
-  return res.json();
+  const data = await res.json();
+  invalidateCache(`${BASE}/floors/`);
+  return data;
 }

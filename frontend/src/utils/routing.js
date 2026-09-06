@@ -23,6 +23,9 @@ const INFRA_RE = /elevator|staircase|stairway|stair|lift/i;
 const ELEVATOR_TARGET_RE = /elevator|lift/i;
 const STAIRCASE_TARGET_RE = /stair/i;
 
+// Adjacency graph cache — avoids O(n²) rebuild when polygon set unchanged
+let _adjCache = null; // { key, fullAdj, corrAdj }
+
 // ---------------------------------------------------------------------------
 // Geometry helpers
 // ---------------------------------------------------------------------------
@@ -511,8 +514,17 @@ export function computeRouting(polygons, startGuid) {
     return { toElevator: null, toStaircase: null };
   }
 
-  const fullAdj = buildFullAdjacency(valid);
-  const corrAdj = buildCorridorNetworkAdjacency(valid);
+  // Cache adjacency graphs — O(n²) build is expensive, skip if polygon set unchanged
+  const cacheKey = valid.length + ':' + valid[0].ifc_guid + ':' + valid[valid.length - 1].ifc_guid;
+  let fullAdj, corrAdj;
+  if (_adjCache && _adjCache.key === cacheKey) {
+    fullAdj = _adjCache.fullAdj;
+    corrAdj = _adjCache.corrAdj;
+  } else {
+    fullAdj = buildFullAdjacency(valid);
+    corrAdj = buildCorridorNetworkAdjacency(valid);
+    _adjCache = { key: cacheKey, fullAdj, corrAdj };
+  }
   const scaleFactor = computeScaleFactor(valid);
 
   function toRouteResult(result) {
