@@ -45,10 +45,7 @@ def _format_space_context(space: dict) -> str:
     """Format a selected space's metadata into context for the LLM."""
     lines = [f"\n[Currently selected space in the 3D viewer]"]
     lines.append(f"Name: {space.get('space_name', 'Unknown')}")
-    if space.get('ifc_guid'):
-        lines.append(f"GUID: {space['ifc_guid']}")
     lines.append(f"Floor: {space.get('floor_name', space.get('floor_id', '?'))}")
-
     if space.get('primary_function'):
         lines.append(f"Primary function: {space['primary_function']}")
     if space.get('secondary_functions'):
@@ -104,7 +101,7 @@ def _format_space_context(space: dict) -> str:
 
 
 def _format_search_context(spaces: list[dict]) -> str:
-    """Format search results into context for the LLM."""
+    """Format enriched search results into compact context for the LLM."""
     if not spaces:
         return ""
     lines = [f"\n[Search returned {len(spaces)} matching spaces]"]
@@ -112,11 +109,50 @@ def _format_search_context(spaces: list[dict]) -> str:
         name = s.get('space_name', 'Unknown')
         floor = s.get('floor_name', s.get('floor_id', '?'))
         func = s.get('primary_function', '')
-        area = s.get('area_m2', '')
-        area_str = f", {area} m\u00b2" if area else ""
-        perim = s.get('perimeter_cm', '')
-        perim_str = f", perim {perim} cm" if perim else ""
-        lines.append(f"- {name} \u2014 {floor}, {func}{area_str}{perim_str}")
+
+        # Build compact metadata parts
+        parts = [f"{name} — {floor}, {func}"]
+
+        area = s.get('area_m2')
+        if area:
+            parts.append(f"{area} m²")
+
+        zone = s.get('functional_zone')
+        if zone:
+            parts.append(f"zone: {zone}")
+
+        occ = s.get('normal_occupancy')
+        max_occ = s.get('max_occupancy')
+        if occ:
+            occ_str = f"occupancy: {occ}"
+            if max_occ and max_occ != occ:
+                occ_str += f"/{max_occ} max"
+            parts.append(occ_str)
+
+        patient_cap = s.get('patient_capacity')
+        if patient_cap:
+            parts.append(f"patients: {patient_cap}")
+
+        privacy = s.get('privacy_level')
+        if privacy and privacy != "None":
+            parts.append(f"privacy: {privacy}")
+
+        access = s.get('access_level')
+        if access:
+            parts.append(f"access: {access}")
+
+        if s.get('accessible') and s['accessible'] != "No":
+            parts.append(f"accessible: {s['accessible']}")
+
+        if s.get('bookable') == "Yes":
+            parts.append("bookable")
+
+        facilities = s.get('facilities_available')
+        if facilities:
+            parts.append(f"facilities: {facilities}")
+
+        lines.append("- " + " | ".join(parts))
+
     if len(spaces) > 20:
         lines.append(f"  ... and {len(spaces) - 20} more")
     return "\n".join(lines)

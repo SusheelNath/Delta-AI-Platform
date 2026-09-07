@@ -6,6 +6,7 @@ No DB Space table queries.
 """
 
 import json
+import re
 from collections import defaultdict
 
 from fastapi import APIRouter, Depends, Request
@@ -82,36 +83,98 @@ def _resolve_selected_space(space_id: str, db: Session) -> dict | None:
 
 
 def _auto_search(user_message: str, db: Session) -> list[dict]:
-    """Search polygons for spaces relevant to the user's message."""
-    keywords = [
-        "operating", "surgical", "surgery", "patient room", "patient care",
-        "consultation", "office", "lab", "laboratory", "pharmacy", "radiology",
-        "imaging", "emergency", "waiting", "reception", "cafeteria", "kitchen",
-        "storage", "technical", "parking", "lift", "elevator", "stair",
-        "conference", "meeting", "icu", "intensive", "neonatal", "nicu",
-        "maternity", "delivery", "endoscopy", "sterilisation",
-        "toilet", "corridor", "vent", "staff", "nursing",
-        "accessibility", "no access", "commercial",
-    ]
+    """Search polygons using full intelligence fields.
+
+    Extracts search terms from the user message, computes intelligence for
+    all polygons on relevant floors (or all floors), then matches against
+    every enriched field: space_name, primary_function, functional_zone,
+    space_class, occupancy_class, facilities, access_level, privacy_level,
+    visitor_access, noise_sensitivity, flexibility, secondary_functions, etc.
+    """
     msg_lower = user_message.lower()
 
-    matched_kw = [kw for kw in keywords if kw in msg_lower]
-    if not matched_kw:
+    # Extract meaningful search tokens (skip stop words)
+    STOP_WORDS = {
+        "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
+        "have", "has", "had", "do", "does", "did", "will", "would", "shall",
+        "should", "may", "might", "must", "can", "could", "i", "me", "my",
+        "we", "our", "you", "your", "it", "its", "they", "them", "their",
+        "this", "that", "these", "those", "what", "which", "who", "whom",
+        "how", "where", "when", "why", "if", "or", "and", "but", "not",
+        "no", "so", "than", "too", "very", "just", "about", "above",
+        "after", "before", "between", "from", "in", "into", "of", "on",
+        "out", "to", "up", "with", "for", "at", "by", "as", "all", "any",
+        "each", "every", "both", "few", "more", "most", "other", "some",
+        "such", "only", "own", "same", "tell", "show", "find", "list",
+        "give", "get", "many", "much", "also", "there", "here", "then",
+        "delta", "hospital", "spaces", "rooms", "room", "space", "please",
+    }
+    words = re.findall(r'[a-z]+', msg_lower)
+    tokens = [w for w in words if w not in STOP_WORDS and len(w) > 1]
+    if not tokens:
         return []
 
-    search_term = matched_kw[0].lower()
+    # Also check for multi-word phrases
+    phrases = []
+    MULTI_WORD = [
+        "patient room", "patient care", "operating room", "operating theatre",
+        "single patient", "double patient", "waiting room", "staff office",
+        "high privacy", "very high privacy", "low privacy",
+        "no access", "step free", "inpatient care", "outpatient",
+        "surgical table", "patient monitor", "gas outlet",
+    ]
+    for phrase in MULTI_WORD:
+        if phrase in msg_lower:
+            phrases.append(phrase)
 
+    search_terms = tokens + phrases
+
+    # Build full intelligence index for all polygons
     polygons = read_all_polygons()
     results = []
 
+    # Group polygons by floor for efficient spatial computation
+    from app.services.geometry import compute_floor_spatial
+    floor_groups = defaultdict(list)
     for p in polygons:
-        name = (p.get("space_name") or "").lower()
-        func = (p.get("primary_function") or "").lower()
-        if search_term in name or search_term in func:
-            # Lightweight result — just polygon fields + floor name
-            entry = dict(p)
-            entry["floor_name"] = FLOOR_NAMES.get(p.get("floor_id", ""), p.get("floor_id", ""))
-            results.append(entry)
+        floor_groups[p.get("floor_id", "")].append(p)
+
+    floor_spatials = {}
+    for fid, fps in floor_groups.items():
+        floor_spatials[fid] = compute_floor_spatial(fps)
+
+    for p in polygons:
+        fid = p.get("floor_id", "")
+        floor_polys = floor_groups.get(fid, [])
+        intel = compute_space_intelligence(p, floor_polys, db, floor_spatials.get(fid))
+
+        # Build a searchable text blob from all intelligence fields
+        searchable_parts = [
+            intel.get("space_name") or "",
+            intel.get("primary_function") or "",
+            intel.get("functional_zone") or "",
+            intel.get("space_class") or "",
+            intel.get("secondary_functions") or "",
+            intel.get("access_level") or "",
+            intel.get("privacy_level") or "",
+            intel.get("visitor_access") or "",
+            intel.get("noise_sensitivity") or "",
+            intel.get("flexibility") or "",
+            intel.get("convertible_functions") or "",
+            intel.get("occupancy_class") or "",
+            intel.get("facilities_available") or "",
+            intel.get("nearest_lift") or "",
+            intel.get("nearest_stair") or "",
+            intel.get("adjacent_spaces") or "",
+            "bookable" if intel.get("bookable") == "Yes" else "",
+            "accessible" if intel.get("accessible") and intel["accessible"] != "No" else "",
+            "occupiable" if intel.get("occupiable") else "",
+        ]
+        blob = " ".join(searchable_parts).lower()
+
+        # Match: any search term must appear in the blob
+        if any(term in blob for term in search_terms):
+            results.append(intel)
             if len(results) >= 30:
                 break
 

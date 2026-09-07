@@ -29,19 +29,21 @@ ADJACENCY_THRESHOLD = 2.0  # max bbox gap in percentage units (matching frontend
 
 def centroid(vertices: list[list[float]]) -> tuple[float, float]:
     """Compute the centroid of a polygon from its vertices."""
-    if not vertices:
+    valid = [v for v in vertices if v and len(v) >= 2]
+    if not valid:
         return (0.0, 0.0)
-    cx = sum(v[0] for v in vertices) / len(vertices)
-    cy = sum(v[1] for v in vertices) / len(vertices)
+    cx = sum(v[0] for v in valid) / len(valid)
+    cy = sum(v[1] for v in valid) / len(valid)
     return (cx, cy)
 
 
 def bbox(vertices: list[list[float]]) -> dict:
     """Compute axis-aligned bounding box of a polygon."""
-    if not vertices:
+    valid = [v for v in vertices if v and len(v) >= 2]
+    if not valid:
         return {"minX": 0, "minY": 0, "maxX": 0, "maxY": 0}
-    xs = [v[0] for v in vertices]
-    ys = [v[1] for v in vertices]
+    xs = [v[0] for v in valid]
+    ys = [v[1] for v in valid]
     return {
         "minX": min(xs), "minY": min(ys),
         "maxX": max(xs), "maxY": max(ys),
@@ -119,8 +121,13 @@ def compute_floor_spatial(polygons: list[dict]) -> dict:
         has_lift: bool
         has_stair: bool
     """
-    valid = [p for p in polygons
-             if p.get("ifc_guid") and p.get("vertices") and len(p["vertices"]) >= 3]
+    def _has_valid_verts(p):
+        verts = p.get("vertices")
+        if not verts or len(verts) < 3:
+            return False
+        return all(isinstance(v, (list, tuple)) and len(v) >= 2 for v in verts)
+
+    valid = [p for p in polygons if p.get("ifc_guid") and _has_valid_verts(p)]
 
     centroids = {}
     bboxes = {}

@@ -83,7 +83,7 @@ def get_floor_polygons(floor_id: str, polygons: list[dict] | None = None) -> lis
 # ══════════════════════════════════════════════════════════════════════
 
 def _get_facilities_from_furnishings(ifc_guid: str, db: Session) -> str | None:
-    """Derive facilities list from furnishing inventory."""
+    """Derive facilities list with quantities from furnishing inventory."""
     furnishings = db.query(SpaceFurnishing).filter(
         SpaceFurnishing.ifc_guid == ifc_guid
     ).all()
@@ -91,12 +91,19 @@ def _get_facilities_from_furnishings(ifc_guid: str, db: Session) -> str | None:
         return None
 
     ft_map = {ft.item_type: ft for ft in db.query(FurnishingType).all()}
-    labels = []
+    # Aggregate quantities per label
+    counts = defaultdict(int)
     for f in furnishings:
         ft = ft_map.get(f.item_type)
         if ft:
-            labels.append(ft.label)
-    return ", ".join(sorted(set(labels))) if labels else None
+            counts[ft.label] += f.quantity
+    if not counts:
+        return None
+    parts = []
+    for label in sorted(counts):
+        qty = counts[label]
+        parts.append(f"{qty}x {label}" if qty > 1 else label)
+    return ", ".join(parts)
 
 
 def _get_patient_capacity(ifc_guid: str, db: Session) -> int:
