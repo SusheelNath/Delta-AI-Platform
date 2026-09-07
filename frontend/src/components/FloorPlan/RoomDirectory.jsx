@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import useStore from '../../store/useStore';
 import { fetchSpaceByGuid } from '../../api/client';
 import { computePolygonMetrics } from '../../utils/unprojectPolygon';
@@ -41,6 +41,10 @@ export default function RoomDirectory() {
   const selectedSpaceId = useStore((s) => s.selectedSpaceId);
   const selectSpace = useStore((s) => s.selectSpace);
   const activeFloorPolygons = useStore((s) => s.activeFloorId ? (s.floorPolygons[s.activeFloorId] || []) : []);
+
+  const directoryExpandGroup = useStore((s) => s.directoryExpandGroup);
+  const directorySelectIndex = useStore((s) => s.directorySelectIndex);
+  const clearDirectoryAction = useStore((s) => s.clearDirectoryAction);
 
   const [collapsedGroups, setCollapsedGroups] = useState(new Set());
   const initializedFloorRef = useRef(null);
@@ -88,6 +92,40 @@ export default function RoomDirectory() {
       selectedRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   }, [selectedSpaceId]);
+
+  // AI-driven: expand a directory group and optionally select the Nth room
+  useEffect(() => {
+    if (!directoryExpandGroup || groups.length === 0) return;
+    const search = directoryExpandGroup.toLowerCase();
+
+    // Find matching group by function name (fuzzy contains match)
+    const match = groups.find(([fn]) => fn.toLowerCase().includes(search))
+      || groups.find(([fn]) => fn.toLowerCase() === search);
+    if (!match) {
+      clearDirectoryAction();
+      return;
+    }
+
+    const [fnName, fnPolygons] = match;
+
+    // Expand the group
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      next.delete(fnName);
+      return next;
+    });
+
+    // If a specific room index is requested, select it
+    if (directorySelectIndex != null && directorySelectIndex >= 0) {
+      const idx = Math.min(directorySelectIndex, fnPolygons.length - 1);
+      const targetPoly = fnPolygons[idx];
+      if (targetPoly) {
+        handleCardClick(targetPoly);
+      }
+    }
+
+    clearDirectoryAction();
+  }, [directoryExpandGroup, directorySelectIndex, groups]);
 
   const handleCardClick = useCallback(async (polygon) => {
     let overrides = {};

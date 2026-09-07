@@ -16,6 +16,8 @@ export default function SpaceToolkit() {
   const setActiveRoute = useStore((s) => s.setActiveRoute);
   const clearActiveRoute = useStore((s) => s.clearActiveRoute);
   const activeRoute = useStore((s) => s.activeRoute);
+  const routingPanelOpen = useStore((s) => s.routingPanelOpen);
+  const setRoutingPanelOpen = useStore((s) => s.setRoutingPanelOpen);
   const [routingOpen, setRoutingOpen] = useState(false);
   const [descOpen, setDescOpen] = useState(false);
   const [metricsOpen, setMetricsOpen] = useState(false);
@@ -45,6 +47,14 @@ export default function SpaceToolkit() {
     if (activeFloorPolygons.length === 0) return null;
     return computeRouting(activeFloorPolygons, selectedSpaceId);
   }, [routingOpen, selectedSpaceId, activeFloorId, activeFloorPolygons]);
+
+  // AI-driven: open routing section when store signals
+  useEffect(() => {
+    if (routingPanelOpen && !routingOpen) {
+      setRoutingOpen(true);
+      setRoutingPanelOpen(false);
+    }
+  }, [routingPanelOpen]);
 
   // Clear route when dropdown closes
   useEffect(() => {

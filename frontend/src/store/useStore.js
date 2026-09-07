@@ -283,6 +283,16 @@ const useStore = create((set, get) => ({
   setActiveRoute: (route) => set({ activeRoute: route }),
   clearActiveRoute: () => set({ activeRoute: null }),
 
+  // AI-controllable UI state
+  directoryExpandGroup: null,      // function name to expand in RoomDirectory
+  directorySelectIndex: null,      // index of room to select within expanded group
+  routingPanelOpen: false,         // whether SpaceToolkit routing section is open
+
+  expandDirectoryGroup: (functionName) => set({ directoryExpandGroup: functionName, directorySelectIndex: null }),
+  selectRoomInGroup: (functionName, index) => set({ directoryExpandGroup: functionName, directorySelectIndex: index }),
+  clearDirectoryAction: () => set({ directoryExpandGroup: null, directorySelectIndex: null }),
+  setRoutingPanelOpen: (open) => set({ routingPanelOpen: open }),
+
   updatePolygonInFloor: (floorId, ifcGuid, updates) => {
     const prev = get().floorPolygons;
     const floor = (prev[floorId] || []).map((p) =>

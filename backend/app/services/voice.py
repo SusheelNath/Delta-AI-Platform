@@ -34,7 +34,7 @@ CANNED_PHRASES = {
     "greeting": "Hello! How can I help you?",
     "acknowledging": "One moment, please.",
     "announcing": "Here is what I found.",
-    "followup": "Would you like to explore more?",
+    "announcing_space": "Here is what I have on this room.",
     "goodbye": "Thank you.",
 }
 

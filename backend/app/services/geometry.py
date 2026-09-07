@@ -247,14 +247,18 @@ def compute_space_spatial(ifc_guid: str, floor_data: dict,
     # Step-free access
     step_free = "Yes" if floor_data["has_lift"] else "No"
 
-    # Adjacent spaces
+    # Adjacent spaces — sorted by distance, closest first
     neighbor_guids = floor_data["adjacency"].get(ifc_guid, [])
-    neighbor_names = []
-    if polygon_map:
-        for ng in neighbor_guids[:8]:  # cap at 8 neighbours
+    neighbor_entries = []
+    if polygon_map and space_centroid:
+        for ng in neighbor_guids:
+            nc = floor_data["centroids"].get(ng)
+            dist = euclidean_distance(space_centroid, nc) if nc else float("inf")
             poly = polygon_map.get(ng)
             name = (poly.get("space_name") or poly.get("primary_function") or ng) if poly else ng
-            neighbor_names.append(name)
+            neighbor_entries.append((dist, name))
+        neighbor_entries.sort(key=lambda x: x[0])
+    neighbor_names = [name for _, name in neighbor_entries[:4]]
     adjacent_str = ", ".join(neighbor_names) if neighbor_names else None
 
     return {

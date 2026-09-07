@@ -202,7 +202,10 @@ async def chat(body: ChatRequest, db: Session = Depends(get_db)):
     async def generate():
         try:
             async for token in stream_chat(conversation, selected_space, search_results, floor_summaries):
-                yield f"data: {token}\n\n"
+                # SSE data lines cannot contain raw newlines — they break framing.
+                # Encode \n as \\n so the frontend can restore them.
+                safe = token.replace("\n", "\\n")
+                yield f"data: {safe}\n\n"
             yield "data: [DONE]\n\n"
         except Exception as e:
             yield f"data: [ERROR] {str(e)}\n\n"

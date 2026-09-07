@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
+import ReactMarkdown from 'react-markdown';
 import useStore from '../../store/useStore';
 import { streamChat, transcribeAudio, speakText } from '../../api/client';
 import {
@@ -6,6 +7,7 @@ import {
   playAudio,
   stripSubmitPhrase,
 } from '../../utils/voiceManager';
+import { resolveAction } from '../../utils/actionResolver';
 import './ChatPanel.css';
 
 const WELCOME_MESSAGE = {
@@ -113,26 +115,14 @@ export default function ChatPanel() {
     return () => mgr.destroy();
   }, []);
 
-  // ── Post-generation: play follow-up prompt then return to listening ──
+  // ── Post-generation: return to listening ──
   useEffect(() => {
     if (prevGeneratingRef.current && !isGenerating && voiceActiveRef.current) {
-      (async () => {
-        try {
-          voiceManagerRef.current?.mute();
-          const audio = await speakText('', 'followup');
-          await playAudio(audio);
-          await new Promise((r) => setTimeout(r, 700));
-        } catch (_) {
-          /* non-critical */
-        } finally {
-          voiceManagerRef.current?.unmute();
-        }
-        if (voiceActiveRef.current) {
-          setInput('');
-          setVoiceState('listening');
-          voiceManagerRef.current?.setMode('listening');
-        }
-      })();
+      if (voiceActiveRef.current) {
+        setInput('');
+        setVoiceState('listening');
+        voiceManagerRef.current?.setMode('listening');
+      }
     }
     prevGeneratingRef.current = isGenerating;
   }, [isGenerating]);
@@ -234,22 +224,15 @@ export default function ChatPanel() {
     addMessage(userMsg);
     setInput('');
 
-    // Play voice phrases if voice is active: acknowledge then announce
+    // Play "One moment, please." if voice is active (blocks until done)
     const voiceOn = voiceActiveRef.current;
     if (voiceOn) {
       voiceManagerRef.current?.mute();
       try {
-        // "One moment, please."
         setVoiceState('acknowledging');
         const ackAudio = await speakText('', 'acknowledging');
         await playAudio(ackAudio);
         await new Promise((r) => setTimeout(r, 400));
-
-        // "Here is what I found."
-        setVoiceState('announcing');
-        const annAudio = await speakText('', 'announcing');
-        await playAudio(annAudio);
-        await new Promise((r) => setTimeout(r, 700));
       } catch (_) {
         /* non-critical */
       } finally {
@@ -276,6 +259,24 @@ export default function ChatPanel() {
       const decoder = new TextDecoder();
       let firstToken = true;
 
+      // Play "Here is what I found." concurrently — voice speaks while text streams
+      if (voiceOn) {
+        (async () => {
+          try {
+            voiceManagerRef.current?.mute();
+            setVoiceState('announcing');
+            const annPhrase = selectedSpaceId ? 'announcing_space' : 'announcing';
+            const annAudio = await speakText('', annPhrase);
+            await playAudio(annAudio);
+            await new Promise((r) => setTimeout(r, 700));
+          } catch (_) {
+            /* non-critical */
+          } finally {
+            voiceManagerRef.current?.unmute();
+          }
+        })();
+      }
+
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
@@ -292,6 +293,17 @@ export default function ChatPanel() {
             continue;
           }
 
+          // Handle tool-call actions from LLM
+          if (data.startsWith('[ACTION]')) {
+            try {
+              const actionPayload = JSON.parse(data.slice(8));
+              resolveAction(actionPayload);
+            } catch (e) {
+              console.warn('[Chat] Failed to parse action:', e);
+            }
+            continue;
+          }
+
           if (firstToken) {
             firstToken = false;
             const msgs = useStore.getState().messages;
@@ -305,7 +317,8 @@ export default function ChatPanel() {
               useStore.setState({ messages: updated });
             }
           }
-          appendToLastMessage(data);
+          // Restore newlines that were escaped for SSE transport
+          appendToLastMessage(data.replace(/\\n/g, '\n'));
         }
       }
     } catch (err) {
@@ -407,7 +420,19 @@ export default function ChatPanel() {
               )}
               <div className={`chat-panel__message chat-panel__message--${msg.role}`}>
                 <div className="chat-panel__bubble">
-                  <p className="chat-panel__bubble-text">{msg.text}</p>
+                  {msg.role === 'delta' ? (
+                    <div className="chat-panel__bubble-text chat-panel__markdown">
+                      <ReactMarkdown
+                        components={{
+                          table: ({ children }) => (
+                            <div className="table-scroll"><table>{children}</table></div>
+                          ),
+                        }}
+                      >{msg.text}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    <p className="chat-panel__bubble-text">{msg.text}</p>
+                  )}
                   {msg.time && (
                     <span className="chat-panel__bubble-time">{msg.time}</span>
                   )}
