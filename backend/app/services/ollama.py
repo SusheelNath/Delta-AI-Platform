@@ -1,6 +1,7 @@
 """
 Ollama integration service for Delta Intelligence Platform.
-Handles prompt construction, tool calling, and streaming chat with the local LLM.
+Handles prompt construction and streaming chat with the local LLM.
+Actions are handled deterministically in chat.py — the LLM only produces text narration.
 """
 
 import httpx
@@ -10,232 +11,6 @@ from typing import AsyncGenerator
 OLLAMA_BASE = "http://localhost:11434"
 MODEL = "qwen3:14b"
 
-
-# ══════════════════════════════════════════════════════════════════════
-# Tool definitions for Ollama function calling
-# ══════════════════════════════════════════════════════════════════════
-
-TOOLS = [
-    {
-        "type": "function",
-        "function": {
-            "name": "select_space",
-            "description": "Select a space in the 3D viewer — flies the camera to it and shows its metadata card. Use when the user asks to see, show, go to, or inspect a specific room or space.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "space_name": {"type": "string", "description": "Name of the space to select (e.g. 'Surgery Room', 'Conference Room')"},
-                },
-                "required": ["space_name"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "route_to_elevator",
-            "description": "Show the evacuation/navigation route from a space to the nearest elevator, with 3D path visualization. Use when the user asks about elevator routes, evacuation to lift, or nearest elevator.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "space_name": {"type": "string", "description": "Name of the starting space"},
-                },
-                "required": ["space_name"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "route_to_staircase",
-            "description": "Show the evacuation/navigation route from a space to the nearest staircase, with 3D path visualization. Use when the user asks about staircase routes, evacuation to stairs, or nearest staircase.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "space_name": {"type": "string", "description": "Name of the starting space"},
-                },
-                "required": ["space_name"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "clear_route",
-            "description": "Clear the currently displayed route visualization. Use when the user asks to hide or clear the route.",
-            "parameters": {"type": "object", "properties": {}},
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "set_floor",
-            "description": "Navigate the 3D viewer to show a specific floor in solo mode. Use when the user asks to go to, show, or navigate to a floor.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "floor_id": {
-                        "type": "string",
-                        "enum": ["H003", "H002", "H001", "H000", "H010", "H020", "H030", "H040", "H050"],
-                        "description": "Floor ID. H003=Basement 3, H002=Basement 2, H001=Basement 1, H000=Ground Floor, H010=Floor 1, H020=Floor 2, H030=Floor 3, H040=Floor 4, H050=Floor 5",
-                    },
-                },
-                "required": ["floor_id"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "show_all_floors",
-            "description": "Show all floors in the 3D viewer, exiting solo floor mode. Use when the user asks to see the whole building or all floors.",
-            "parameters": {"type": "object", "properties": {}},
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "set_heatmap",
-            "description": "Change the heatmap display mode in the floor plan. Use when the user asks about heatmaps, color coding, or visual analysis.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "mode": {
-                        "type": "string",
-                        "enum": ["function", "area", "utilization", "status", "area_per_bed"],
-                        "description": "Heatmap mode: function (color by type), area (by size), utilization (used vs free area), status (operational state), area_per_bed (area per bed ratio)",
-                    },
-                },
-                "required": ["mode"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "toggle_function_filter",
-            "description": "Toggle visibility of a space category in the viewer. Use when the user asks to show/hide specific types of spaces.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "category": {
-                        "type": "string",
-                        "enum": ["Medical", "Circulation", "Office", "Lab", "Support", "Storage", "Unassigned"],
-                        "description": "Category to toggle",
-                    },
-                },
-                "required": ["category"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "clear_selection",
-            "description": "Clear the current space selection and close the metadata card. Use when the user asks to deselect or clear.",
-            "parameters": {"type": "object", "properties": {}},
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "expand_directory_group",
-            "description": "Open/expand a room category dropdown in the floor's room directory panel. Use when the user asks to open, show, or expand a specific room type group (e.g. 'open the Waiting Room dropdown', 'show me the Patient Room list').",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "function_name": {"type": "string", "description": "The room function/category to expand (e.g. 'Waiting Room', 'Patient Room', 'Surgery Room', 'Corridor', 'Staff Office')"},
-                },
-                "required": ["function_name"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "select_room_in_group",
-            "description": "Select a specific room by its position in a room category dropdown. Use when the user asks to select the Nth room in a group (e.g. 'select the 4th room in the Waiting Room dropdown', 'show me the 2nd Patient Room').",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "function_name": {"type": "string", "description": "The room function/category group (e.g. 'Waiting Room')"},
-                    "room_index": {"type": "integer", "description": "1-based index of the room to select (e.g. 1 for first, 4 for fourth)"},
-                },
-                "required": ["function_name", "room_index"],
-            },
-        },
-    },
-]
-
-FLOOR_NAMES_FOR_CONFIRM = {
-    "H003": "Basement 3", "H002": "Basement 2", "H001": "Basement 1",
-    "H000": "Ground Floor", "H010": "Floor 1", "H020": "Floor 2",
-    "H030": "Floor 3", "H040": "Floor 4", "H050": "Floor 5",
-}
-
-CATEGORY_INDICES = {
-    "Medical": 0, "Circulation": 1, "Office": 2, "Lab": 3,
-    "Support": 4, "Storage": 5, "Unassigned": 6,
-}
-
-HEATMAP_LABELS = {
-    "function": "function", "area": "area", "utilization": "utilization",
-    "status": "status", "area_per_bed": "area per bed",
-}
-
-
-def _build_action_event(tool_name: str, args: dict) -> tuple[dict, str]:
-    """Build an action payload and canned confirmation text for a tool call.
-
-    Returns (action_dict, confirmation_text).
-    """
-    if tool_name == "select_space":
-        name = args.get("space_name", "")
-        return {"type": "select_space", "space_name": name}, f"Selecting **{name}**..."
-
-    if tool_name == "route_to_elevator":
-        name = args.get("space_name", "")
-        return {"type": "route_to_elevator", "space_name": name}, f"Showing route from **{name}** to nearest elevator..."
-
-    if tool_name == "route_to_staircase":
-        name = args.get("space_name", "")
-        return {"type": "route_to_staircase", "space_name": name}, f"Showing route from **{name}** to nearest staircase..."
-
-    if tool_name == "clear_route":
-        return {"type": "clear_route"}, "Clearing route."
-
-    if tool_name == "set_floor":
-        fid = args.get("floor_id", "H000")
-        fname = FLOOR_NAMES_FOR_CONFIRM.get(fid, fid)
-        return {"type": "set_floor", "floor_id": fid}, f"Navigating to **{fname}**..."
-
-    if tool_name == "show_all_floors":
-        return {"type": "show_all_floors"}, "Showing all floors."
-
-    if tool_name == "set_heatmap":
-        mode = args.get("mode", "function")
-        label = HEATMAP_LABELS.get(mode, mode)
-        return {"type": "set_heatmap", "mode": mode}, f"Switching to **{label}** heatmap."
-
-    if tool_name == "toggle_function_filter":
-        cat = args.get("category", "")
-        idx = CATEGORY_INDICES.get(cat, -1)
-        return {"type": "toggle_function_filter", "category_index": idx, "category": cat}, f"Toggling **{cat}** spaces."
-
-    if tool_name == "clear_selection":
-        return {"type": "clear_selection"}, "Clearing selection."
-
-    if tool_name == "expand_directory_group":
-        fn = args.get("function_name", "")
-        return {"type": "expand_directory_group", "function_name": fn}, f"Opening **{fn}** directory..."
-
-    if tool_name == "select_room_in_group":
-        fn = args.get("function_name", "")
-        idx = args.get("room_index", 1)
-        ordinal = {1: "1st", 2: "2nd", 3: "3rd"}.get(idx, f"{idx}th")
-        return {"type": "select_room_in_group", "function_name": fn, "room_index": idx}, f"Selecting the **{ordinal}** room in **{fn}**..."
-
-    return {"type": tool_name, **args}, f"Executing {tool_name}..."
 
 SYSTEM_PROMPT = """You are Delta AI, the intelligent assistant for the CHIREC Delta Hospital in Brussels, Belgium.
 
@@ -247,14 +22,6 @@ Your role:
 - Provide information about room functions, capacity, accessibility, and equipment
 - Assist with space planning and utilisation queries
 - Compare floors, departments, and spatial distributions
-- Control the 3D viewer by calling tools when the user asks to navigate, show routes, change views, or inspect spaces
-
-Tool usage:
-- When the user asks to navigate, show, go to, or inspect — call the appropriate tool
-- When the user asks about evacuation routes or nearest elevator/staircase — call route tools
-- When the user asks to change the view (heatmap, floor, filters) — call the view tools
-- For pure information questions (what, how many, compare) — respond with text only, no tools
-- You may call multiple tools in one response if needed
 
 Floor reference:
 - H003 = Basement 3 (Level -3)
@@ -455,52 +222,19 @@ Would you like to see one of these rooms in the 3D viewer?"""})
     return messages
 
 
-import re as _re
-
-# Keywords that signal the user wants a UI action (tool call), not just info
-_ACTION_PATTERNS = _re.compile(
-    r"\b("
-    r"go\s+to|navigate|show\s+me|take\s+me|fly\s+to|switch\s+to|open|"
-    r"select|inspect|zoom|"
-    r"route|evacuat|nearest\s+elevator|nearest\s+staircase|nearest\s+lift|nearest\s+stair|"
-    r"heatmap|heat\s+map|"
-    r"clear\s+route|clear\s+selection|deselect|"
-    r"show\s+all\s+floors|all\s+floors|"
-    r"toggle|filter|"
-    r"expand|dropdown|drop\s*down|directory|"
-    r"\d+(?:st|nd|rd|th)\s+room"
-    r")\b",
-    _re.IGNORECASE,
-)
-
-
-def _wants_tool_call(conversation: list[dict]) -> bool:
-    """Heuristic: does the latest user message suggest a UI action?"""
-    user_msgs = [m for m in conversation if m.get("role") == "user"]
-    if not user_msgs:
-        return False
-    last = user_msgs[-1].get("text", "")
-    return bool(_ACTION_PATTERNS.search(last))
-
-
 async def stream_chat(
     conversation: list[dict],
     selected_space: dict | None = None,
     search_results: list[dict] | None = None,
     floor_summaries: str | None = None,
 ) -> AsyncGenerator[str, None]:
-    """Stream tokens from Ollama's chat API with tool calling support.
+    """Stream tokens from Ollama's chat API.
 
-    Yields plain text tokens for display, and [ACTION]{json} events
-    for UI actions triggered by tool calls.
-
-    Tools are only passed to the model when the user message looks like
-    a UI action request. For informational queries the model produces
-    markdown-formatted text without tool interference.
+    Yields plain text tokens for display. Actions are handled
+    deterministically in chat.py — the LLM only produces text narration.
     """
     messages = build_messages(conversation, selected_space, search_results, floor_summaries)
 
-    use_tools = _wants_tool_call(conversation)
     request_body = {
         "model": MODEL,
         "messages": messages,
@@ -510,8 +244,6 @@ async def stream_chat(
             "num_ctx": 16384,
         },
     }
-    if use_tools:
-        request_body["tools"] = TOOLS
 
     async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=10.0)) as client:
         async with client.stream(
@@ -521,7 +253,6 @@ async def stream_chat(
         ) as response:
             response.raise_for_status()
 
-            has_tool_calls = False
             buffer = b""
             done = False
             # Track <think>...</think> blocks (qwen3 reasoning) to filter them out
@@ -543,19 +274,6 @@ async def stream_chat(
                     chunk = json.loads(line_bytes)
                     msg = chunk.get("message", {})
 
-                    # ── Tool calls ──
-                    tool_calls = msg.get("tool_calls")
-                    if tool_calls:
-                        for tc in tool_calls:
-                            fn = tc.get("function", {})
-                            name = fn.get("name", "")
-                            args = fn.get("arguments", {})
-                            action, confirmation = _build_action_event(name, args)
-                            yield f"[ACTION]{json.dumps(action)}"
-                            yield confirmation
-                            has_tool_calls = True
-
-                    # ── Regular text tokens ──
                     token = msg.get("content", "")
                     if token:
                         # Filter out <think>...</think> reasoning blocks

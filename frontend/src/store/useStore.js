@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { getAllSessions, getSession, putSession, deleteSession as dbDeleteSession } from '../utils/sessionDB';
 
 const POLYGONS_KEY = 'delta_floorPolygons';
 
@@ -117,6 +118,11 @@ const useStore = create((set, get) => ({
   // Chat
   messages: [],
   isGenerating: false,
+
+  // Session history
+  activeSessionId: null,
+  sessionList: [],        // [{ id, title, created, updated, messageCount, preview }] — no messages (lightweight)
+  sessionHistoryOpen: false,
 
   // Voice (STT / TTS)
   voiceActive: false,
@@ -335,6 +341,132 @@ const useStore = create((set, get) => ({
       }
       return { messages: msgs };
     });
+  },
+
+  // ── Session history actions ──
+
+  setSessionHistoryOpen: (open) => set({ sessionHistoryOpen: open }),
+
+  /** Load session list from IndexedDB on app start (lightweight — no message bodies). */
+  loadSessionList: async () => {
+    try {
+      const all = await getAllSessions();
+      const lightweight = all.map(({ id, title, created, updated, messageCount, preview }) => ({
+        id, title, created, updated, messageCount, preview,
+      }));
+      set({ sessionList: lightweight });
+    } catch (e) {
+      console.warn('[Sessions] Failed to load list:', e);
+    }
+  },
+
+  /** Save current messages as a session (create or update). */
+  saveCurrentSession: async () => {
+    const { messages, activeSessionId } = get();
+    // Don't save empty or welcome-only sessions
+    if (messages.length === 0) return;
+    const hasUserMessage = messages.some((m) => m.role === 'user');
+    if (!hasUserMessage) return;
+
+    const now = new Date().toISOString();
+    const id = activeSessionId || `s_${Date.now()}`;
+
+    // Extract title from first Delta response ### heading
+    let title = '';
+    const firstDelta = messages.find((m) => m.role === 'delta' && m.text.trim());
+    if (firstDelta) {
+      const headingMatch = firstDelta.text.match(/^###\s*(.+)/m);
+      if (headingMatch) {
+        title = headingMatch[1].replace(/\*\*/g, '').trim().slice(0, 60);
+      }
+    }
+    // Fallback: first user message
+    if (!title) {
+      const firstUser = messages.find((m) => m.role === 'user');
+      if (firstUser) title = firstUser.text.slice(0, 50);
+    }
+    if (!title) title = 'Untitled Chat';
+
+    // Preview: last Delta message snippet
+    const lastDelta = [...messages].reverse().find((m) => m.role === 'delta' && m.text.trim());
+    const preview = lastDelta ? lastDelta.text.replace(/[#*\n]/g, ' ').trim().slice(0, 80) : '';
+
+    const session = {
+      id,
+      title,
+      created: activeSessionId ? undefined : now,  // preserve original created
+      updated: now,
+      messageCount: messages.length,
+      preview,
+      messages,
+    };
+
+    // If updating, preserve created date
+    if (activeSessionId) {
+      const existing = get().sessionList.find((s) => s.id === activeSessionId);
+      if (existing) session.created = existing.created;
+    }
+    if (!session.created) session.created = now;
+
+    try {
+      await putSession(session);
+      set({ activeSessionId: id });
+      // Refresh lightweight list
+      const all = await getAllSessions();
+      const lightweight = all.map(({ id: sid, title: t, created: c, updated: u, messageCount: mc, preview: p }) => ({
+        id: sid, title: t, created: c, updated: u, messageCount: mc, preview: p,
+      }));
+      set({ sessionList: lightweight });
+    } catch (e) {
+      console.warn('[Sessions] Failed to save:', e);
+    }
+  },
+
+  /** Load a session's full messages into the chat. */
+  loadSession: async (sessionId) => {
+    try {
+      const session = await getSession(sessionId);
+      if (!session) return;
+      set({
+        messages: session.messages || [],
+        activeSessionId: session.id,
+        sessionHistoryOpen: false,
+      });
+    } catch (e) {
+      console.warn('[Sessions] Failed to load session:', e);
+    }
+  },
+
+  /** Start a new empty chat, saving current session first if needed. */
+  newChat: async () => {
+    const { messages, saveCurrentSession } = get();
+    if (messages.length > 0) {
+      await saveCurrentSession();
+    }
+    set({
+      messages: [],
+      activeSessionId: null,
+      sessionHistoryOpen: false,
+    });
+  },
+
+  /** Delete a session from IndexedDB and refresh list. */
+  removeSession: async (sessionId) => {
+    try {
+      await dbDeleteSession(sessionId);
+      const { activeSessionId } = get();
+      if (activeSessionId === sessionId) {
+        set({ messages: [], activeSessionId: null });
+      }
+      // Refresh list
+      const all = await getAllSessions();
+      const lightweight = all.map(({ id, title, created, updated, messageCount, preview }) => ({
+        id, title, created, updated, messageCount, preview,
+      }));
+      set({ sessionList: lightweight });
+    } catch (e) {
+      console.warn('[Sessions] Failed to delete:', e);
+    }
   },
 }));
 

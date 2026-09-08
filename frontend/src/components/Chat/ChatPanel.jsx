@@ -47,14 +47,19 @@ export default function ChatPanel() {
     voiceActiveRef.current = voiceActive;
   }, [voiceActive]);
 
-  // ── Welcome message ──
-  const welcomeSent = useRef(false);
+  // ── Load session list on mount ──
+  const loadSessionList = useStore((s) => s.loadSessionList);
   useEffect(() => {
-    if (!welcomeSent.current && messages.length === 0) {
-      welcomeSent.current = true;
+    loadSessionList();
+  }, []);
+
+  // ── Welcome message (re-fires when messages cleared by New Chat) ──
+  const isEmpty = messages.length === 0;
+  useEffect(() => {
+    if (isEmpty) {
       addMessage(WELCOME_MESSAGE);
     }
-  }, []);
+  }, [isEmpty]);
 
   // ── Auto-scroll ──
   useEffect(() => {
@@ -343,6 +348,8 @@ export default function ChatPanel() {
     } finally {
       setGenerating(false);
       abortRef.current = null;
+      // Auto-save session after each exchange
+      useStore.getState().saveCurrentSession();
     }
   }, [input, isGenerating, addMessage, appendToLastMessage, setGenerating, selectedSpaceId, setVoiceState]);
 
@@ -368,6 +375,9 @@ export default function ChatPanel() {
     ? `chat-panel__mic-btn--${voiceState}`
     : '';
 
+  const sessionHistoryOpen = useStore((s) => s.sessionHistoryOpen);
+  const setSessionHistoryOpen = useStore((s) => s.setSessionHistoryOpen);
+
   return (
     <div className="chat-panel">
       {/* Header */}
@@ -376,8 +386,23 @@ export default function ChatPanel() {
           <span className="chat-panel__title">Delta</span>
           <span className={`chat-panel__status-dot ${viewerReady ? 'chat-panel__status-dot--ready' : ''}`} />
         </div>
-        <span className="chat-panel__header-sub">AI Assistant</span>
+        <div className="chat-panel__header-right">
+          <button
+            className={`chat-panel__history-btn ${sessionHistoryOpen ? 'chat-panel__history-btn--active' : ''}`}
+            onClick={() => setSessionHistoryOpen(!sessionHistoryOpen)}
+            title="Session history"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+          </button>
+          <span className="chat-panel__header-sub">AI Assistant</span>
+        </div>
       </div>
+
+      {/* Session history panel */}
+      {sessionHistoryOpen && <SessionHistory />}
 
       {/* Context indicator */}
       {selectedSpace && (
@@ -504,6 +529,71 @@ export default function ChatPanel() {
             </button>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function SessionHistory() {
+  const sessionList = useStore((s) => s.sessionList);
+  const activeSessionId = useStore((s) => s.activeSessionId);
+  const loadSession = useStore((s) => s.loadSession);
+  const newChat = useStore((s) => s.newChat);
+  const removeSession = useStore((s) => s.removeSession);
+
+  const formatDate = (iso) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const now = new Date();
+    const diff = now - d;
+    if (diff < 86400000) {
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    if (diff < 604800000) {
+      return d.toLocaleDateString([], { weekday: 'short' });
+    }
+    return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  };
+
+  return (
+    <div className="session-history">
+      <div className="session-history__header">
+        <span className="session-history__title">Sessions</span>
+        <button className="session-history__new-btn" onClick={newChat} title="New chat">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          New Chat
+        </button>
+      </div>
+      <div className="session-history__list">
+        {sessionList.length === 0 ? (
+          <div className="session-history__empty">No saved sessions</div>
+        ) : (
+          sessionList.map((s) => (
+            <div
+              key={s.id}
+              className={`session-history__item ${s.id === activeSessionId ? 'session-history__item--active' : ''}`}
+              onClick={() => loadSession(s.id)}
+            >
+              <div className="session-history__item-top">
+                <span className="session-history__item-title">{s.title}</span>
+                <span className="session-history__item-date">{formatDate(s.updated)}</span>
+              </div>
+              <div className="session-history__item-bottom">
+                <span className="session-history__item-preview">{s.preview}</span>
+                <button
+                  className="session-history__item-delete"
+                  onClick={(e) => { e.stopPropagation(); removeSession(s.id); }}
+                  title="Delete session"
+                >
+                  &times;
+                </button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
