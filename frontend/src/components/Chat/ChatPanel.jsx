@@ -822,6 +822,42 @@ function LearningsPanel() {
   const learnings = useStore((s) => s.learnings);
   const removeLearning = useStore((s) => s.removeLearning);
   const clearAllLearnings = useStore((s) => s.clearAllLearnings);
+  const listRef = useRef(null);
+  const scrollState = useRef({ target: 0, current: 0, raf: null });
+
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const s = scrollState.current;
+    s.current = el.scrollTop;
+    s.target = el.scrollTop;
+
+    const tick = () => {
+      const diff = s.target - s.current;
+      if (Math.abs(diff) < 0.3) {
+        s.current = s.target;
+        el.scrollTop = s.target;
+        s.raf = null;
+        return;
+      }
+      s.current += diff * 0.18;
+      el.scrollTop = Math.round(s.current);
+      s.raf = requestAnimationFrame(tick);
+    };
+
+    const onWheel = (e) => {
+      e.preventDefault();
+      const max = el.scrollHeight - el.clientHeight;
+      s.target = Math.max(0, Math.min(max, s.target + e.deltaY * 0.8));
+      if (!s.raf) s.raf = requestAnimationFrame(tick);
+    };
+
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+      if (s.raf) cancelAnimationFrame(s.raf);
+    };
+  }, []);
 
   return (
     <div className="learnings-panel">
@@ -833,7 +869,7 @@ function LearningsPanel() {
           </button>
         )}
       </div>
-      <div className="learnings-panel__list">
+      <div className="learnings-panel__list" ref={listRef}>
         {learnings.length === 0 ? (
           <div className="learnings-panel__empty">
             No learnings yet. As you chat, Delta will learn your preferences.

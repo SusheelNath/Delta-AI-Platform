@@ -21,6 +21,8 @@ export default function RoomDirectory() {
   const [collapsedGroups, setCollapsedGroups] = useState(new Set());
   const initializedFloorRef = useRef(null);
   const selectedRef = useRef(null);
+  const directoryRef = useRef(null);
+  const scrollState = useRef({ target: 0, current: 0, raf: null });
 
   const polygons = activeFloorPolygons;
 
@@ -66,6 +68,41 @@ export default function RoomDirectory() {
       selectedRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   }, [selectedSpaceId]);
+
+  // Lerped smooth scroll
+  useEffect(() => {
+    const el = directoryRef.current;
+    if (!el) return;
+    const s = scrollState.current;
+    s.current = el.scrollTop;
+    s.target = el.scrollTop;
+
+    const tick = () => {
+      const diff = s.target - s.current;
+      if (Math.abs(diff) < 0.3) {
+        s.current = s.target;
+        el.scrollTop = s.target;
+        s.raf = null;
+        return;
+      }
+      s.current += diff * 0.18;
+      el.scrollTop = Math.round(s.current);
+      s.raf = requestAnimationFrame(tick);
+    };
+
+    const onWheel = (e) => {
+      e.preventDefault();
+      const max = el.scrollHeight - el.clientHeight;
+      s.target = Math.max(0, Math.min(max, s.target + e.deltaY * 0.8));
+      if (!s.raf) s.raf = requestAnimationFrame(tick);
+    };
+
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+      if (s.raf) cancelAnimationFrame(s.raf);
+    };
+  }, []);
 
   // AI-driven: expand a directory group and optionally select the Nth room
   useEffect(() => {
@@ -149,7 +186,7 @@ export default function RoomDirectory() {
   }
 
   return (
-    <div className="room-directory">
+    <div className="room-directory" ref={directoryRef}>
       {groups.map(([fn, fnPolygons], groupIdx) => {
         const collapsed = collapsedGroups.has(fn);
         const totalOcc = fnPolygons.reduce((s, p) => s + (p.max_occupancy || 0), 0);

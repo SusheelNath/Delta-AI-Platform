@@ -435,8 +435,8 @@ def try_render_template(
                     room_idx = a2.get("room_index")
                     fn_name = a2.get("function_name")
                     break
-            # Use enrichment-resolved intel if available, else frontend-provided space
-            frontend = action.get("_resolved_intel") or selected_space
+            # Frontend-provided space is the single source of truth
+            frontend = selected_space or action.get("_resolved_intel")
             text = render_room_detail(guid, room_idx, fn_name, frontend_space=frontend)
             if text:
                 parts.append(text)

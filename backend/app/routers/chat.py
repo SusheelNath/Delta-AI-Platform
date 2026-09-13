@@ -661,6 +661,21 @@ async def chat(body: ChatRequest, db: Session = Depends(get_db)):
         if ambiguity:
             disambiguation_hint = format_disambiguation_hint(ambiguity)
 
+    # When a space is already selected, the selected space context is the
+    # single source of truth. Suppress search results that share the same
+    # name OR same function to prevent the LLM from aggregating/summing
+    # data across identically-named spaces on different floors.
+    if selected_space and search_results:
+        sel_name = (selected_space.get("space_name") or "").lower().strip()
+        sel_fn = (selected_space.get("primary_function") or "").lower().strip()
+        sel_guid = selected_space.get("ifc_guid", "")
+        search_results = [
+            r for r in search_results
+            if r.get("ifc_guid") != sel_guid
+            and (r.get("space_name") or "").lower().strip() != sel_name
+            and (r.get("primary_function") or "").lower().strip() != sel_fn
+        ]
+
     # Deterministic action detection — fires before LLM (supports chained actions)
     parsed_list = parse_intents(latest_user_text, expanded_group=body.expanded_group, active_floor_id=body.active_floor_id)
     detected_actions = intents_to_actions(parsed_list, selected_space, body.active_floor_id)

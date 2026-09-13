@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #ffffff;
+  background: #f0eee9;
 }
 
 /* ── Header ── */
@@ -13,9 +13,10 @@
   height: 48px;
   min-height: 48px;
   padding: 0 16px;
-  border-bottom: 1px solid #eae7e2;
   background: #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  margin: 8px 8px 0 8px;
 }
 
 .chat-panel__header-left {
@@ -94,12 +95,15 @@
 
 /* ── Session History Panel ── */
 .session-history {
-  border-bottom: 1px solid #e5e2de;
-  background: #fafaf8;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  margin: 6px 8px 0 8px;
   max-height: 280px;
   display: flex;
   flex-direction: column;
   animation: session-slide-down 0.2s ease-out;
+  overflow: hidden;
 }
 
 @keyframes session-slide-down {
@@ -112,7 +116,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 8px 14px;
-  border-bottom: 1px solid #f0ede8;
+  border-bottom: 1px solid #f0eee9;
 }
 
 .session-history__title {
@@ -158,7 +162,7 @@
 .session-history__item {
   padding: 8px 14px;
   cursor: pointer;
-  border-bottom: 1px solid #f0ede8;
+  border-bottom: 1px solid #f0eee9;
   transition: background 0.15s ease;
 }
 
@@ -233,8 +237,11 @@
 
 /* ── Guide Booklet ── */
 .guide-booklet {
-  border-bottom: 1px solid #e5e2de;
-  background: #fafaf8;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  margin: 6px 8px 0 8px;
+  overflow: hidden;
 }
 
 .guide-booklet__strip {
@@ -357,11 +364,15 @@
 
 /* ── Learnings Panel ── */
 .learnings-panel {
-  border-bottom: 1px solid #e5e2de;
-  background: #fafaf8;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  margin: 6px 8px 0 8px;
   animation: session-slide-down 0.2s ease;
   max-height: 280px;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .learnings-panel__header {
@@ -369,7 +380,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 8px 12px;
-  border-bottom: 1px solid #f0ede8;
+  border-bottom: 1px solid #f0eee9;
 }
 
 .learnings-panel__title {
@@ -398,6 +409,25 @@
 
 .learnings-panel__list {
   padding: 4px 0;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.learnings-panel__list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.learnings-panel__list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.learnings-panel__list::-webkit-scrollbar-thumb {
+  background: rgba(231, 113, 51, 0.2);
+  border-radius: 4px;
+}
+
+.learnings-panel__list::-webkit-scrollbar-thumb:hover {
+  background: rgba(231, 113, 51, 0.35);
 }
 
 .learnings-panel__empty {
@@ -518,7 +548,7 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
-  background: linear-gradient(180deg, #ffffff 0%, #faf9f7 100%);
+  background: transparent;
 }
 
 .chat-panel__messages::-webkit-scrollbar {
@@ -553,7 +583,7 @@
 
 .chat-panel__bubble {
   padding: 10px 14px;
-  border-radius: 12px;
+  border-radius: 10px;
   max-width: 100%;
 }
 
@@ -716,15 +746,16 @@
   color: #c28a60;
 }
 
-/* ── Input tray — elevated card ── */
+/* ── Input tray — floating card ── */
 .chat-panel__input-tray {
   display: flex;
   flex-direction: column;
   gap: 0;
   padding: 0;
   background: #ffffff;
-  border-top: 1px solid #eae7e2;
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.04);
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  margin: 0 8px 8px 8px;
 }
 
 /* ── Input row ── */
