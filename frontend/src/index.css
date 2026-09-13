@@ -12,8 +12,8 @@ html, body, #root {
 }
 
 body {
-  background: #0a0e17;
-  color: #e2e8f0;
+  background: #f8f7f4;
+  color: #1a1a2e;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   font-size: 14px;
   line-height: 1.5;
@@ -36,14 +36,14 @@ input, textarea {
 }
 
 ::-webkit-scrollbar-track {
-  background: #0a0e17;
+  background: #f0ede8;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2d3548;
+  background: #c8c3ba;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3d4a63;
+  background: #a8a29e;
 }

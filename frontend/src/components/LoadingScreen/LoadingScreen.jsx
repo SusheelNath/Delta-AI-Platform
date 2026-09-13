@@ -46,7 +46,7 @@ export default function LoadingScreen() {
               cy={SIZE / 2}
               r={RADIUS}
               fill="none"
-              stroke="#1e2636"
+              stroke="#e5e2de"
               strokeWidth={STROKE}
             />
             {/* Progress arc */}

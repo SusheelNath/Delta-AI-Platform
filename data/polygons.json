@@ -12839,40 +12839,6 @@
     "created_at": "2026-09-13T01:39:42.586610"
   },
   {
-    "ifc_guid": "0X_HHBnnLCbv3OsWw4p6x_",
-    "floor_id": "H002",
-    "vertices": [
-      [
-        45.0,
-        5.0,
-        59.0,
-        59.082284233616434
-      ],
-      [
-        46.51358602220733,
-        58.131486568435456
-      ],
-      [
-        45.8,
-        57.0,
-        57.52931471382083
-      ],
-      [
-        44.944489038025495,
-        58.4695479604998
-      ],
-      [
-        45.5355872169981,
-        59.10341307062046
-      ]
-    ],
-    "space_name": "Accessibility Elevator",
-    "primary_function": "Elevator",
-    "area_m2": 12.152869523270056,
-    "perimeter_cm": null,
-    "created_at": "2026-09-13T01:39:42.586610"
-  },
-  {
     "ifc_guid": "0D49qAShj1VeBssFjebQJY",
     "floor_id": "H002",
     "vertices": [

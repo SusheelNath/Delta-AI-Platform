@@ -311,6 +311,7 @@ const useStore = create((set, get) => ({
     selectedSpace: null,
     activeRoute: null,
     highlightedGuids: [],
+    expandedGroups: [],
     searchQuery: '',
     drawerOpen: false,
     compareMode: false,
@@ -322,12 +323,14 @@ const useStore = create((set, get) => ({
   directoryExpandGroup: null,      // function name to expand in RoomDirectory
   directorySelectIndex: null,      // index of room to select within expanded group
   currentExpandedGroup: null,      // tracks which group is currently open (for "select the 4th one")
+  expandedGroups: [],              // all currently expanded group names (for multi-group 3D highlighting)
   routingPanelOpen: false,         // whether SpaceToolkit routing section is open
 
   expandDirectoryGroup: (functionName) => set({ directoryExpandGroup: functionName, directorySelectIndex: null }),
   selectRoomInGroup: (functionName, index) => set({ directoryExpandGroup: functionName, directorySelectIndex: index }),
   clearDirectoryAction: () => set({ directoryExpandGroup: null, directorySelectIndex: null }),
   setCurrentExpandedGroup: (name) => set({ currentExpandedGroup: name }),
+  setExpandedGroups: (groups) => set({ expandedGroups: groups }),
   setRoutingPanelOpen: (open) => set({ routingPanelOpen: open }),
 
   updatePolygonInFloor: (floorId, ifcGuid, updates) => {

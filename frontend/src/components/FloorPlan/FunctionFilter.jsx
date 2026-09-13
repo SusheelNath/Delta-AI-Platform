@@ -26,7 +26,7 @@ export default function FunctionFilter() {
         >
           <span
             className="function-filter__dot"
-            style={{ background: activeFunctionFilters[i] ? cat.cssColor : '#4a5268' }}
+            style={{ background: activeFunctionFilters[i] ? cat.cssColor : '#c8c3ba' }}
           />
           {cat.label}
         </button>

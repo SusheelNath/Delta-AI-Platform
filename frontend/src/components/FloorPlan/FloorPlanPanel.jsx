@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import useStore from '../../store/useStore';
 import { fetchFloors, fetchFloorPolygons, syncPolygons, savePolygon } from '../../api/client';
 import { computePolygonMetrics } from '../../utils/unprojectPolygon';
@@ -183,28 +183,15 @@ export default function FloorPlanPanel() {
   return (
     <div ref={panelRef} className="floorplan-panel">
       {/* ── Hero floor selector ── */}
-      <div className="floorplan-panel__hero">
-        <select
-          className="floorplan-panel__hero-select"
-          value={activeFloorId || ''}
-          onChange={(e) => {
-            const val = e.target.value;
-            if (val) { handleFloorClick(val); } else { showAllFloors(); clearSelection(); }
-          }}
-        >
-          <option value="">All floors</option>
-          {floors.map((floor) => (
-            <option key={floor.id} value={floor.id}>{floor.name}</option>
-          ))}
-        </select>
-        {activeFloor && (
-          <div className="floorplan-panel__hero-stats">
-            <span>{polyCount} spaces</span>
-            <span className="floorplan-panel__hero-dot">&middot;</span>
-            <span>{activeFloor.total_area_m2 != null ? `${Number(activeFloor.total_area_m2).toLocaleString(undefined, { maximumFractionDigits: 0 })} m\u00B2` : '--'}</span>
-          </div>
-        )}
-      </div>
+      <FloorDropdown
+        floors={floors}
+        activeFloorId={activeFloorId}
+        activeFloor={activeFloor}
+        polyCount={polyCount}
+        onSelect={(id) => {
+          if (id) { handleFloorClick(id); } else { showAllFloors(); clearSelection(); }
+        }}
+      />
 
       {/* ── Search (only when floor selected) ── */}
       {activeFloorId && (
@@ -290,6 +277,67 @@ export default function FloorPlanPanel() {
         )}
       </div>
 
+    </div>
+  );
+}
+
+/* ── Custom floor dropdown ── */
+function FloorDropdown({ floors, activeFloorId, activeFloor, polyCount, onSelect }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    const handleClick = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [open]);
+
+  const selectedLabel = activeFloor ? activeFloor.name : 'All floors';
+
+  return (
+    <div className="floorplan-panel__hero" ref={ref}>
+      <button
+        className={`floorplan-panel__hero-select ${open ? 'floorplan-panel__hero-select--open' : ''}`}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <span>{selectedLabel}</span>
+        <svg className={`floorplan-panel__hero-chevron ${open ? 'floorplan-panel__hero-chevron--open' : ''}`} width="12" height="7" viewBox="0 0 12 7" fill="none">
+          <path d="M1 1l5 5 5-5" stroke="#E77133" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+
+      {open && (
+        <div className="floorplan-panel__dropdown">
+          <button
+            className={`floorplan-panel__dropdown-item ${!activeFloorId ? 'floorplan-panel__dropdown-item--active' : ''}`}
+            onClick={() => { onSelect(''); setOpen(false); }}
+          >
+            All floors
+          </button>
+          <div className="floorplan-panel__dropdown-divider" />
+          {floors.map((floor) => (
+            <button
+              key={floor.id}
+              className={`floorplan-panel__dropdown-item ${activeFloorId === floor.id ? 'floorplan-panel__dropdown-item--active' : ''}`}
+              onClick={() => { onSelect(floor.id); setOpen(false); }}
+            >
+              {floor.name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {activeFloor && (
+        <div className="floorplan-panel__hero-stats">
+          <span>{polyCount} spaces</span>
+          <span className="floorplan-panel__hero-dot">&middot;</span>
+          <span>{activeFloor.total_area_m2 != null ? `${Number(activeFloor.total_area_m2).toLocaleString(undefined, { maximumFractionDigits: 0 })} m\u00B2` : '--'}</span>
+        </div>
+      )}
     </div>
   );
 }

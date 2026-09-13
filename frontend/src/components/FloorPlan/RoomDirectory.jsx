@@ -16,6 +16,7 @@ export default function RoomDirectory() {
   const directorySelectIndex = useStore((s) => s.directorySelectIndex);
   const clearDirectoryAction = useStore((s) => s.clearDirectoryAction);
   const setCurrentExpandedGroup = useStore((s) => s.setCurrentExpandedGroup);
+  const setExpandedGroups = useStore((s) => s.setExpandedGroups);
 
   const [collapsedGroups, setCollapsedGroups] = useState(new Set());
   const initializedFloorRef = useRef(null);
@@ -55,9 +56,10 @@ export default function RoomDirectory() {
   React.useEffect(() => {
     if (groups.length > 0 && initializedFloorRef.current !== activeFloorId) {
       setCollapsedGroups(new Set(groups.map(([fn]) => fn)));
+      setExpandedGroups([]);
       initializedFloorRef.current = activeFloorId;
     }
-  }, [groups, activeFloorId]);
+  }, [groups, activeFloorId, setExpandedGroups]);
 
   React.useEffect(() => {
     if (selectedRef.current) {
@@ -84,6 +86,8 @@ export default function RoomDirectory() {
     setCollapsedGroups((prev) => {
       const next = new Set(prev);
       next.delete(fnName);
+      const allGroupNames = groups.map(([name]) => name);
+      setExpandedGroups(allGroupNames.filter((name) => !next.has(name)));
       return next;
     });
     setCurrentExpandedGroup(fnName);
@@ -113,17 +117,21 @@ export default function RoomDirectory() {
       } else {
         next.add(fn);
       }
+      // Sync expanded groups to store: all group names NOT in the collapsed set
+      const allGroupNames = groups.map(([name]) => name);
+      const expanded = allGroupNames.filter((name) => !next.has(name));
+      setExpandedGroups(expanded);
       return next;
     });
     setCurrentExpandedGroup(isCurrentlyCollapsed ? fn : null);
-  }, [collapsedGroups, setCurrentExpandedGroup]);
+  }, [collapsedGroups, setCurrentExpandedGroup, setExpandedGroups, groups]);
 
   const isSearching = searchQuery.trim().length > 0;
 
   if (!activeFloorId && !isSearching) {
     return (
       <div className="room-directory__empty">
-        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#7b8ca1" strokeWidth="1.2">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.2">
           <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" strokeLinecap="round" strokeLinejoin="round"/>
           <polyline points="9 22 9 12 15 12 15 22" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
@@ -150,7 +158,7 @@ export default function RoomDirectory() {
         return (
           <div key={fn} className="room-directory__group">
             <button
-              className="room-directory__group-header"
+              className={`room-directory__group-header ${collapsed ? '' : 'room-directory__group-header--open'}`}
               onClick={() => toggleGroup(fn)}
             >
               <span className={`room-directory__chevron ${collapsed ? '' : 'room-directory__chevron--open'}`}>
@@ -158,7 +166,7 @@ export default function RoomDirectory() {
                   <path d="M3 2l4 3-4 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </span>
-              <span className="room-directory__group-index">{groupNumber}.</span>
+              <span className="room-directory__group-index">{groupNumber}</span>
               <span className="room-directory__group-name">{fn}</span>
               <span className="room-directory__group-meta">
                 <span className="room-directory__group-col room-directory__group-col--rooms">

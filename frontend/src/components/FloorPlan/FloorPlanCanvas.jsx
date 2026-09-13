@@ -252,7 +252,7 @@ export default function FloorPlanCanvas({ floorIdOverride }) {
   };
 
   const getRoomColor = useCallback((room) => {
-    if (!room.isActive) return '#1a1d24';
+    if (!room.isActive) return '#d5d0c8';
     if (room.isMep) return MEP_COLORS[room.spaceClass] || '#4a5568';
     if (heatmapMode === 'status') return STATUS_COLORS[room.status] || STATUS_COLORS.unknown;
     if (heatmapMode === 'function' || !heatmapStats) {
@@ -305,7 +305,7 @@ export default function FloorPlanCanvas({ floorIdOverride }) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, cw, ch);
 
-    ctx.fillStyle = '#0a0e17';
+    ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, cw, ch);
 
     ctx.save();
@@ -328,7 +328,7 @@ export default function FloorPlanCanvas({ floorIdOverride }) {
 
       if (isSearching) {
         alpha = searchMatches.has(room.id) ? 1 : 0.1;
-        if (!searchMatches.has(room.id)) color = '#1a1d24';
+        if (!searchMatches.has(room.id)) color = '#d5d0c8';
       }
 
       const isSelected = room.id === selectedSpaceId;

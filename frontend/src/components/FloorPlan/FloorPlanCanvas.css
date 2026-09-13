@@ -5,7 +5,7 @@
   user-select: none;
   position: relative;
   min-height: 0;
-  background: #0a0e17;
+  background: #ffffff;
 }
 
 .fpc:active {
@@ -35,10 +35,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(13, 17, 23, 0.9);
-  border: 1px solid #2d3548;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #e5e2de;
   border-radius: 6px;
-  color: #8892a5;
+  color: #6b7280;
   font-size: 16px;
   cursor: pointer;
   transition: all 0.12s ease;
@@ -46,7 +46,7 @@
 
 .fpc__zoom-btn:hover {
   border-color: #E77133;
-  color: #e2e8f0;
+  color: #1a1a2e;
 }
 
 .fpc__zoom-btn--reset {
@@ -59,8 +59,8 @@
   position: absolute;
   bottom: 10px;
   left: 10px;
-  background: rgba(13, 17, 23, 0.88);
-  border: 1px solid #2d3548;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #e5e2de;
   border-radius: 8px;
   padding: 8px 10px;
   display: flex;
@@ -68,6 +68,7 @@
   gap: 4px;
   z-index: 4;
   max-width: 140px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .fpc__legend-item {
@@ -85,13 +86,13 @@
 
 .fpc__legend-label {
   font-size: 10px;
-  color: #8892a5;
+  color: #6b7280;
   white-space: nowrap;
 }
 
 .fpc__legend-divider {
   height: 1px;
-  background: #2d3548;
+  background: #e5e2de;
   margin: 2px 0;
 }
 
@@ -100,10 +101,10 @@
     45deg,
     transparent,
     transparent 2px,
-    rgba(255,255,255,0.15) 2px,
-    rgba(255,255,255,0.15) 4px
+    rgba(0,0,0,0.1) 2px,
+    rgba(0,0,0,0.1) 4px
   ) !important;
-  border: 1px dashed rgba(255,255,255,0.3);
+  border: 1px dashed rgba(0,0,0,0.2);
 }
 
 .fpc__legend-gradient {
@@ -129,13 +130,13 @@
   position: absolute;
   pointer-events: none;
   z-index: 10;
-  background: rgba(13, 17, 23, 0.95);
-  border: 1px solid #2d3548;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #e5e2de;
   border-radius: 8px;
   padding: 10px 12px;
   min-width: 180px;
   max-width: 240px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 .fpc__tooltip-header {
@@ -144,7 +145,7 @@
   gap: 6px;
   margin-bottom: 8px;
   padding-bottom: 6px;
-  border-bottom: 1px solid #2d3548;
+  border-bottom: 1px solid #e5e2de;
 }
 
 .fpc__tooltip-dot {
@@ -157,7 +158,7 @@
 .fpc__tooltip-name {
   font-size: 13px;
   font-weight: 600;
-  color: #e2e8f0;
+  color: #1a1a2e;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -170,7 +171,7 @@
   gap: 8px;
   padding: 2px 0;
   font-size: 11px;
-  color: #c5cdd9;
+  color: #374151;
 }
 
 .fpc__tooltip-row--link {
@@ -183,12 +184,12 @@
 }
 
 .fpc__tooltip-key {
-  color: #5a6478;
+  color: #9ca3af;
   flex-shrink: 0;
 }
 
-.fpc__tooltip-status[data-status="operational"] { color: #4ade80; }
-.fpc__tooltip-status[data-status="maintenance"] { color: #fbbf24; }
+.fpc__tooltip-status[data-status="operational"] { color: #16a34a; }
+.fpc__tooltip-status[data-status="maintenance"] { color: #d97706; }
 .fpc__tooltip-status[data-status="closed"] { color: #ef4444; }
 .fpc__tooltip-status[data-status="unknown"] { color: #6b7280; }
 
@@ -197,13 +198,13 @@
   position: absolute;
   top: 10px;
   left: 10px;
-  background: rgba(13, 17, 23, 0.95);
+  background: rgba(255, 255, 255, 0.97);
   border: 1px solid #E77133;
   border-radius: 10px;
   padding: 12px 14px;
   min-width: 200px;
   z-index: 8;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 .fpc__dept-header {
@@ -212,7 +213,7 @@
   align-items: center;
   font-size: 14px;
   font-weight: 700;
-  color: #e2e8f0;
+  color: #1a1a2e;
   margin-bottom: 10px;
 }
 
@@ -224,16 +225,16 @@
   justify-content: center;
   border: none;
   border-radius: 50%;
-  background: #2d3548;
-  color: #8892a5;
+  background: #e5e2de;
+  color: #6b7280;
   font-size: 14px;
   cursor: pointer;
   transition: background 0.12s;
 }
 
 .fpc__dept-close:hover {
-  background: #3d4558;
-  color: #e2e8f0;
+  background: #d5d0c8;
+  color: #1a1a2e;
 }
 
 .fpc__dept-stats {
@@ -256,7 +257,7 @@
 
 .fpc__dept-stat-key {
   font-size: 10px;
-  color: #5a6478;
+  color: #9ca3af;
 }
 
 .fpc__dept-breakdown {
@@ -273,22 +274,22 @@
 }
 
 .fpc__dept-badge[data-status="operational"] {
-  background: rgba(74, 222, 128, 0.15);
-  color: #4ade80;
+  background: rgba(74, 222, 128, 0.1);
+  color: #16a34a;
 }
 
 .fpc__dept-badge[data-status="maintenance"] {
-  background: rgba(251, 191, 36, 0.15);
-  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.1);
+  color: #d97706;
 }
 
 .fpc__dept-badge[data-status="closed"] {
-  background: rgba(239, 68, 68, 0.15);
+  background: rgba(239, 68, 68, 0.1);
   color: #ef4444;
 }
 
 .fpc__dept-badge[data-status="unknown"] {
-  background: rgba(107, 114, 128, 0.15);
+  background: rgba(107, 114, 128, 0.08);
   color: #6b7280;
 }
 
@@ -296,22 +297,22 @@
 .fpc__disambig {
   position: absolute;
   z-index: 12;
-  background: rgba(13, 17, 23, 0.96);
-  border: 1px solid #2d3548;
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid #e5e2de;
   border-radius: 8px;
   padding: 8px 0;
   min-width: 180px;
   max-width: 260px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   transform: translate(-50%, 8px);
 }
 
 .fpc__disambig-title {
   font-size: 11px;
   font-weight: 600;
-  color: #5a6478;
+  color: #9ca3af;
   padding: 0 12px 6px;
-  border-bottom: 1px solid #2d3548;
+  border-bottom: 1px solid #e5e2de;
   margin-bottom: 4px;
 }
 
@@ -323,7 +324,7 @@
   padding: 6px 12px;
   border: none;
   background: none;
-  color: #e2e8f0;
+  color: #1a1a2e;
   font-size: 12px;
   cursor: pointer;
   text-align: left;
@@ -331,7 +332,7 @@
 }
 
 .fpc__disambig-item:hover {
-  background: rgba(231, 113, 51, 0.15);
+  background: rgba(231, 113, 51, 0.06);
 }
 
 .fpc__disambig-dot {
@@ -351,7 +352,7 @@
 
 .fpc__disambig-fn {
   font-size: 10px;
-  color: #5a6478;
+  color: #9ca3af;
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -362,12 +363,12 @@
   bottom: 10px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(13, 17, 23, 0.85);
-  border: 1px solid #2d3548;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #e5e2de;
   border-radius: 12px;
   padding: 4px 12px;
   font-size: 11px;
-  color: #8892a5;
+  color: #6b7280;
   pointer-events: none;
   z-index: 5;
 }
@@ -379,7 +380,7 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #5a6478;
+  color: #9ca3af;
   font-size: 12px;
   gap: 10px;
 }
@@ -387,7 +388,7 @@
 .fpc__spinner {
   width: 24px;
   height: 24px;
-  border: 2px solid #2d3548;
+  border: 2px solid #e5e2de;
   border-top-color: #E77133;
   border-radius: 50%;
   animation: fpc-spin 0.8s linear infinite;

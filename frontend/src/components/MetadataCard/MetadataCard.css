@@ -5,13 +5,13 @@
   width: 340px;
   max-height: 60vh;
   overflow-y: auto;
-  background: rgba(13, 17, 23, 0.92);
+  background: rgba(255, 255, 255, 0.97);
   backdrop-filter: blur(12px);
-  border: 1px solid #2d3548;
+  border: 1px solid #e5e2de;
   border-radius: 10px;
   padding: 16px;
   z-index: 10;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
 .metadata-card--expanded {
@@ -31,22 +31,22 @@
   justify-content: center;
   background: transparent;
   border: none;
-  color: #5a6478;
+  color: #9ca3af;
   font-size: 18px;
   border-radius: 4px;
   transition: all 0.12s;
 }
 
 .metadata-card__close:hover {
-  background: #1e2636;
-  color: #e2e8f0;
+  background: #f5f3f0;
+  color: #1a1a2e;
 }
 
 /* Compact */
 .metadata-card__name {
   font-size: 16px;
   font-weight: 600;
-  color: #e2e8f0;
+  color: #1a1a2e;
   margin-bottom: 2px;
   padding-right: 24px;
   line-height: 1.3;
@@ -54,7 +54,7 @@
 
 .metadata-card__sub {
   font-size: 12px;
-  color: #8892a5;
+  color: #6b7280;
   margin-bottom: 8px;
 }
 
@@ -74,12 +74,12 @@
 
 .metadata-card__label {
   font-size: 12px;
-  color: #8892a5;
+  color: #6b7280;
 }
 
 .metadata-card__value {
   font-size: 12px;
-  color: #c5cdd9;
+  color: #374151;
   font-weight: 500;
   text-align: right;
 }
@@ -102,21 +102,21 @@
 }
 
 .metadata-card__tag--green {
-  background: rgba(74, 186, 120, 0.15);
-  color: #4aba78;
-  border: 1px solid rgba(74, 186, 120, 0.25);
+  background: rgba(74, 186, 120, 0.08);
+  color: #16a34a;
+  border: 1px solid rgba(74, 186, 120, 0.2);
 }
 
 .metadata-card__tag--blue {
-  background: rgba(231, 113, 51, 0.15);
-  color: #f5a36b;
-  border: 1px solid rgba(231, 113, 51, 0.25);
+  background: rgba(231, 113, 51, 0.06);
+  color: #E77133;
+  border: 1px solid rgba(231, 113, 51, 0.2);
 }
 
 .metadata-card__tag--grey {
-  background: rgba(136, 146, 165, 0.1);
-  color: #8892a5;
-  border: 1px solid rgba(136, 146, 165, 0.15);
+  background: rgba(156, 163, 175, 0.08);
+  color: #6b7280;
+  border: 1px solid rgba(156, 163, 175, 0.15);
 }
 
 /* Actions */
@@ -137,30 +137,30 @@
 }
 
 .metadata-card__btn--primary {
-  background: #6e3a1e;
-  color: #f5b57b;
-  border: 1px solid #8e4d2a;
+  background: #E77133;
+  color: #ffffff;
+  border: 1px solid #E77133;
 }
 
 .metadata-card__btn--primary:hover {
-  background: #884a25;
+  background: #d46425;
 }
 
 .metadata-card__btn--secondary {
-  background: #161b26;
-  color: #8892a5;
-  border: 1px solid #2d3548;
+  background: #ffffff;
+  color: #6b7280;
+  border: 1px solid #e5e2de;
 }
 
 .metadata-card__btn--secondary:hover {
-  background: #1e2636;
-  color: #c5cdd9;
+  background: #f5f3f0;
+  color: #374151;
 }
 
 /* ── Expanded / Full Profile ── */
 .metadata-card__full {
   margin-top: 16px;
-  border-top: 1px solid #2d3548;
+  border-top: 1px solid #e5e2de;
   padding-top: 12px;
 }
 
@@ -199,7 +199,7 @@
 
 .metadata-card__meta-label {
   font-size: 10px;
-  color: #5a6478;
+  color: #9ca3af;
   text-transform: uppercase;
   letter-spacing: 0.4px;
   margin-bottom: 1px;
@@ -207,12 +207,12 @@
 
 .metadata-card__meta-value {
   font-size: 12px;
-  color: #c5cdd9;
+  color: #374151;
   word-break: break-word;
 }
 
 .metadata-card__meta-value--mono {
   font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
   font-size: 10px;
-  color: #8892a5;
+  color: #6b7280;
 }

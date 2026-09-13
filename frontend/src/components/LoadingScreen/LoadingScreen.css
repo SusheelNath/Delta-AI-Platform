@@ -5,7 +5,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(ellipse at center, #0f1520 0%, #0a0e17 70%);
+  background: radial-gradient(ellipse at center, #ffffff 0%, #f8f7f4 70%);
   transition: opacity 0.8s ease, visibility 0.8s ease;
   opacity: 1;
   visibility: visible;
@@ -50,20 +50,20 @@
 }
 
 .loading-screen__logo-path {
-  filter: drop-shadow(0 0 8px rgba(231, 113, 51, 0.5));
+  filter: drop-shadow(0 0 8px rgba(231, 113, 51, 0.4));
   animation: logo-breathe 2.4s ease-in-out infinite;
 }
 
 @keyframes logo-breathe {
-  0%, 100% { opacity: 0.7; filter: drop-shadow(0 0 6px rgba(231, 113, 51, 0.3)); }
-  50%      { opacity: 1;   filter: drop-shadow(0 0 14px rgba(231, 113, 51, 0.6)); }
+  0%, 100% { opacity: 0.7; filter: drop-shadow(0 0 6px rgba(231, 113, 51, 0.2)); }
+  50%      { opacity: 1;   filter: drop-shadow(0 0 14px rgba(231, 113, 51, 0.5)); }
 }
 
 /* ── Title ── */
 .loading-screen__title {
   font-size: 20px;
   font-weight: 600;
-  color: #e2e8f0;
+  color: #1a1a2e;
   letter-spacing: 0.5px;
   margin: 0;
 }
@@ -71,7 +71,7 @@
 /* ── Stage text ── */
 .loading-screen__stage {
   font-size: 12px;
-  color: #5a6478;
+  color: #9ca3af;
   text-align: center;
   letter-spacing: 0.3px;
 }

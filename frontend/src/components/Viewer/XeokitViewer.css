@@ -2,16 +2,16 @@
   position: relative;
   width: 100%;
   height: 100%;
-  background: linear-gradient(180deg, #111d33 0%, #0c1525 35%, #080e1a 70%, #060a12 100%);
+  background: linear-gradient(180deg, #f2f2f5 0%, #ebebf0 40%, #e6e6ec 70%, #e2e2e8 100%);
   overflow: hidden;
 }
 
-/* Radial glow behind model */
+/* Subtle radial glow behind model — cool neutral */
 .xeokit-viewer::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(30, 60, 120, 0.12) 0%, transparent 70%);
+  background: radial-gradient(ellipse 65% 55% at 50% 45%, rgba(255, 255, 255, 0.4) 0%, transparent 70%);
   pointer-events: none;
   z-index: 1;
 }
@@ -24,7 +24,7 @@
   z-index: 0;
 }
 
-/* NavCube — floating, no box */
+/* NavCube — floating with subtle shadow */
 .xeokit-viewer__navcube {
   position: absolute;
   top: 14px;
@@ -33,10 +33,10 @@
   height: 120px;
   pointer-events: all;
   border-radius: 0;
-  opacity: 0.85;
+  opacity: 0.9;
   border: none;
   background: transparent;
-  box-shadow: none;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.1));
   transition: opacity 0.3s ease;
 }
 
@@ -52,17 +52,17 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(13, 17, 23, 0.92);
+  background: rgba(255, 255, 255, 0.92);
   z-index: 5;
   gap: 12px;
-  color: #8892a5;
+  color: #6b7280;
   font-size: 14px;
 }
 
 .xeokit-viewer__spinner {
   width: 36px;
   height: 36px;
-  border: 3px solid #2d3548;
+  border: 3px solid #e5e2de;
   border-top-color: #E77133;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -80,7 +80,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(10, 22, 40, 0.78);
+  background: rgba(255, 255, 255, 0.8);
   z-index: 6;
   gap: 14px;
   animation: transitionFadeIn 0.15s ease-out;
@@ -105,7 +105,7 @@
 
 .xeokit-viewer__transition-track {
   fill: none;
-  stroke: #1e293b;
+  stroke: #e5e2de;
   stroke-width: 3;
 }
 
@@ -121,7 +121,7 @@
 .xeokit-viewer__transition-label {
   font-size: 13px;
   font-weight: 500;
-  color: #cbd5e1;
+  color: #374151;
   letter-spacing: 0.3px;
 }
 
@@ -134,11 +134,11 @@
 .xeokit-viewer__error-title {
   font-size: 16px;
   font-weight: 600;
-  color: #e2e8f0;
+  color: #1a1a2e;
 }
 
 .xeokit-viewer__error-sub {
-  color: #8892a5;
+  color: #6b7280;
   font-size: 13px;
   max-width: 320px;
   text-align: center;
@@ -160,8 +160,8 @@
 
 .xeokit-viewer__hint {
   font-size: 10px;
-  color: #5a6478;
-  background: rgba(13, 17, 23, 0.7);
+  color: #9ca3af;
+  background: rgba(255, 255, 255, 0.8);
   padding: 3px 8px;
   border-radius: 4px;
   pointer-events: none;
@@ -173,9 +173,9 @@
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
-  background: rgba(22, 27, 38, 0.9);
-  color: #8892a5;
-  border: 1px solid #2d3548;
+  background: rgba(255, 255, 255, 0.92);
+  color: #6b7280;
+  border: 1px solid #e5e2de;
   border-radius: 6px;
   font-size: 12px;
   transition: all 0.15s ease;
@@ -184,8 +184,8 @@
 }
 
 .xeokit-viewer__reset-btn:hover {
-  background: rgba(30, 38, 54, 0.95);
-  color: #e2e8f0;
+  background: #ffffff;
+  color: #1a1a2e;
   border-color: #E77133;
 }
 
@@ -193,23 +193,24 @@
 .xeokit-viewer__polygon-tooltip {
   position: absolute;
   pointer-events: none;
-  background: rgba(13, 17, 23, 0.92);
+  background: rgba(255, 255, 255, 0.96);
   border: 1px solid #E77133;
   border-radius: 6px;
   padding: 5px 9px;
   z-index: 20;
   white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .xeokit-viewer__polygon-tooltip-name {
   font-size: 11px;
   font-weight: 600;
-  color: #f5b57b;
+  color: #E77133;
 }
 
 .xeokit-viewer__polygon-tooltip-area {
   font-size: 10px;
-  color: #8892a5;
+  color: #6b7280;
   margin-top: 1px;
 }
 
@@ -229,7 +230,7 @@
   border-radius: 6px;
   cursor: pointer;
   transition: background 0.15s ease, opacity 0.15s ease;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+  box-shadow: 0 2px 8px rgba(231, 113, 51, 0.25);
 }
 
 .xeokit-viewer__save-btn:hover {
@@ -251,7 +252,7 @@
   font-size: 12px;
   font-weight: 600;
   border-radius: 5px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   animation: save-toast-in 0.2s ease;
 }
 

@@ -163,7 +163,7 @@ export default function XeokitViewer() {
       });
 
       viewer.scene.canvas.canvas.style.background = 'transparent';
-      viewer.scene.canvas.backgroundColor = [8/255, 14/255, 26/255];
+      viewer.scene.canvas.backgroundColor = [235/255, 235/255, 240/255];
       viewer.camera.projection = 'perspective';
       viewer.camera.perspective.near = 1.0;
 
@@ -224,23 +224,23 @@ export default function XeokitViewer() {
       // X-ray material (used for IfcSpace ghost outlines in floor plan view)
       viewer.scene.xrayMaterial.fill = true;
       viewer.scene.xrayMaterial.fillAlpha = 0.05;
-      viewer.scene.xrayMaterial.fillColor = [0.6, 0.6, 0.7];
+      viewer.scene.xrayMaterial.fillColor = [0.7, 0.7, 0.72];
       viewer.scene.xrayMaterial.edges = false;
 
       if (navCubeCanvasRef.current) {
         const navCube = new NavCubePlugin(viewer, {
           canvasElement: navCubeCanvasRef.current,
           visible: true,
-          color: '#0e1522',
-          frontColor: '#121a2a',
-          backColor: '#0b1018',
-          leftColor: '#0e1420',
-          rightColor: '#0e1420',
-          topColor: '#141e30',
-          bottomColor: '#0a0e18',
+          color: '#d8d8de',
+          frontColor: '#e0e0e6',
+          backColor: '#ccccd2',
+          leftColor: '#d5d5db',
+          rightColor: '#d5d5db',
+          topColor: '#e5e5eb',
+          bottomColor: '#c8c8ce',
           hoverColor: 'rgba(231, 113, 51, 0.30)',
-          textColor: '#ffffff',
-          highColor: '#f5944e',
+          textColor: '#4b5563',
+          highColor: '#E77133',
           shadowVisible: false,
           cameraFlyDuration: 0.4,
           fitVisible: false,
@@ -1197,6 +1197,7 @@ export default function XeokitViewer() {
   const floorSnapshots = useStore((s) => s.floorSnapshots);
   const activeRoute = useStore((s) => s.activeRoute);
   const currentExpandedGroup = useStore((s) => s.currentExpandedGroup);
+  const expandedGroups = useStore((s) => s.expandedGroups);
 
   // Derive a stable key from snapshot matrices so mesh effect only re-runs when matrices change,
   // not when the image URL updates (Tier 2 hi-res capture)
@@ -1340,11 +1341,12 @@ export default function XeokitViewer() {
     const routeStartGuid = activeRoute?.path?.[0]?.ifc_guid || null;
     const routePathGuids = activeRoute?.path ? new Set(activeRoute.path.map((p) => p.ifc_guid)) : null;
 
-    // ── Build group membership set for expanded directory group ──
+    // ── Build group membership set for all expanded directory groups ──
     const groupGuids = new Set();
-    if (currentExpandedGroup) {
+    if (expandedGroups.length > 0) {
+      const expandedSet = new Set(expandedGroups);
       for (const p of floorPolygons) {
-        if ((p.primary_function || 'Unassigned') === currentExpandedGroup) {
+        if (expandedSet.has(p.primary_function || 'Unassigned')) {
           groupGuids.add(p.ifc_guid);
         }
       }
@@ -1580,7 +1582,7 @@ export default function XeokitViewer() {
         }));
       } catch {}
     }
-  }, [hoveredPolygonGuid, selectedSpaceId, activeRoute, activeFloorId, currentExpandedGroup, floorPolygons]);
+  }, [hoveredPolygonGuid, selectedSpaceId, activeRoute, activeFloorId, expandedGroups, floorPolygons]);
 
 
   return (
