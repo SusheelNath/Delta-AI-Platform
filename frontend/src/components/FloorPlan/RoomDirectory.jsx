@@ -1,46 +1,16 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import useStore from '../../store/useStore';
 import { fetchSpaceByGuid } from '../../api/client';
-import { computePolygonMetrics } from '../../utils/unprojectPolygon';
+import { selectSpaceFromPolygon } from '../../utils/polygonOverrides';
 import './RoomDirectory.css';
 
-
-function getPolygonOverrides(polygon, floorId) {
-  const overrides = {};
-  if (polygon.area_m2 != null) {
-    overrides.area_m2 = polygon.area_m2;
-  }
-  if (polygon.normal_occupancy != null) overrides.normal_occupancy = polygon.normal_occupancy;
-  if (polygon.max_occupancy != null) overrides.max_occupancy = polygon.max_occupancy;
-  if (polygon.absolute_occupancy != null) overrides.absolute_occupancy = polygon.absolute_occupancy;
-  if (polygon.occupiable != null) overrides.occupiable = polygon.occupiable;
-  if (polygon.used_area_m2 != null) overrides.used_area_m2 = polygon.used_area_m2;
-  if (polygon.free_area_m2 != null) overrides.free_area_m2 = polygon.free_area_m2;
-
-  const snapshot = useStore.getState().floorSnapshots[floorId];
-  if (snapshot?.viewMatrix && snapshot?.projMatrix && polygon.vertices?.length >= 3) {
-    const geom = useStore.getState().floorSpaceGeometry?.[floorId] || [];
-    const avgY = geom.length > 0 ? geom.reduce((sum, s) => sum + (s.y || 0), 0) / geom.length : 0;
-    const metrics = computePolygonMetrics(polygon.vertices, snapshot.viewMatrix, snapshot.projMatrix, avgY);
-    if (metrics) {
-      overrides.perimeter_cm = Math.round(metrics.perimeter_m * 100);
-      if (overrides.area_m2 == null) {
-        overrides.area_m2 = Math.round(metrics.area_m2 * 100) / 100;
-      }
-    }
-  }
-  if (overrides.perimeter_cm == null && polygon.perimeter_m != null) {
-    overrides.perimeter_cm = Math.round(polygon.perimeter_m * 100);
-  }
-  return overrides;
-}
+const EMPTY = [];
 
 export default function RoomDirectory() {
   const activeFloorId = useStore((s) => s.activeFloorId);
   const searchQuery = useStore((s) => s.searchQuery);
   const selectedSpaceId = useStore((s) => s.selectedSpaceId);
-  const selectSpace = useStore((s) => s.selectSpace);
-  const activeFloorPolygons = useStore((s) => s.activeFloorId ? (s.floorPolygons[s.activeFloorId] || []) : []);
+  const activeFloorPolygons = useStore((s) => s.activeFloorId ? (s.floorPolygons[s.activeFloorId] || EMPTY) : EMPTY);
 
   const directoryExpandGroup = useStore((s) => s.directoryExpandGroup);
   const directorySelectIndex = useStore((s) => s.directorySelectIndex);
@@ -131,45 +101,22 @@ export default function RoomDirectory() {
   }, [directoryExpandGroup, directorySelectIndex, groups]);
 
   const handleCardClick = useCallback(async (polygon) => {
-    let overrides = {};
-    try {
-      overrides = getPolygonOverrides(polygon, activeFloorId);
-    } catch {}
-    try {
-      const spaceData = await fetchSpaceByGuid(polygon.ifc_guid);
-      // API data is authoritative for metrics — don't let stale polygon overrides mask it
-      const METRIC_KEYS = ['normal_occupancy', 'max_occupancy', 'absolute_occupancy',
-        'occupiable', 'used_area_m2', 'free_area_m2'];
-      const safeOverrides = { ...overrides };
-      for (const k of METRIC_KEYS) {
-        if (spaceData[k] != null) delete safeOverrides[k];
-      }
-      selectSpace(polygon.ifc_guid, { ...spaceData, ...safeOverrides });
-    } catch {
-      selectSpace(polygon.ifc_guid, {
-        ifc_guid: polygon.ifc_guid,
-        space_name: polygon.space_name,
-        primary_function: polygon.primary_function,
-        floor_id: activeFloorId,
-        ...overrides,
-      });
-    }
-  }, [selectSpace, activeFloorId]);
+    await selectSpaceFromPolygon(polygon, activeFloorId, fetchSpaceByGuid);
+  }, [activeFloorId]);
 
   const toggleGroup = useCallback((fn) => {
+    const isCurrentlyCollapsed = collapsedGroups.has(fn);
     setCollapsedGroups((prev) => {
       const next = new Set(prev);
       if (next.has(fn)) {
         next.delete(fn);
-        setCurrentExpandedGroup(fn);
       } else {
         next.add(fn);
-        // Collapsed — clear if this was the tracked group
-        setCurrentExpandedGroup(null);
       }
       return next;
     });
-  }, [setCurrentExpandedGroup]);
+    setCurrentExpandedGroup(isCurrentlyCollapsed ? fn : null);
+  }, [collapsedGroups, setCurrentExpandedGroup]);
 
   const isSearching = searchQuery.trim().length > 0;
 
@@ -195,9 +142,10 @@ export default function RoomDirectory() {
 
   return (
     <div className="room-directory">
-      {groups.map(([fn, fnPolygons]) => {
+      {groups.map(([fn, fnPolygons], groupIdx) => {
         const collapsed = collapsedGroups.has(fn);
         const totalOcc = fnPolygons.reduce((s, p) => s + (p.max_occupancy || 0), 0);
+        const groupNumber = groupIdx + 1;
 
         return (
           <div key={fn} className="room-directory__group">
@@ -210,6 +158,7 @@ export default function RoomDirectory() {
                   <path d="M3 2l4 3-4 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </span>
+              <span className="room-directory__group-index">{groupNumber}.</span>
               <span className="room-directory__group-name">{fn}</span>
               <span className="room-directory__group-meta">
                 <span className="room-directory__group-col room-directory__group-col--rooms">
@@ -224,10 +173,11 @@ export default function RoomDirectory() {
             </button>
             <div className={`room-directory__group-body ${collapsed ? 'room-directory__group-body--collapsed' : ''}`}>
               <div className="room-directory__group-body-inner">
-                {fnPolygons.map((poly) => (
+                {fnPolygons.map((poly, roomIdx) => (
                   <PolygonCard
                     key={poly.ifc_guid}
                     polygon={poly}
+                    roomIndex={roomIdx + 1}
                     isSelected={poly.ifc_guid === selectedSpaceId}
                     onClick={handleCardClick}
                     selectedRef={poly.ifc_guid === selectedSpaceId ? selectedRef : null}
@@ -242,7 +192,7 @@ export default function RoomDirectory() {
   );
 }
 
-function PolygonCard({ polygon, isSelected, onClick, selectedRef }) {
+function PolygonCard({ polygon, roomIndex, isSelected, onClick, selectedRef }) {
   const area = polygon.area_m2 != null ? `${Number(polygon.area_m2).toFixed(1)} m\u00b2` : null;
   const occ = polygon.max_occupancy > 0 ? polygon.max_occupancy : null;
   const setHoveredGuid = useStore((s) => s.setHoveredPolygonGuid);
@@ -255,6 +205,7 @@ function PolygonCard({ polygon, isSelected, onClick, selectedRef }) {
       onMouseEnter={() => setHoveredGuid(polygon.ifc_guid)}
       onMouseLeave={() => setHoveredGuid(null)}
     >
+      <span className="room-card__index">{roomIndex}</span>
       <div className="room-card__info">
         <span className="room-card__name">{polygon.space_name || polygon.ifc_guid}</span>
         <span className="room-card__sub">

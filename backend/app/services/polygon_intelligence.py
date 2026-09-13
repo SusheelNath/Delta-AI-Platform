@@ -158,6 +158,24 @@ def compute_space_intelligence(
     polygon_map = {p["ifc_guid"]: p for p in floor_polygons if p.get("ifc_guid")}
     spatial = compute_space_spatial(ifc_guid, floor_spatial, polygon_map)
 
+    # Enrich nearby lifts with occupancy from DB
+    nearby_lifts = spatial.get("nearby_lifts", [])
+    if nearby_lifts:
+        lift_guids = [lf["ifc_guid"] for lf in nearby_lifts]
+        lift_metrics = {
+            m.ifc_guid: m
+            for m in db.query(SpaceMetrics).filter(SpaceMetrics.ifc_guid.in_(lift_guids)).all()
+        }
+        enriched_lifts = []
+        for lf in nearby_lifts:
+            entry = {**lf}
+            m = lift_metrics.get(lf["ifc_guid"])
+            entry["normal_occupancy"] = m.normal_occupancy if m else 0
+            entry["max_occupancy"] = m.max_occupancy if m else 0
+            entry["absolute_occupancy"] = m.absolute_occupancy if m else 0
+            enriched_lifts.append(entry)
+        nearby_lifts = enriched_lifts
+
     # ── Layer 3: Metrics and furnishings (from DB, derived from polygon data) ──
     metrics = db.query(SpaceMetrics).filter(SpaceMetrics.ifc_guid == ifc_guid).first()
 
@@ -207,6 +225,8 @@ def compute_space_intelligence(
         "lift_distance_m": spatial["lift_distance_m"],
         "nearest_stair": spatial["nearest_stair"],
         "stair_distance_m": spatial["stair_distance_m"],
+        "nearby_lifts": nearby_lifts,
+        "nearby_stairs": spatial.get("nearby_stairs", []),
         "step_free_access": spatial["step_free_access"],
         "adjacent_spaces": spatial["adjacent_spaces"],
 

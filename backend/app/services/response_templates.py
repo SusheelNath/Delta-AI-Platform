@@ -89,14 +89,18 @@ def render_room_detail(
     ifc_guid: str,
     room_index: int | None = None,
     function_name: str | None = None,
+    frontend_space: dict | None = None,
 ) -> str | None:
     """Render markdown for a selected room.
 
     Uses double newlines between section groups (paragraph breaks) and
     trailing two-space + newline for hard line breaks within sections,
     so CommonMark renderers display each field on its own line.
+
+    When frontend_space is provided, it takes priority over the backend
+    cache — ensuring the chat text matches what the user sees.
     """
-    intel = get_cached_intelligence(ifc_guid)
+    intel = frontend_space or get_cached_intelligence(ifc_guid)
     if not intel:
         return None
 
@@ -160,18 +164,40 @@ def render_room_detail(
     if access_items:
         parts.append("**Access:** " + " · ".join(access_items))
 
-    # ── Nearest exits ──
-    exit_lines = []
-    if intel.get("nearest_lift"):
+    # ── Nearest elevators (top 3 with occupancy) ──
+    nearby_lifts = intel.get("nearby_lifts") or []
+    if nearby_lifts:
+        lift_lines = ["**Nearest elevators**"]
+        for lf in nearby_lifts:
+            line = f"- {lf['space_name']} ({lf['distance_m']}m)"
+            occ_parts = []
+            if lf.get("normal_occupancy"):
+                occ_parts.append(f"Normal: {lf['normal_occupancy']}")
+            if lf.get("max_occupancy"):
+                occ_parts.append(f"Max: {lf['max_occupancy']}")
+            if lf.get("absolute_occupancy"):
+                occ_parts.append(f"Absolute: {lf['absolute_occupancy']}")
+            if occ_parts:
+                line += f" — {' · '.join(occ_parts)}"
+            lift_lines.append(line)
+        parts.append("\n".join(lift_lines))
+    elif intel.get("nearest_lift"):
         dist = f" ({intel['lift_distance_m']}m)" if intel.get("lift_distance_m") else ""
-        exit_lines.append(f"- Elevator: {intel['nearest_lift']}{dist}")
-    if intel.get("nearest_stair"):
+        parts.append(f"**Nearest elevator:** {intel['nearest_lift']}{dist}")
+
+    # ── Nearest staircases (top 3, distance only) ──
+    nearby_stairs = intel.get("nearby_stairs") or []
+    if nearby_stairs:
+        stair_lines = ["**Nearest staircases**"]
+        for st in nearby_stairs:
+            stair_lines.append(f"- {st['space_name']} ({st['distance_m']}m)")
+        parts.append("\n".join(stair_lines))
+    elif intel.get("nearest_stair"):
         dist = f" ({intel['stair_distance_m']}m)" if intel.get("stair_distance_m") else ""
-        exit_lines.append(f"- Staircase: {intel['nearest_stair']}{dist}")
+        parts.append(f"**Nearest staircase:** {intel['nearest_stair']}{dist}")
+
     if intel.get("step_free_access"):
-        exit_lines.append(f"- Step-free: {intel['step_free_access']}")
-    if exit_lines:
-        parts.append("**Nearest exits**\n" + "\n".join(exit_lines))
+        parts.append(f"**Step-free access:** {intel['step_free_access']}")
 
     # ── Adjacent spaces ──
     if intel.get("adjacent_spaces"):
@@ -198,14 +224,15 @@ def render_room_detail(
 
 # ── Routing ──────────────────────────────────────────────────────
 
-def render_route(ifc_guid: str, target_type: str) -> str | None:
+def render_route(ifc_guid: str, target_type: str, frontend_space: dict | None = None) -> str | None:
     """Render markdown for 'route to elevator/staircase'."""
-    intel = get_cached_intelligence(ifc_guid)
+    intel = frontend_space or get_cached_intelligence(ifc_guid)
     if not intel:
         return None
 
     name = intel.get("space_name", "Unknown")
     fname = FLOOR_NAMES.get(intel.get("floor_id", ""), "")
+    step_free = intel.get("step_free_access", "Unknown")
 
     if target_type == "elevator":
         target = intel.get("nearest_lift", "Unknown")
@@ -214,21 +241,44 @@ def render_route(ifc_guid: str, target_type: str) -> str | None:
         target = intel.get("nearest_stair", "Unknown")
         dist = intel.get("stair_distance_m", "?")
 
-    step_free = intel.get("step_free_access", "Unknown")
-
     lines = [f"### Route from {name}\n"]
     lines.append(f"**Target:** {target}")
     lines.append(f"**Distance:** {dist}m")
     lines.append(f"**Step-free access:** {step_free}")
     lines.append(f"**Floor:** {fname}")
+
+    # Show all nearby alternatives
+    if target_type == "elevator":
+        nearby = intel.get("nearby_lifts") or []
+        if len(nearby) > 1:
+            lines.append("\n**Other nearby elevators**")
+            for lf in nearby[1:]:
+                line = f"- {lf['space_name']} ({lf['distance_m']}m)"
+                occ_parts = []
+                if lf.get("normal_occupancy"):
+                    occ_parts.append(f"Normal: {lf['normal_occupancy']}")
+                if lf.get("max_occupancy"):
+                    occ_parts.append(f"Max: {lf['max_occupancy']}")
+                if lf.get("absolute_occupancy"):
+                    occ_parts.append(f"Absolute: {lf['absolute_occupancy']}")
+                if occ_parts:
+                    line += f" — {' · '.join(occ_parts)}"
+                lines.append(line)
+    else:
+        nearby = intel.get("nearby_stairs") or []
+        if len(nearby) > 1:
+            lines.append("\n**Other nearby staircases**")
+            for st in nearby[1:]:
+                lines.append(f"- {st['space_name']} ({st['distance_m']}m)")
+
     return "\n".join(lines)
 
 
 # ── Adjacency ────────────────────────────────────────────────────
 
-def render_adjacency(ifc_guid: str, floor_id: str) -> str | None:
+def render_adjacency(ifc_guid: str, floor_id: str, frontend_space: dict | None = None) -> str | None:
     """Render markdown for 'what's adjacent to X'."""
-    intel = get_cached_intelligence(ifc_guid)
+    intel = frontend_space or get_cached_intelligence(ifc_guid)
     if not intel:
         return None
 
@@ -321,11 +371,16 @@ _GROUNDED_ACTION_TYPES = {
 def try_render_template(
     detected_actions: list[tuple[dict, str]],
     active_floor_id: str | None,
+    selected_space: dict | None = None,
 ) -> str | None:
     """Attempt to render a deterministic response from templates.
 
     Returns the rendered markdown if ALL actions are grounded,
     or None if any action requires LLM narration.
+
+    When selected_space is provided (from the frontend store), it is
+    passed through to render_room_detail so the chat text matches the
+    user's MetadataCard exactly.
     """
     action_types = [a.get("type") for a, _ in detected_actions]
 
@@ -380,7 +435,9 @@ def try_render_template(
                     room_idx = a2.get("room_index")
                     fn_name = a2.get("function_name")
                     break
-            text = render_room_detail(guid, room_idx, fn_name)
+            # Use enrichment-resolved intel if available, else frontend-provided space
+            frontend = action.get("_resolved_intel") or selected_space
+            text = render_room_detail(guid, room_idx, fn_name, frontend_space=frontend)
             if text:
                 parts.append(text)
 
@@ -397,7 +454,7 @@ def try_render_template(
                         guid = g
                         break
             if guid:
-                text = render_route(guid, target_type)
+                text = render_route(guid, target_type, frontend_space=selected_space)
                 if text:
                     parts.append(text)
 
@@ -412,7 +469,7 @@ def try_render_template(
                         guid = g
                         break
             if guid:
-                text = render_adjacency(guid, effective_fid)
+                text = render_adjacency(guid, effective_fid, frontend_space=selected_space)
                 if text:
                     parts.append(text)
 

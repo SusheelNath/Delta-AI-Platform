@@ -1,0 +1,79 @@
+/* ══════════════════════════════════════
+   3D-anchored room labels
+   ══════════════════════════════════════ */
+
+.room-labels {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  overflow: hidden;
+}
+
+.room-labels__label {
+  position: absolute;
+  transform: translate(-50%, -100%) translateY(-8px);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px 3px 6px;
+  background: rgba(10, 14, 26, 0.85);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(94, 179, 245, 0.2);
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: auto;
+  cursor: default;
+  transition: border-color 0.2s ease, background 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.room-labels__label::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid rgba(10, 14, 26, 0.85);
+}
+
+.room-labels__label--selected {
+  background: rgba(42, 26, 10, 0.9);
+  border-color: rgba(231, 113, 51, 0.5);
+}
+
+.room-labels__label--selected::after {
+  border-top-color: rgba(42, 26, 10, 0.9);
+}
+
+.room-labels__index {
+  font-size: 9px;
+  font-weight: 700;
+  color: #5eb3f5;
+  font-variant-numeric: tabular-nums;
+  min-width: 12px;
+  text-align: center;
+}
+
+.room-labels__label--selected .room-labels__index {
+  color: #E77133;
+}
+
+.room-labels__name {
+  font-size: 10px;
+  font-weight: 600;
+  color: #e0e8f0;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.room-labels__area {
+  font-size: 9px;
+  color: #7b8ca1;
+  font-variant-numeric: tabular-nums;
+}

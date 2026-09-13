@@ -392,6 +392,17 @@ _RE_EXPAND_GROUP_BARE = re.compile(
     re.IGNORECASE,
 )
 
+# Group-by-index: "open group 3", "expand the 5th dropdown", "select the third group"
+_RE_EXPAND_GROUP_INDEX = re.compile(
+    r"\b" + _EXPAND_VERBS + r"\s+"
+    r"(?:me\s+)?(?:the\s+)?"
+    r"(?:(" + _ORDINAL_RE + r")\s+(?:drop\s*-?\s*down|directory|group|category)"
+    r"|(?:drop\s*-?\s*down|directory|group|category)\s+(?:number\s+)?(\d+)"
+    r"|group\s+(?:number\s+)?(\d+))"
+    r"(?:\s+please)?\s*$",
+    re.IGNORECASE,
+)
+
 _RE_COMPARE = re.compile(
     r"\b(?:compare|diff|difference(?:s)?\s+between|side\s+by\s+side)\s+(.+?)\s+(?:and|with|to|&|vs|versus)\s+(.+)",
     re.IGNORECASE,
@@ -557,7 +568,7 @@ def find_polygon_by_name(name: str, polygons: list[dict]) -> dict | None:
 # Main parser — returns list of intents (chained actions)
 # ══════════════════════════════════════════════════════════════════════
 
-def parse_intents(message: str, polygons: list[dict] | None = None, expanded_group: str | None = None) -> list[ParsedIntent]:
+def parse_intents(message: str, polygons: list[dict] | None = None, expanded_group: str | None = None, active_floor_id: str | None = None) -> list[ParsedIntent]:
     """Parse a user message into one or more structured intents.
 
     Extracts all entities, then checks every classifier. Non-conflicting
@@ -745,28 +756,49 @@ def parse_intents(message: str, polygons: list[dict] | None = None, expanded_gro
                 select_room_fn = raw_fn
 
     expand_group_fn = None
-    m = _RE_EXPAND_GROUP.search(msg)
-    if m:
-        expand_group_fn = m.group(1).strip()
-    else:
-        # Bare fallback: "open/expand <function>" without suffix word
-        # Guard: skip if the text matches drawer/toolkit/panel keywords
-        _drawer_guard = {"toolkit", "drawer", "side panel", "metadata",
-                         "info panel", "details panel", "space card",
-                         "space details", "space info", "space metadata",
-                         "metadata panel", "details", "info"}
-        _zoom_guard = {"closer", "further", "bigger", "smaller", "in", "out"}
-        m2 = _RE_EXPAND_GROUP_BARE.search(msg)
-        if m2:
-            candidate = m2.group(1).strip()
-            candidate_lower = candidate.lower()
-            # Guard: skip if candidate resolves to a floor ("go to floor 1")
-            _is_floor = resolve_floor_id(candidate) is not None
-            if (not any(g in candidate_lower for g in _drawer_guard)
-                    and candidate_lower not in _zoom_guard
-                    and not _is_floor
-                    and len(candidate) > 1):
-                expand_group_fn = candidate
+    # Try group-by-index first: "open group 3", "expand the 5th dropdown"
+    m_gi = _RE_EXPAND_GROUP_INDEX.search(msg)
+    if m_gi and active_floor_id:
+        from app.services.intelligence_cache import get_group_function_by_index
+        # Extract the index from whichever capture group matched
+        ordinal_raw = (m_gi.group(1) or "").lower().strip()
+        digit_g2 = m_gi.group(2)
+        digit_g3 = m_gi.group(3)
+        group_idx = None
+        if ordinal_raw:
+            group_idx = _WORD_ORDINALS.get(ordinal_raw)
+        elif digit_g2:
+            group_idx = int(digit_g2)
+        elif digit_g3:
+            group_idx = int(digit_g3)
+        if group_idx and group_idx > 0:
+            resolved_fn = get_group_function_by_index(active_floor_id, group_idx)
+            if resolved_fn:
+                expand_group_fn = resolved_fn
+
+    if not expand_group_fn:
+        m = _RE_EXPAND_GROUP.search(msg)
+        if m:
+            expand_group_fn = m.group(1).strip()
+        else:
+            # Bare fallback: "open/expand <function>" without suffix word
+            # Guard: skip if the text matches drawer/toolkit/panel keywords
+            _drawer_guard = {"toolkit", "drawer", "side panel", "metadata",
+                             "info panel", "details panel", "space card",
+                             "space details", "space info", "space metadata",
+                             "metadata panel", "details", "info"}
+            _zoom_guard = {"closer", "further", "bigger", "smaller", "in", "out"}
+            m2 = _RE_EXPAND_GROUP_BARE.search(msg)
+            if m2:
+                candidate = m2.group(1).strip()
+                candidate_lower = candidate.lower()
+                # Guard: skip if candidate resolves to a floor ("go to floor 1")
+                _is_floor = resolve_floor_id(candidate) is not None
+                if (not any(g in candidate_lower for g in _drawer_guard)
+                        and candidate_lower not in _zoom_guard
+                        and not _is_floor
+                        and len(candidate) > 1):
+                    expand_group_fn = candidate
 
     # ── Intent classification (collect all matches) ──
 

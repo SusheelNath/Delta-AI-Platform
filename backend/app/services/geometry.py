@@ -224,25 +224,55 @@ def compute_space_spatial(ifc_guid: str, floor_data: dict,
 
     scale = floor_data["scale_factor"]
 
-    # Nearest lift
-    nearest_lift_name = None
-    nearest_lift_dist = None
+    # All lifts with distances (for nearest-3 in chat text)
+    all_lifts = []
     for lift in floor_data["lifts"]:
         dist_pct = euclidean_distance(space_centroid, lift["centroid"])
         dist_m = round(dist_pct * scale, 1)
-        if nearest_lift_dist is None or dist_m < nearest_lift_dist:
-            nearest_lift_dist = dist_m
-            nearest_lift_name = lift["space_name"] or "Lift"
+        all_lifts.append({
+            "ifc_guid": lift["ifc_guid"],
+            "space_name": lift["space_name"] or "Lift",
+            "distance_m": dist_m,
+        })
+    all_lifts.sort(key=lambda x: x["distance_m"])
 
-    # Nearest stair
-    nearest_stair_name = None
-    nearest_stair_dist = None
+    # Deduplicate by name — keep the closest instance of each distinct name
+    seen_lift_names = set()
+    nearby_lifts = []
+    for lf in all_lifts:
+        if lf["space_name"] not in seen_lift_names:
+            seen_lift_names.add(lf["space_name"])
+            nearby_lifts.append(lf)
+        if len(nearby_lifts) == 3:
+            break
+
+    nearest_lift_name = nearby_lifts[0]["space_name"] if nearby_lifts else None
+    nearest_lift_dist = nearby_lifts[0]["distance_m"] if nearby_lifts else None
+
+    # All stairs with distances
+    all_stairs = []
     for stair in floor_data["stairs"]:
         dist_pct = euclidean_distance(space_centroid, stair["centroid"])
         dist_m = round(dist_pct * scale, 1)
-        if nearest_stair_dist is None or dist_m < nearest_stair_dist:
-            nearest_stair_dist = dist_m
-            nearest_stair_name = stair["space_name"] or "Staircase"
+        all_stairs.append({
+            "ifc_guid": stair["ifc_guid"],
+            "space_name": stair["space_name"] or "Staircase",
+            "distance_m": dist_m,
+        })
+    all_stairs.sort(key=lambda x: x["distance_m"])
+
+    # Deduplicate by name
+    seen_stair_names = set()
+    nearby_stairs = []
+    for st in all_stairs:
+        if st["space_name"] not in seen_stair_names:
+            seen_stair_names.add(st["space_name"])
+            nearby_stairs.append(st)
+        if len(nearby_stairs) == 3:
+            break
+
+    nearest_stair_name = nearby_stairs[0]["space_name"] if nearby_stairs else None
+    nearest_stair_dist = nearby_stairs[0]["distance_m"] if nearby_stairs else None
 
     # Step-free access
     step_free = "Yes" if floor_data["has_lift"] else "No"
@@ -266,6 +296,8 @@ def compute_space_spatial(ifc_guid: str, floor_data: dict,
         "lift_distance_m": nearest_lift_dist,
         "nearest_stair": nearest_stair_name,
         "stair_distance_m": nearest_stair_dist,
+        "nearby_lifts": nearby_lifts,
+        "nearby_stairs": nearby_stairs,
         "step_free_access": step_free,
         "adjacent_spaces": adjacent_str,
     }

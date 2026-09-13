@@ -212,8 +212,13 @@ export function createVoiceManager({
 
     async setMode(newMode) {
       mode = newMode;
-      accumulatedText = '';
-      lastInterim = '';
+      // Only clear accumulated text when going idle (submit/stop).
+      // When switching to 'listening', preserve any text the user already
+      // spoke so it isn't silently swallowed during mode transitions.
+      if (newMode !== 'listening') {
+        accumulatedText = '';
+        lastInterim = '';
+      }
       wakeFired = false;
     },
 

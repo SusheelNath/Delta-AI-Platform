@@ -60,7 +60,7 @@ export default function ChatPanel() {
   const setVoiceActive = useStore((s) => s.setVoiceActive);
   const setVoiceState = useStore((s) => s.setVoiceState);
 
-  const [input, setInput] = useState('');
+  const [input, setInputRaw] = useState('');
   const [pendingPhase, setPendingPhase] = useState('idle'); // 'idle' | 'detecting' | 'generating'
   const [completedActions, setCompletedActions] = useState([]);
   const messagesEndRef = useRef(null);
@@ -71,6 +71,13 @@ export default function ChatPanel() {
   const voiceManagerRef = useRef(null);
   const voiceActiveRef = useRef(false);
   const prevGeneratingRef = useRef(false);
+
+  // Track current input value in a ref so voice submit can read it synchronously
+  const inputValueRef = useRef('');
+  const setInput = useCallback((val) => {
+    setInputRaw(val);
+    inputValueRef.current = val;
+  }, []);
 
   // Keep ref in sync
   useEffect(() => {
@@ -208,28 +215,19 @@ export default function ChatPanel() {
 
   // ── Voice submit (triggered by "Submit" or "Send Delta") ──
 
-  const handleVoiceSubmit = useCallback(async (audioBlob, webSpeechText) => {
+  const handleVoiceSubmit = useCallback(async (_audioBlob, webSpeechText) => {
     if (!voiceActiveRef.current) return;
 
-    setInput(webSpeechText);
     setVoiceState('processing');
 
-    let finalText = webSpeechText;
-
-    // Verify with Whisper (Groq → local fallback)
-    if (audioBlob && audioBlob.size > 0) {
-      try {
-        const { text: whisperText } = await transcribeAudio(audioBlob);
-        if (whisperText && whisperText.trim()) {
-          finalText = stripSubmitPhrase(whisperText);
-          setInput(finalText);
-        }
-      } catch (err) {
-        console.warn('[Voice] Whisper verification failed, using Web Speech text:', err);
-      }
-    }
+    // Use the text currently displayed in the input field (what the user sees)
+    // as the authoritative source — it's kept in sync by onInterim callbacks.
+    // Fall back to the voice manager's internal text only if the field is empty.
+    const displayedText = inputValueRef.current.trim();
+    const finalText = stripSubmitPhrase(displayedText || webSpeechText);
 
     if (finalText) {
+      setInput(finalText);
       handleSend(finalText);
     } else {
       // Empty — go back to listening
@@ -309,13 +307,14 @@ export default function ChatPanel() {
         if (visFloors.length === 1) effectiveFloor = visFloors[0].id;
       }
       const effectiveSpace = liveState.selectedSpaceId;
+      const effectiveSpaceData = liveState.selectedSpace;
       const effectiveGroup = liveState.currentExpandedGroup;
 
       // Phase 1: Instant intent detection — fire actions before LLM
       let actionsHandled = false;
       let phase1Content = null;
       try {
-        const { actions, confirmations, content } = await fetchIntents(text, effectiveSpace, effectiveFloor, effectiveGroup);
+        const { actions, confirmations, content } = await fetchIntents(text, effectiveSpace, effectiveFloor, effectiveGroup, effectiveSpaceData);
         if (actions.length > 0) {
           for (const action of actions) {
             await resolveAction(action);
@@ -368,10 +367,11 @@ export default function ChatPanel() {
         if (vis.length === 1) effectiveFloorId = vis[0].id;
       }
       const effectiveSpaceId = phase2State.selectedSpaceId;
+      const effectiveSpaceObj = phase2State.selectedSpace;
 
       const reader = await streamChat(
         conversation, effectiveSpaceId, effectiveFloorId,
-        abortController.signal, actionsHandled, currentExpandedGroup,
+        abortController.signal, actionsHandled, currentExpandedGroup, effectiveSpaceObj,
       );
       const decoder = new TextDecoder();
       let firstToken = true;

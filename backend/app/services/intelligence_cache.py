@@ -111,6 +111,24 @@ def rebuild_cache(db: Session) -> None:
     build_cache(db)
 
 
+def _enrich_lifts_with_occupancy(lifts: list[dict]) -> list[dict]:
+    """Attach occupancy data from _metrics_map to each nearby lift."""
+    enriched = []
+    for lf in lifts:
+        entry = {**lf}
+        m = _metrics_map.get(lf.get("ifc_guid"))
+        if m:
+            entry["normal_occupancy"] = m.normal_occupancy or 0
+            entry["max_occupancy"] = m.max_occupancy or 0
+            entry["absolute_occupancy"] = m.absolute_occupancy or 0
+        else:
+            entry["normal_occupancy"] = 0
+            entry["max_occupancy"] = 0
+            entry["absolute_occupancy"] = 0
+        enriched.append(entry)
+    return enriched
+
+
 # ══════════════════════════════════════════════════════════════════════
 # Internal computation (replaces per-polygon DB queries)
 # ══════════════════════════════════════════════════════════════════════
@@ -189,6 +207,8 @@ def _compute_intelligence_from_cache(
         "lift_distance_m": spatial["lift_distance_m"],
         "nearest_stair": spatial["nearest_stair"],
         "stair_distance_m": spatial["stair_distance_m"],
+        "nearby_lifts": _enrich_lifts_with_occupancy(spatial.get("nearby_lifts", [])),
+        "nearby_stairs": spatial.get("nearby_stairs", []),
         "step_free_access": spatial["step_free_access"],
         "adjacent_spaces": spatial["adjacent_spaces"],
 
@@ -325,7 +345,8 @@ def get_floor_group_summary(floor_id: str) -> list[dict]:
     """Return function group breakdown for a floor.
 
     Each entry: {function, count, total_area, max_occupancy}.
-    Sorted by count descending. Used by Tier 1 action context.
+    Sorted alphabetically (matching frontend RoomDirectory order) with
+    "Unassigned" always last. Used by Tier 1 action context.
     """
     groups: dict[str, dict] = {}
     for guid, intel in _intelligence.items():
@@ -338,8 +359,25 @@ def get_floor_group_summary(floor_id: str) -> list[dict]:
         g["count"] += 1
         g["total_area"] += intel.get("area_m2") or 0
         g["max_occupancy"] += intel.get("max_occupancy") or 0
-    result = sorted(groups.values(), key=lambda x: -x["count"])
+    # Sort alphabetically with "Unassigned" last — matches frontend RoomDirectory
+    result = sorted(
+        groups.values(),
+        key=lambda x: (x["function"] == "Unassigned", x["function"]),
+    )
     return result
+
+
+def get_group_function_by_index(floor_id: str, group_index: int) -> str | None:
+    """Resolve a 1-based group index to a function name.
+
+    Uses the same alphabetical sort as the frontend RoomDirectory.
+    Returns None if the index is out of range.
+    """
+    groups = get_floor_group_summary(floor_id)
+    idx_0 = group_index - 1
+    if 0 <= idx_0 < len(groups):
+        return groups[idx_0]["function"]
+    return None
 
 
 def get_cached_polygons() -> list[dict]:

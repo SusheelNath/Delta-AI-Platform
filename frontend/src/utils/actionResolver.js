@@ -9,6 +9,7 @@
 import useStore from '../store/useStore';
 import { fetchSpaceByGuid } from '../api/client';
 import { computeRouting } from './routing';
+import { selectSpaceFromPolygon } from './polygonOverrides';
 
 /**
  * Resolve a space_name to a polygon on the current active floor (or any floor).
@@ -66,18 +67,39 @@ export async function resolveAction(action) {
 
   switch (type) {
     case 'select_space': {
+      // Skip if this select_space was appended by backend enrichment after
+      // a select_room_in_group that already selected the space correctly.
+      if (action.from_enrichment) break;
+
       // Support both space_id (direct guid) and space_name (name lookup)
       let guid = action.space_id;
+      let poly = null;
       if (!guid && action.space_name) {
-        const poly = findPolygonByName(action.space_name);
+        poly = findPolygonByName(action.space_name);
         if (poly) guid = poly.ifc_guid;
       }
       if (!guid) break;
-      try {
-        const spaceData = await fetchSpaceByGuid(guid);
-        store.selectSpace(guid, spaceData);
-      } catch (err) {
-        console.warn('[Action] Failed to select space:', err);
+
+      // Find the polygon in store so we can apply overrides
+      if (!poly) {
+        const allFloorPolygons = store.floorPolygons || {};
+        for (const fid of Object.keys(allFloorPolygons)) {
+          const found = (allFloorPolygons[fid] || []).find((p) => p.ifc_guid === guid);
+          if (found) { poly = { ...found, _floorId: fid }; break; }
+        }
+      }
+
+      if (poly) {
+        const floorId = poly._floorId || poly.floor_id || store.activeFloorId;
+        await selectSpaceFromPolygon(poly, floorId, fetchSpaceByGuid);
+      } else {
+        // No local polygon — fall back to API-only (rare)
+        try {
+          const spaceData = await fetchSpaceByGuid(guid);
+          store.selectSpace(guid, spaceData);
+        } catch (err) {
+          console.warn('[Action] Failed to select space:', err);
+        }
       }
       break;
     }
@@ -90,11 +112,8 @@ export async function resolveAction(action) {
       const floorPolys = getFloorPolygons(floorId);
       if (!floorPolys.length) break;
 
-      // Select the space first
-      try {
-        const spaceData = await fetchSpaceByGuid(poly.ifc_guid);
-        store.selectSpace(poly.ifc_guid, spaceData);
-      } catch (_) {}
+      // Select the space first (with overrides)
+      await selectSpaceFromPolygon(poly, floorId, fetchSpaceByGuid);
 
       // Compute routing
       const routing = computeRouting(floorPolys, poly.ifc_guid);
@@ -157,14 +176,14 @@ export async function resolveAction(action) {
     case 'select_room_in_group': {
       // Convert 1-based index from LLM to 0-based
       const roomIdx = (action.room_index || 1) - 1;
-      // Expand the directory group in the list UI
-      store.selectRoomInGroup(action.function_name, roomIdx);
 
-      // Also directly select the space for 3D viewer (don't rely on
-      // RoomDirectory being mounted — resolve the polygon here)
+      // Expand the directory group UI only (don't trigger RoomDirectory's
+      // handleCardClick — we handle selection here as the single authority)
+      store.expandDirectoryGroup(action.function_name);
+
+      // Resolve the polygon directly from the frontend store
       let floorId = store.activeFloorId;
       if (!floorId) {
-        // Infer from visibility (same logic as ChatPanel)
         const vis = (store.floors || []).filter((f) => (store.floorVisibility || {})[f.id]);
         if (vis.length === 1) floorId = vis[0].id;
       }
@@ -177,19 +196,7 @@ export async function resolveAction(action) {
             || (a.ifc_guid || '').localeCompare(b.ifc_guid || ''));
         const idx = Math.min(roomIdx, grouped.length - 1);
         if (idx >= 0 && grouped[idx]) {
-          const poly = grouped[idx];
-          try {
-            const spaceData = await fetchSpaceByGuid(poly.ifc_guid);
-            store.selectSpace(poly.ifc_guid, spaceData);
-          } catch {
-            store.selectSpace(poly.ifc_guid, {
-              ifc_guid: poly.ifc_guid,
-              space_name: poly.space_name,
-              primary_function: poly.primary_function,
-              floor_id: floorId,
-            });
-          }
-          // Open the Space Metadata drawer
+          await selectSpaceFromPolygon(grouped[idx], floorId, fetchSpaceByGuid);
           store.setDrawerOpen(true);
         }
       }

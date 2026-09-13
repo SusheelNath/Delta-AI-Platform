@@ -95,10 +95,21 @@ def _format_space_context(space: dict) -> str:
         lines.append(f"Access level: {space['access_level']}")
     if space.get('privacy_level'):
         lines.append(f"Privacy: {space['privacy_level']}")
-    if space.get('nearest_lift'):
+    nearby_lifts = space.get('nearby_lifts') or []
+    if nearby_lifts:
+        for lf in nearby_lifts:
+            occ = ""
+            if lf.get("max_occupancy"):
+                occ = f", occupancy normal={lf.get('normal_occupancy',0)} max={lf['max_occupancy']} absolute={lf.get('absolute_occupancy',0)}"
+            lines.append(f"Nearby elevator: {lf['space_name']} ({lf['distance_m']}m{occ})")
+    elif space.get('nearest_lift'):
         dist = f" ({space['lift_distance_m']}m)" if space.get('lift_distance_m') else ""
         lines.append(f"Nearest lift: {space['nearest_lift']}{dist}")
-    if space.get('nearest_stair'):
+    nearby_stairs = space.get('nearby_stairs') or []
+    if nearby_stairs:
+        for st in nearby_stairs:
+            lines.append(f"Nearby staircase: {st['space_name']} ({st['distance_m']}m)")
+    elif space.get('nearest_stair'):
         dist = f" ({space['stair_distance_m']}m)" if space.get('stair_distance_m') else ""
         lines.append(f"Nearest stair: {space['nearest_stair']}{dist}")
     if space.get('step_free_access'):

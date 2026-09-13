@@ -50,6 +50,7 @@ class IntentRequest(BaseModel):
     selected_space_id: str | None = None
     active_floor_id: str | None = None
     expanded_group: str | None = None
+    selected_space: dict | None = None  # full space metadata from frontend store
 
 
 class ChatRequest(BaseModel):
@@ -58,6 +59,7 @@ class ChatRequest(BaseModel):
     active_floor_id: str | None = None
     expanded_group: str | None = None
     skip_actions: bool = False
+    selected_space: dict | None = None  # full space metadata from frontend store
 
 
 def _build_floor_summaries() -> str:
@@ -99,11 +101,11 @@ def _build_action_context(
             total_rooms = sum(g["count"] for g in groups)
             total_area = sum(g["total_area"] for g in groups)
             lines = [f"NAVIGATED TO: {fname} — {total_rooms} spaces, {total_area:,.0f} m²."]
-            lines.append("Function groups on this floor (use ONLY these names and counts):")
-            for g in groups:
+            lines.append("Function groups on this floor (use ONLY these names, indices, and counts):")
+            for gi, g in enumerate(groups, 1):
                 area_str = f"{g['total_area']:,.0f} m²"
                 occ_str = f", total max occupancy {g['max_occupancy']}" if g["max_occupancy"] else ""
-                lines.append(f"- {g['function']}: {g['count']} rooms, {area_str}{occ_str}")
+                lines.append(f"- [Group {gi}] {g['function']}: {g['count']} rooms, {area_str}{occ_str}")
             parts.append("\n".join(lines))
 
         # ── TIER 2: Directory group opened ──
@@ -119,11 +121,18 @@ def _build_action_context(
             if search_fid:
                 rooms = get_rooms_by_function(search_fid, fn_name)
                 fname = FLOOR_NAMES.get(search_fid, search_fid)
+                # Resolve group index for this function
+                group_idx_str = ""
+                floor_groups = get_floor_group_summary(search_fid)
+                for gi, g in enumerate(floor_groups, 1):
+                    if g["function"].lower() == fn_name.lower():
+                        group_idx_str = f" (Group {gi})"
+                        break
                 if rooms:
-                    lines = [f"DIRECTORY OPENED: **{fn_name}** on {fname} — {len(rooms)} rooms."]
+                    lines = [f"DIRECTORY OPENED: **{fn_name}**{group_idx_str} on {fname} — {len(rooms)} rooms."]
                     lines.append("List ONLY these rooms with their EXACT data. Do NOT invent rooms or values:")
                     for idx, r in enumerate(rooms, 1):
-                        entry = f"- [{idx}] {r.get('space_name', '?')}"
+                        entry = f"- [Room {idx}] {r.get('space_name', '?')}"
                         area = r.get("area_m2")
                         if area:
                             entry += f", {round(area, 1)} m²"
@@ -136,7 +145,7 @@ def _build_action_context(
                         lines.append(entry)
                     parts.append("\n".join(lines))
                 else:
-                    parts.append(f"DIRECTORY OPENED: **{fn_name}** — no matching rooms found on this floor.")
+                    parts.append(f"DIRECTORY OPENED: **{fn_name}**{group_idx_str} — no matching rooms found on this floor.")
             else:
                 parts.append(f"DIRECTORY OPENED: **{fn_name}** — no floor is currently active. Navigate to a floor first.")
 
@@ -185,6 +194,22 @@ def _build_action_context(
                         lines.append(f"- Target: {target}")
                         lines.append(f"- Distance: {dist}m")
                         lines.append(f"- Step-free access: {step_free}")
+                        # Include nearby alternatives
+                        if target_type == "elevator":
+                            nearby = intel.get("nearby_lifts") or []
+                            if len(nearby) > 1:
+                                lines.append("Other nearby elevators:")
+                                for lf in nearby[1:]:
+                                    occ = ""
+                                    if lf.get("max_occupancy"):
+                                        occ = f", occupancy {lf.get('normal_occupancy',0)}/{lf['max_occupancy']}/{lf.get('absolute_occupancy',0)}"
+                                    lines.append(f"- {lf['space_name']} ({lf['distance_m']}m{occ})")
+                        else:
+                            nearby = intel.get("nearby_stairs") or []
+                            if len(nearby) > 1:
+                                lines.append("Other nearby staircases:")
+                                for st in nearby[1:]:
+                                    lines.append(f"- {st['space_name']} ({st['distance_m']}m)")
                         parts.append("\n".join(lines))
                         break
 
@@ -390,6 +415,7 @@ def _enrich_room_selection(
                     "type": "select_space",
                     "space_id": ifc_guid,
                     "_resolved_intel": room,
+                    "from_enrichment": True,
                 },
                 f"Selecting **{space_name}**...",
             ))
@@ -465,6 +491,7 @@ def _enrich_room_selection(
                     "type": "select_space",
                     "space_id": ifc_guid,
                     "_resolved_intel": room,
+                    "from_enrichment": True,
                 },
                 f"Selecting **{space_name}** (#{new_idx + 1} of {len(rooms)})...",
             ))
@@ -558,11 +585,12 @@ def detect_intents(body: IntentRequest):
     When content is non-null, the frontend can display it directly and
     skip the /chat endpoint entirely (Phase 1-only resolution).
     """
-    selected_space = None
-    if body.selected_space_id:
+    # Frontend-provided space wins; fall back to cache
+    selected_space = body.selected_space
+    if not selected_space and body.selected_space_id:
         selected_space = get_cached_intelligence(body.selected_space_id)
 
-    parsed_list = parse_intents(body.message, expanded_group=body.expanded_group)
+    parsed_list = parse_intents(body.message, expanded_group=body.expanded_group, active_floor_id=body.active_floor_id)
     detected_actions = intents_to_actions(parsed_list, selected_space, body.active_floor_id)
 
     # Enrich select_room_in_group: resolve actual room and add select_space action
@@ -576,7 +604,8 @@ def detect_intents(body: IntentRequest):
     is_deterministic = len(enriched) > 0 and not (intent_types & _LLM_REQUIRED_INTENTS)
 
     if is_deterministic:
-        content = try_render_template(enriched, body.active_floor_id)
+        # Pass frontend space so templates use what the user actually sees
+        content = try_render_template(enriched, body.active_floor_id, selected_space=selected_space)
         # Pure UI actions (clear_all, zoom, toggle, etc.) have no template —
         # use the last confirmation as the chat response
         if content is None:
@@ -594,9 +623,9 @@ def detect_intents(body: IntentRequest):
 
 @router.post("/chat")
 async def chat(body: ChatRequest, db: Session = Depends(get_db)):
-    # Resolve selected space (polygon-only)
-    selected_space = None
-    if body.selected_space_id:
+    # Frontend-provided space wins; fall back to backend resolution
+    selected_space = body.selected_space
+    if not selected_space and body.selected_space_id:
         selected_space = _resolve_selected_space(body.selected_space_id, db)
 
     # Fetch user learnings for scoring boost + context injection
@@ -633,17 +662,19 @@ async def chat(body: ChatRequest, db: Session = Depends(get_db)):
             disambiguation_hint = format_disambiguation_hint(ambiguity)
 
     # Deterministic action detection — fires before LLM (supports chained actions)
-    parsed_list = parse_intents(latest_user_text, expanded_group=body.expanded_group)
+    parsed_list = parse_intents(latest_user_text, expanded_group=body.expanded_group, active_floor_id=body.active_floor_id)
     detected_actions = intents_to_actions(parsed_list, selected_space, body.active_floor_id)
 
     # Enrich select_room_in_group: resolve actual room and add select_space action
     detected_actions = _enrich_room_selection(detected_actions, body.active_floor_id, body.selected_space_id)
 
-    # If a room was resolved via select_room_in_group, use it as selected_space for LLM
-    for action, _ in detected_actions:
-        if action.get("type") == "select_space" and action.get("_resolved_intel"):
-            selected_space = action["_resolved_intel"]
-            break
+    # If the frontend already sent the selected space (Phase 2 re-read after actions),
+    # trust that.  Otherwise fall back to enrichment-resolved intel from cache.
+    if not body.selected_space:
+        for action, _ in detected_actions:
+            if action.get("type") == "select_space" and action.get("_resolved_intel"):
+                selected_space = action["_resolved_intel"]
+                break
 
     # Build floor summaries from polygon data
     floor_summaries = _build_floor_summaries()

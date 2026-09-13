@@ -222,7 +222,7 @@ export async function fetchSpaceFurnishings(ifcGuid) {
  * Lightweight intent detection — returns actions as JSON, no LLM call.
  * Used to fire actions instantly before streaming LLM narration.
  */
-export async function fetchIntents(message, selectedSpaceId, activeFloorId, expandedGroup) {
+export async function fetchIntents(message, selectedSpaceId, activeFloorId, expandedGroup, selectedSpace = null) {
   const res = await fetch(`${BASE}/intents`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -231,6 +231,7 @@ export async function fetchIntents(message, selectedSpaceId, activeFloorId, expa
       selected_space_id: selectedSpaceId || null,
       active_floor_id: activeFloorId || null,
       expanded_group: expandedGroup || null,
+      selected_space: selectedSpace || null,
     }),
   });
   if (!res.ok) return { actions: [], confirmations: [], content: null };
@@ -245,9 +246,10 @@ export async function fetchIntents(message, selectedSpaceId, activeFloorId, expa
  * @param {string|null} selectedSpaceId - currently selected space ID (or null)
  * @param {AbortSignal} [signal] - optional abort signal
  * @param {boolean} [skipActions] - skip action emission (already handled via /intents)
+ * @param {Object|null} [selectedSpace] - full space metadata from frontend store
  * @returns {Promise<ReadableStreamDefaultReader>}
  */
-export async function streamChat(messages, selectedSpaceId, activeFloorId, signal, skipActions = false, expandedGroup = null) {
+export async function streamChat(messages, selectedSpaceId, activeFloorId, signal, skipActions = false, expandedGroup = null, selectedSpace = null) {
   const res = await fetch(`${BASE}/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -257,6 +259,7 @@ export async function streamChat(messages, selectedSpaceId, activeFloorId, signa
       active_floor_id: activeFloorId || null,
       skip_actions: skipActions,
       expanded_group: expandedGroup || null,
+      selected_space: selectedSpace || null,
     }),
     signal,
   });

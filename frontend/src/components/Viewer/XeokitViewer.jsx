@@ -3,6 +3,7 @@ import useStore from '../../store/useStore';
 import { fetchSpaceByGuid, searchSpaces, fullSavePolygons } from '../../api/client';
 import { getColorForFunction, getCategoryIndex } from '../../utils/colorScheme';
 import { unprojectPolygon, earClipTriangulate, computePolygonMetrics } from '../../utils/unprojectPolygon';
+import { selectSpaceFromPolygon } from '../../utils/polygonOverrides';
 import './XeokitViewer.css';
 
 let Viewer, XKTLoaderPlugin, NavCubePlugin, StoreyViewsPlugin, SectionPlanesPlugin;
@@ -45,6 +46,8 @@ function throttle(fn, ms) {
     }
   };
 }
+
+const EMPTY = [];
 
 let cachedXKT = null;
 
@@ -413,38 +416,20 @@ export default function XeokitViewer() {
           highlightedRef.current = null;
         }
 
-        // Build polygon-derived overrides for Space Toolkit
+        // Use the shared helper so all selection paths produce identical metadata
         const floorId = useStore.getState().activeFloorId;
         const floorPolys = floorId ? (useStore.getState().floorPolygons[floorId] || []) : [];
         const polyData = floorPolys.find((p) => p.ifc_guid === ifcGuid);
-        const overrides = {};
         if (polyData) {
-          if (polyData.area_m2 != null) overrides.area_m2 = polyData.area_m2;
-          if (floorId) {
-            const snapshot = useStore.getState().floorSnapshots[floorId];
-            if (snapshot?.viewMatrix && snapshot?.projMatrix && polyData.vertices?.length >= 3) {
-              const geom = useStore.getState().floorSpaceGeometry?.[floorId] || [];
-              const avgY = geom.length > 0 ? geom.reduce((sum, sp) => sum + (sp.y || 0), 0) / geom.length : 0;
-              const metrics = computePolygonMetrics(polyData.vertices, snapshot.viewMatrix, snapshot.projMatrix, avgY);
-              if (metrics) {
-                overrides.perimeter_cm = Math.round(metrics.perimeter_m * 100);
-                if (overrides.area_m2 == null) overrides.area_m2 = Math.round(metrics.area_m2 * 100) / 100;
-              }
-            }
+          await selectSpaceFromPolygon(polyData, floorId, fetchSpaceByGuid);
+        } else {
+          // Polygon not in store (rare) — API-only fallback
+          try {
+            const spaceData = await fetchSpaceByGuid(ifcGuid);
+            selectSpace(ifcGuid, spaceData);
+          } catch (err) {
+            selectSpace(ifcGuid, { ifc_guid: ifcGuid, floor_id: floorId });
           }
-        }
-
-        try {
-          const spaceData = await fetchSpaceByGuid(ifcGuid);
-          selectSpace(ifcGuid, { ...spaceData, ...overrides });
-        } catch (err) {
-          selectSpace(ifcGuid, {
-            ifc_guid: ifcGuid,
-            space_name: polyData?.space_name,
-            primary_function: polyData?.primary_function,
-            floor_id: floorId,
-            ...overrides,
-          });
         }
       });
 
@@ -637,12 +622,6 @@ export default function XeokitViewer() {
     { pattern: 'Screed', color: [0.78, 0.80, 0.82] },
   ];
 
-  // ── Per-element position offsets (fix z-clipping) ──
-  const ELEMENT_OFFSET_OVERRIDES = {
-    '3oCszVTFbEdhxb6Y3$XhpG': [0, 0.0001, 0],
-    '3oCszVTFbEdhxb6Y3$XhpL': [0, 0.0001, 0],
-  };
-
   function applyElementColorOverrides(viewer) {
     for (const [guid, color] of Object.entries(ELEMENT_COLOR_OVERRIDES)) {
       const obj = viewer.scene.objects[guid];
@@ -652,13 +631,6 @@ export default function XeokitViewer() {
         obj.opacity = 1.0;
       } else {
         console.warn(`[Delta] Color override: entity ${guid} not found in scene`);
-      }
-    }
-    // Apply position offsets
-    for (const [guid, offset] of Object.entries(ELEMENT_OFFSET_OVERRIDES)) {
-      const obj = viewer.scene.objects[guid];
-      if (obj) {
-        obj.offset = offset;
       }
     }
     // Apply name-based color overrides
@@ -1220,10 +1192,11 @@ export default function XeokitViewer() {
 
   // ── Render ALL saved floor polygons as pickable 3D meshes ──
   const savedMeshesRef = useRef(new Map()); // ifcGuid → mesh
-  const floorPolygons = useStore((s) => s.activeFloorId ? (s.floorPolygons[s.activeFloorId] || []) : []);
+  const floorPolygons = useStore((s) => s.activeFloorId ? (s.floorPolygons[s.activeFloorId] || EMPTY) : EMPTY);
   const hoveredPolygonGuid = useStore((s) => s.hoveredPolygonGuid);
   const floorSnapshots = useStore((s) => s.floorSnapshots);
   const activeRoute = useStore((s) => s.activeRoute);
+  const currentExpandedGroup = useStore((s) => s.currentExpandedGroup);
 
   // Derive a stable key from snapshot matrices so mesh effect only re-runs when matrices change,
   // not when the image URL updates (Tier 2 hi-res capture)
@@ -1367,17 +1340,29 @@ export default function XeokitViewer() {
     const routeStartGuid = activeRoute?.path?.[0]?.ifc_guid || null;
     const routePathGuids = activeRoute?.path ? new Set(activeRoute.path.map((p) => p.ifc_guid)) : null;
 
+    // ── Build group membership set for expanded directory group ──
+    const groupGuids = new Set();
+    if (currentExpandedGroup) {
+      for (const p of floorPolygons) {
+        if ((p.primary_function || 'Unassigned') === currentExpandedGroup) {
+          groupGuids.add(p.ifc_guid);
+        }
+      }
+    }
+
     // ── Apply colors to overlay polygon meshes (skip unchanged) ──
     for (const [guid, mesh] of savedMeshesRef.current) {
       const isRouteStart = routeStartGuid === guid;
       const isRouteTarget = activeRoute?.targetGuid === guid;
       const isRoutePath = routePathGuids?.has(guid) && !isRouteStart && !isRouteTarget;
       const isHoverOrSelect = hoveredPolygonGuid === guid || selectedSpaceId === guid;
+      const isGroupMember = groupGuids.has(guid);
 
       const newState = isRouteStart ? 'start'
         : isRouteTarget ? 'target'
         : isRoutePath ? 'path'
         : isHoverOrSelect ? 'hover'
+        : isGroupMember ? 'group'
         : 'default';
 
       if (meshStateRef.current.get(guid) === newState) continue;
@@ -1400,6 +1385,10 @@ export default function XeokitViewer() {
           mesh.material.alpha = 0.45;
           mesh.material.diffuse = [1.0, 0.55, 0.2];
           mesh.material.emissive = [0.4, 0.15, 0.0];
+        } else if (newState === 'group') {
+          mesh.material.alpha = 0.22;
+          mesh.material.diffuse = [1.0, 0.55, 0.2];
+          mesh.material.emissive = [0.2, 0.075, 0.0];
         } else {
           mesh.material.alpha = 0.01;
           mesh.material.diffuse = [0, 0, 0];
@@ -1591,7 +1580,7 @@ export default function XeokitViewer() {
         }));
       } catch {}
     }
-  }, [hoveredPolygonGuid, selectedSpaceId, activeRoute, activeFloorId]);
+  }, [hoveredPolygonGuid, selectedSpaceId, activeRoute, activeFloorId, currentExpandedGroup, floorPolygons]);
 
 
   return (
