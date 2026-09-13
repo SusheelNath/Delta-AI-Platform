@@ -49,7 +49,10 @@
   justify-content: center;
 }
 
-.loading-screen__logo-path {
+.loading-screen__logo-char {
+  font-size: 48px;
+  color: #E77133;
+  line-height: 1;
   filter: drop-shadow(0 0 8px rgba(231, 113, 51, 0.4));
   animation: logo-breathe 2.4s ease-in-out infinite;
 }

@@ -245,12 +245,16 @@ export default function XeokitViewer() {
           cameraFlyDuration: 0.4,
           fitVisible: false,
         });
-        // Hack internal scene edge material — config edgeColor is not wired up
+        // Hack internal scene — config edgeColor & resolutionScale are not wired up
         try {
           const ncScene = navCube._navCubeScene;
           if (ncScene && ncScene.edgeMaterial) {
             ncScene.edgeMaterial.edgeColor = [0.91, 0.44, 0.20];
             ncScene.edgeMaterial.edgeAlpha = 1.0;
+          }
+          // Boost canvas backing resolution for crisp text
+          if (ncScene && ncScene.canvas) {
+            ncScene.canvas.resolutionScale = window.devicePixelRatio || 2;
           }
         } catch (_) { /* non-critical */ }
       }
@@ -403,6 +407,9 @@ export default function XeokitViewer() {
         if (!destroyed) { setLoading(false); setModelError(true); }
         return;
       }
+
+      // ── Instant click — disable double-click delay ──
+      viewer.cameraControl.doubleClickTimeFrame = 0;
 
       // ── Click handler — select whichever polygon is currently hovered ──
       viewer.cameraControl.on('picked', async () => {
@@ -1302,6 +1309,8 @@ export default function XeokitViewer() {
   const bimDarkenedRef = useRef(false);
   const routeNavMeshesRef = useRef([]); // ground stripe + waypoint dots
   const meshStateRef = useRef(new Map()); // guid → 'start'|'target'|'path'|'hover'|'default'
+  const breatheRafRef = useRef(null);
+  const breatheMeshRef = useRef(null);
 
   useEffect(() => {
     const viewer = viewerRef.current;
@@ -1384,11 +1393,11 @@ export default function XeokitViewer() {
           mesh.material.diffuse = [0.25, 0.58, 1.0];
           mesh.material.emissive = [0.08, 0.22, 0.55];
         } else if (newState === 'hover') {
-          mesh.material.alpha = 0.45;
+          mesh.material.alpha = 0.65;
           mesh.material.diffuse = [1.0, 0.55, 0.2];
-          mesh.material.emissive = [0.4, 0.15, 0.0];
+          mesh.material.emissive = [0.7, 0.3, 0.05];
         } else if (newState === 'group') {
-          mesh.material.alpha = 0.22;
+          mesh.material.alpha = 0.50;
           mesh.material.diffuse = [1.0, 0.55, 0.2];
           mesh.material.emissive = [0.2, 0.075, 0.0];
         } else {
@@ -1397,6 +1406,27 @@ export default function XeokitViewer() {
           mesh.material.emissive = [0, 0, 0];
         }
       } catch {}
+    }
+
+    // ── Breathe animation for selected mesh ──
+    if (breatheRafRef.current) { cancelAnimationFrame(breatheRafRef.current); breatheRafRef.current = null; }
+    breatheMeshRef.current = null;
+    if (selectedSpaceId) {
+      const selMesh = savedMeshesRef.current.get(selectedSpaceId);
+      if (selMesh) {
+        breatheMeshRef.current = selMesh;
+        const startTime = performance.now();
+        const tick = (now) => {
+          if (breatheMeshRef.current !== selMesh) return;
+          const t = (Math.sin((now - startTime) / 1000 * Math.PI) + 1) / 2; // 0→1→0 over 2s
+          try {
+            selMesh.material.alpha = 0.50 + t * 0.30; // 0.50 → 0.80
+            selMesh.material.emissive = [0.5 + t * 0.3, 0.2 + t * 0.15, 0.02 + t * 0.03];
+          } catch {}
+          breatheRafRef.current = requestAnimationFrame(tick);
+        };
+        breatheRafRef.current = requestAnimationFrame(tick);
+      }
     }
 
     // ── Create nav meshes: ground stripe, breadcrumb dots, polygon glow borders ──
@@ -1588,7 +1618,7 @@ export default function XeokitViewer() {
   return (
     <div className="xeokit-viewer">
       <canvas ref={canvasRef} className="xeokit-viewer__canvas" />
-      <canvas ref={navCubeCanvasRef} className="xeokit-viewer__navcube" width="360" height="360" />
+      <canvas ref={navCubeCanvasRef} className="xeokit-viewer__navcube" />
 
       {loading && (
         <div className="xeokit-viewer__overlay">

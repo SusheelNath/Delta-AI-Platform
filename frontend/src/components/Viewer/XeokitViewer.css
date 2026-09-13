@@ -33,15 +33,15 @@
   height: 120px;
   pointer-events: all;
   border-radius: 0;
-  opacity: 0.9;
+  opacity: 1;
   border: none;
   background: transparent;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.1));
-  transition: opacity 0.3s ease;
+  image-rendering: auto;
 }
 
 .xeokit-viewer__navcube:hover {
   opacity: 1;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.1));
 }
 
 /* Loading / Error overlay */

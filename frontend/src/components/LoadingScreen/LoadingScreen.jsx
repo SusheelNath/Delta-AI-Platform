@@ -67,16 +67,7 @@ export default function LoadingScreen() {
 
           {/* Delta logo centered inside ring */}
           <div className="loading-screen__logo">
-            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-              <path
-                d="M20 4 L36 34 L4 34 Z"
-                fill="none"
-                stroke="#E77133"
-                strokeWidth="2.2"
-                strokeLinejoin="round"
-                className="loading-screen__logo-path"
-              />
-            </svg>
+            <span className="loading-screen__logo-char">&#9651;</span>
           </div>
         </div>
 

@@ -18,8 +18,6 @@ export default function RoomDirectory() {
   const setCurrentExpandedGroup = useStore((s) => s.setCurrentExpandedGroup);
   const setExpandedGroups = useStore((s) => s.setExpandedGroups);
 
-  const [collapsedGroups, setCollapsedGroups] = useState(new Set());
-  const initializedFloorRef = useRef(null);
   const selectedRef = useRef(null);
   const directoryRef = useRef(null);
   const scrollState = useRef({ target: 0, current: 0, raf: null });
@@ -54,7 +52,23 @@ export default function RoomDirectory() {
     });
   }, [filtered]);
 
-  // Start all groups collapsed; reset when floor changes
+  // Eagerly compute initial collapsed set to avoid one-frame flash
+  const [collapsedGroups, setCollapsedGroups] = useState(() => {
+    const allGroupNames = groups.map(([fn]) => fn);
+    if (allGroupNames.length === 0) return new Set();
+    // If a space is already selected, expand its group
+    if (selectedSpaceId) {
+      const selectedPoly = filtered.find((p) => p.ifc_guid === selectedSpaceId);
+      if (selectedPoly) {
+        const selectedFn = selectedPoly.primary_function || 'Unassigned';
+        return new Set(allGroupNames.filter((fn) => fn !== selectedFn));
+      }
+    }
+    return new Set(allGroupNames);
+  });
+  const initializedFloorRef = useRef(activeFloorId);
+
+  // Reset when floor changes
   React.useEffect(() => {
     if (groups.length > 0 && initializedFloorRef.current !== activeFloorId) {
       setCollapsedGroups(new Set(groups.map(([fn]) => fn)));
@@ -62,6 +76,19 @@ export default function RoomDirectory() {
       initializedFloorRef.current = activeFloorId;
     }
   }, [groups, activeFloorId, setExpandedGroups]);
+
+  // On selection: collapse all groups, expand only the selected item's parent, scroll to it
+  // On deselection (null): leave dropdowns as-is
+  React.useEffect(() => {
+    if (!selectedSpaceId || groups.length === 0) return;
+    const selectedPoly = filtered.find((p) => p.ifc_guid === selectedSpaceId);
+    if (!selectedPoly) return;
+    const selectedFn = selectedPoly.primary_function || 'Unassigned';
+    const allGroupNames = groups.map(([name]) => name);
+    setCollapsedGroups(new Set(allGroupNames.filter((name) => name !== selectedFn)));
+    setExpandedGroups([selectedFn]);
+    setCurrentExpandedGroup(selectedFn);
+  }, [selectedSpaceId, groups, filtered, setExpandedGroups, setCurrentExpandedGroup]);
 
   React.useEffect(() => {
     if (selectedRef.current) {
