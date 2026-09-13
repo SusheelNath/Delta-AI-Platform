@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import useStore from '../../store/useStore';
-import { streamChat, transcribeAudio, speakText } from '../../api/client';
+import { streamChat, fetchIntents, transcribeAudio, speakText } from '../../api/client';
 import {
   createVoiceManager,
   playAudio,
@@ -9,6 +9,32 @@ import {
 } from '../../utils/voiceManager';
 import { resolveAction } from '../../utils/actionResolver';
 import './ChatPanel.css';
+
+const ACTION_LABELS = {
+  set_floor: 'Navigating',
+  set_heatmap: 'Setting heatmap',
+  reset_heatmap: 'Clearing heatmap',
+  reset_filters: 'Resetting filters',
+  select_space: 'Selecting space',
+  toggle_function_filter: 'Filtering',
+  clear_selection: 'Clearing selection',
+  expand_directory_group: 'Opening directory',
+  select_room_in_group: 'Selecting room',
+  toggle_drawer: 'Opening panel',
+  route_to_elevator: 'Finding elevator',
+  route_to_staircase: 'Finding stairs',
+  clear_route: 'Clearing route',
+  highlight_spaces: 'Highlighting spaces',
+  highlight_adjacent: 'Finding adjacent',
+  clear_all: 'Clearing all',
+  set_search: 'Searching',
+  zoom_view: 'Adjusting view',
+  fly_to_zone: 'Flying to zone',
+};
+
+function formatActionLabel(type) {
+  return ACTION_LABELS[type] || type.replace(/_/g, ' ');
+}
 
 const WELCOME_MESSAGE = {
   role: 'delta',
@@ -25,6 +51,8 @@ export default function ChatPanel() {
   const viewerReady = useStore((s) => s.viewerReady);
   const selectedSpaceId = useStore((s) => s.selectedSpaceId);
   const selectedSpace = useStore((s) => s.selectedSpace);
+  const activeFloorId = useStore((s) => s.activeFloorId);
+  const currentExpandedGroup = useStore((s) => s.currentExpandedGroup);
 
   // Voice state
   const voiceActive = useStore((s) => s.voiceActive);
@@ -33,6 +61,8 @@ export default function ChatPanel() {
   const setVoiceState = useStore((s) => s.setVoiceState);
 
   const [input, setInput] = useState('');
+  const [pendingPhase, setPendingPhase] = useState('idle'); // 'idle' | 'detecting' | 'generating'
+  const [completedActions, setCompletedActions] = useState([]);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const abortRef = useRef(null);
@@ -47,16 +77,18 @@ export default function ChatPanel() {
     voiceActiveRef.current = voiceActive;
   }, [voiceActive]);
 
-  // ── Load session list on mount ──
+  // ── Load session list + learnings on mount ──
   const loadSessionList = useStore((s) => s.loadSessionList);
+  const fetchLearnings = useStore((s) => s.fetchLearnings);
   useEffect(() => {
     loadSessionList();
+    fetchLearnings();
   }, []);
 
   // ── Welcome message (re-fires when messages cleared by New Chat) ──
   const isEmpty = messages.length === 0;
   useEffect(() => {
-    if (isEmpty) {
+    if (isEmpty && useStore.getState().messages.length === 0) {
       addMessage(WELCOME_MESSAGE);
     }
   }, [isEmpty]);
@@ -174,7 +206,7 @@ export default function ChatPanel() {
     setInput('');
   }, [setVoiceActive, setVoiceState]);
 
-  // ── Voice submit (triggered by "Send") ──
+  // ── Voice submit (triggered by "Submit" or "Send Delta") ──
 
   const handleVoiceSubmit = useCallback(async (audioBlob, webSpeechText) => {
     if (!voiceActiveRef.current) return;
@@ -224,10 +256,18 @@ export default function ChatPanel() {
     const text = (overrideText || input).trim();
     if (!text || isGenerating) return;
 
+    // Bare "clear" — just clear the input, don't send anything
+    if (/^clear\.?$/i.test(text)) {
+      setInput('');
+      return;
+    }
+
     const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const userMsg = { role: 'user', text, time: now };
     addMessage(userMsg);
     setInput('');
+    setCompletedActions([]);
+    setPendingPhase('detecting');
 
     // Play "One moment, please." if voice is active (blocks until done)
     const voiceOn = voiceActiveRef.current;
@@ -256,13 +296,86 @@ export default function ChatPanel() {
 
     try {
       const currentMessages = useStore.getState().messages;
-      const conversation = currentMessages.filter(
+      let conversation = currentMessages.filter(
         (m, i) => i < currentMessages.length - 1,
       );
 
-      const reader = await streamChat(conversation, selectedSpaceId, abortController.signal);
+      // Resolve live context from store — covers user clicks, AI actions, visibility toggles
+      const liveState = useStore.getState();
+      let effectiveFloor = liveState.activeFloorId;
+      if (!effectiveFloor) {
+        // Infer floor from visibility: if exactly one floor is visible, use it
+        const visFloors = (liveState.floors || []).filter((f) => liveState.floorVisibility[f.id]);
+        if (visFloors.length === 1) effectiveFloor = visFloors[0].id;
+      }
+      const effectiveSpace = liveState.selectedSpaceId;
+      const effectiveGroup = liveState.currentExpandedGroup;
+
+      // Phase 1: Instant intent detection — fire actions before LLM
+      let actionsHandled = false;
+      let phase1Content = null;
+      try {
+        const { actions, confirmations, content } = await fetchIntents(text, effectiveSpace, effectiveFloor, effectiveGroup);
+        if (actions.length > 0) {
+          for (const action of actions) {
+            await resolveAction(action);
+          }
+
+          const cleanLabels = confirmations
+            .map((c) => c.replace(/\*\*/g, '').replace(/\.{3,}$/, '').trim());
+          setCompletedActions(cleanLabels);
+          actionsHandled = true;
+        }
+        if (content) {
+          phase1Content = content;
+        }
+      } catch (e) {
+        console.warn('[Chat] Intent detection failed, falling back to stream:', e);
+      }
+
+      // Phase 1 fully resolved — display content and skip LLM
+      if (phase1Content) {
+        const now2 = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const msgs = useStore.getState().messages;
+        const last = msgs[msgs.length - 1];
+        if (last && last.role === 'delta' && last.text === '') {
+          const updated = [...msgs];
+          updated[updated.length - 1] = { ...last, text: phase1Content, time: now2 };
+          useStore.setState({ messages: updated });
+        }
+        setPendingPhase('idle');
+        setCompletedActions([]);
+        setGenerating(false);
+        abortRef.current = null;
+        // Save session + periodic learnings (same as Phase 2 finally block)
+        useStore.getState().saveCurrentSession();
+        const allMsgs = useStore.getState().messages;
+        const userMsgCount = allMsgs.filter((m) => m.role === 'user').length;
+        if (userMsgCount > 0 && userMsgCount % 3 === 0) {
+          useStore.getState().generateLearnings();
+        }
+        return;
+      }
+
+      // Phase 2: Stream LLM narration (only for queries, evacuate, capacity_plan)
+      setPendingPhase('generating');
+
+      // Re-read from store — intent actions may have navigated or selected a space
+      const phase2State = useStore.getState();
+      let effectiveFloorId = phase2State.activeFloorId;
+      if (!effectiveFloorId) {
+        const vis = (phase2State.floors || []).filter((f) => phase2State.floorVisibility[f.id]);
+        if (vis.length === 1) effectiveFloorId = vis[0].id;
+      }
+      const effectiveSpaceId = phase2State.selectedSpaceId;
+
+      const reader = await streamChat(
+        conversation, effectiveSpaceId, effectiveFloorId,
+        abortController.signal, actionsHandled, currentExpandedGroup,
+      );
       const decoder = new TextDecoder();
       let firstToken = true;
+      let skipNextConfirm = false;
 
       // Play "Here is what I found." concurrently — voice speaks while text streams
       if (voiceOn) {
@@ -298,19 +411,29 @@ export default function ChatPanel() {
             continue;
           }
 
-          // Handle tool-call actions from LLM
+          // Fallback: handle actions from stream (if intent detection failed)
           if (data.startsWith('[ACTION]')) {
             try {
               const actionPayload = JSON.parse(data.slice(8));
-              resolveAction(actionPayload);
+              await resolveAction(actionPayload);
+              setCompletedActions((prev) => [...prev, formatActionLabel(actionPayload.type)]);
             } catch (e) {
               console.warn('[Chat] Failed to parse action:', e);
             }
+            skipNextConfirm = true;
             continue;
           }
 
+          // Skip confirmation text that follows [ACTION] — shown in indicator instead
+          if (skipNextConfirm) {
+            skipNextConfirm = false;
+            continue;
+          }
+
+          // First LLM text token — dismiss indicator, set timestamp
           if (firstToken) {
             firstToken = false;
+            setPendingPhase('idle');
             const msgs = useStore.getState().messages;
             const last = msgs[msgs.length - 1];
             if (last && last.role === 'delta' && last.text === '') {
@@ -347,11 +470,19 @@ export default function ChatPanel() {
       }
     } finally {
       setGenerating(false);
+      setPendingPhase('idle');
+      setCompletedActions([]);
       abortRef.current = null;
       // Auto-save session after each exchange
       useStore.getState().saveCurrentSession();
+      // Generate learnings every 3rd user message (fire-and-forget)
+      const msgs = useStore.getState().messages;
+      const userMsgCount = msgs.filter((m) => m.role === 'user').length;
+      if (userMsgCount > 0 && userMsgCount % 3 === 0) {
+        useStore.getState().generateLearnings();
+      }
     }
-  }, [input, isGenerating, addMessage, appendToLastMessage, setGenerating, selectedSpaceId, setVoiceState]);
+  }, [input, isGenerating, addMessage, appendToLastMessage, setGenerating, selectedSpaceId, activeFloorId, currentExpandedGroup, setVoiceState]);
 
   // ── Mic button click ──
 
@@ -377,6 +508,10 @@ export default function ChatPanel() {
 
   const sessionHistoryOpen = useStore((s) => s.sessionHistoryOpen);
   const setSessionHistoryOpen = useStore((s) => s.setSessionHistoryOpen);
+  const learningsPanelOpen = useStore((s) => s.learningsPanelOpen);
+  const setLearningsPanelOpen = useStore((s) => s.setLearningsPanelOpen);
+  const guideBookletOpen = useStore((s) => s.guideBookletOpen);
+  const setGuideBookletOpen = useStore((s) => s.setGuideBookletOpen);
 
   return (
     <div className="chat-panel">
@@ -387,6 +522,28 @@ export default function ChatPanel() {
           <span className={`chat-panel__status-dot ${viewerReady ? 'chat-panel__status-dot--ready' : ''}`} />
         </div>
         <div className="chat-panel__header-right">
+          <button
+            className={`chat-panel__brain-btn ${learningsPanelOpen ? 'chat-panel__brain-btn--active' : ''}`}
+            onClick={() => setLearningsPanelOpen(!learningsPanelOpen)}
+            title="AI learnings"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2a7 7 0 0 1 7 7c0 2.5-1.3 4.7-3.2 6H8.2C6.3 13.7 5 11.5 5 9a7 7 0 0 1 7-7z" />
+              <path d="M9 22h6M10 18h4M12 15v3" />
+            </svg>
+          </button>
+          <button
+            className={`chat-panel__guide-btn ${guideBookletOpen ? 'chat-panel__guide-btn--active' : ''}`}
+            onClick={() => setGuideBookletOpen(!guideBookletOpen)}
+            title="What can I do?"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+              <line x1="8" y1="7" x2="16" y2="7" />
+              <line x1="8" y1="11" x2="14" y2="11" />
+            </svg>
+          </button>
           <button
             className={`chat-panel__history-btn ${sessionHistoryOpen ? 'chat-panel__history-btn--active' : ''}`}
             onClick={() => setSessionHistoryOpen(!sessionHistoryOpen)}
@@ -404,6 +561,16 @@ export default function ChatPanel() {
       {/* Session history panel */}
       {sessionHistoryOpen && <SessionHistory />}
 
+      {/* Learnings panel */}
+      {learningsPanelOpen && <LearningsPanel />}
+
+      {/* Guide booklet */}
+      {guideBookletOpen && (
+        <div className="guide-booklet">
+          <GuideBooklet onChipClick={(text) => { setInput(text); setGuideBookletOpen(false); inputRef.current?.focus(); }} />
+        </div>
+      )}
+
       {/* Context indicator */}
       {selectedSpace && (
         <div className="chat-panel__context">
@@ -420,7 +587,7 @@ export default function ChatPanel() {
           <span className="chat-panel__voice-dot" />
           <span className="chat-panel__voice-label">
             {voiceState === 'greeting' && 'Delta is greeting...'}
-            {voiceState === 'listening' && 'Listening... say "Send" to send'}
+            {voiceState === 'listening' && 'Listening... say "Submit" or "Send Delta"'}
             {voiceState === 'processing' && 'Verifying transcription...'}
             {voiceState === 'acknowledging' && 'One moment, please...'}
             {voiceState === 'announcing' && 'Here is what I found...'}
@@ -467,10 +634,21 @@ export default function ChatPanel() {
           );
         })}
 
-        {/* Typing indicator while generating */}
-        {isGenerating && messages.length > 0 && messages[messages.length - 1]?.text === '' && (
-          <div className="chat-panel__typing">
-            <span /><span /><span />
+        {/* Multi-phase processing indicator */}
+        {pendingPhase !== 'idle' && (
+          <div className="chat-panel__pending">
+            {completedActions.map((label, i) => (
+              <span key={i} className="chat-panel__pending-done">
+                <svg className="chat-panel__pending-check" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M2.5 6l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                {label}
+              </span>
+            ))}
+            <span className="chat-panel__pending-phase">
+              <span className="chat-panel__pending-dot" />
+              {pendingPhase === 'detecting' ? 'Processing\u2026' : 'Generating response\u2026'}
+            </span>
           </div>
         )}
 
@@ -486,7 +664,7 @@ export default function ChatPanel() {
             className="chat-panel__input"
             placeholder={
               voiceActive && voiceState === 'listening'
-                ? 'Listening... speak now, say "Send" to send'
+                ? 'Listening... say "Submit" or "Send Delta"'
                 : selectedSpace
                   ? `Ask about ${selectedSpace.space_name || 'this space'}...`
                   : 'Ask Delta about any space...'
@@ -529,6 +707,167 @@ export default function ChatPanel() {
             </button>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+const GUIDE_TABS = [
+  { label: 'Nav',       chips: ['Go to floor 1', 'Next floor', 'Show all floors'] },
+  { label: 'Search',    chips: ['Find consultation rooms', 'Large rooms on floor 2', 'Private patient rooms'] },
+  { label: 'Select',    chips: ['Select Nursing Station', 'Zoom to Operating Room'] },
+  { label: 'Heat',      chips: ['Color by function', 'Show occupancy', 'Show evacuation capacity'] },
+  { label: 'Route',     chips: ['Nearest elevator', 'Nearest staircase', 'Clear route'] },
+  { label: 'Filter',    chips: ['Show only medical spaces', 'Hide circulation', 'Show all types'] },
+  { label: 'Highlight', chips: ['Highlight all surgical rooms', "What's adjacent to Nursing Station", 'How many clinical spaces'] },
+  { label: 'Evac',      chips: ['Best rooms to collect people', 'Conference room for 50 people'] },
+  { label: 'Infra',     chips: ['Show infrastructure', 'Hide MEP'] },
+  { label: 'Panels',    chips: ['Show directory', 'Show statistics'] },
+  { label: 'Compare',   chips: ['Compare floor 1 and floor 2', 'Enter compare mode'] },
+  { label: 'Clear',     chips: ['Clear', 'Normal view', 'Clear highlights'] },
+];
+
+function GuideBooklet({ onChipClick }) {
+  const [activeIdx, setActiveIdx] = useState(null);
+  const tabsRef = useRef(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkScroll = useCallback(() => {
+    const el = tabsRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 2);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 2);
+  }, []);
+
+  useEffect(() => {
+    checkScroll();
+    const el = tabsRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', checkScroll, { passive: true });
+    const ro = new ResizeObserver(checkScroll);
+    ro.observe(el);
+    return () => { el.removeEventListener('scroll', checkScroll); ro.disconnect(); };
+  }, [checkScroll]);
+
+  const scroll = (dir) => {
+    const el = tabsRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * 120, behavior: 'smooth' });
+  };
+
+  return (
+    <div className="guide-booklet__strip">
+      <div className="guide-booklet__tabs-wrapper">
+        {canScrollLeft && (
+          <button className="guide-booklet__arrow guide-booklet__arrow--left" onClick={() => scroll(-1)}>
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6.5 1.5 3.5 5 6.5 8.5" /></svg>
+          </button>
+        )}
+        <div className="guide-booklet__tabs" ref={tabsRef}>
+          {GUIDE_TABS.map((tab, i) => (
+            <button
+              key={tab.label}
+              className={`guide-booklet__tab ${activeIdx === i ? 'guide-booklet__tab--active' : ''}`}
+              onClick={() => setActiveIdx(activeIdx === i ? null : i)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        {canScrollRight && (
+          <button className="guide-booklet__arrow guide-booklet__arrow--right" onClick={() => scroll(1)}>
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3.5 1.5 6.5 5 3.5 8.5" /></svg>
+          </button>
+        )}
+      </div>
+      <div
+        className="guide-booklet__reveal"
+        style={{ maxHeight: activeIdx !== null ? '50px' : '0px' }}
+      >
+        {activeIdx !== null && (
+          <div className="guide-booklet__chips" key={activeIdx}>
+            {GUIDE_TABS[activeIdx].chips.map((chip) => (
+              <button
+                key={chip}
+                className="guide-booklet__chip"
+                onClick={() => onChipClick(chip)}
+              >
+                {chip}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const LEARNING_ICONS = {
+  function_interest: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+  ),
+  floor_preference: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+  ),
+  facility_need: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+  ),
+  general_observation: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2a7 7 0 0 1 7 7c0 2.5-1.3 4.7-3.2 6H8.2C6.3 13.7 5 11.5 5 9a7 7 0 0 1 7-7z"/><path d="M10 18h4M12 15v3"/></svg>
+  ),
+};
+
+function LearningsPanel() {
+  const learnings = useStore((s) => s.learnings);
+  const removeLearning = useStore((s) => s.removeLearning);
+  const clearAllLearnings = useStore((s) => s.clearAllLearnings);
+
+  return (
+    <div className="learnings-panel">
+      <div className="learnings-panel__header">
+        <span className="learnings-panel__title">Delta AI Learnings</span>
+        {learnings.length > 0 && (
+          <button className="learnings-panel__clear-btn" onClick={clearAllLearnings} title="Clear all learnings">
+            Clear all
+          </button>
+        )}
+      </div>
+      <div className="learnings-panel__list">
+        {learnings.length === 0 ? (
+          <div className="learnings-panel__empty">
+            No learnings yet. As you chat, Delta will learn your preferences.
+          </div>
+        ) : (
+          learnings.map((lr) => (
+            <div key={lr.id} className="learnings-panel__item">
+              <div className="learnings-panel__item-icon">
+                {LEARNING_ICONS[lr.learning_type] || LEARNING_ICONS.general_observation}
+              </div>
+              <div className="learnings-panel__item-body">
+                <span className="learnings-panel__item-text">{lr.content}</span>
+                <div className="learnings-panel__item-meta">
+                  <div className="learnings-panel__confidence-bar">
+                    <div
+                      className="learnings-panel__confidence-fill"
+                      style={{ width: `${Math.round(lr.confidence * 100)}%` }}
+                    />
+                  </div>
+                  <span className="learnings-panel__item-count">
+                    Seen {lr.observation_count}x
+                  </span>
+                </div>
+              </div>
+              <button
+                className="learnings-panel__item-delete"
+                onClick={() => removeLearning(lr.id)}
+                title="Remove learning"
+              >
+                &times;
+              </button>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import FurnishingType, SpaceFurnishing, SpaceMetrics
+from app.services.intelligence_cache import rebuild_cache
 from app.schemas import (
     FurnishingTypeResponse,
     SpaceFurnishingCreate,
@@ -185,6 +186,7 @@ def add_furnishing(req: SpaceFurnishingCreate, db: Session = Depends(get_db)):
 
     # Recompute metrics for this space
     _recompute_space_metrics(db, req.ifc_guid, req.floor_id)
+    rebuild_cache(db)
 
     return _enrich_furnishing(furnishing, ft)
 
@@ -212,6 +214,7 @@ def update_furnishing(
 
     # Recompute metrics
     _recompute_space_metrics(db, furnishing.ifc_guid, furnishing.floor_id)
+    rebuild_cache(db)
 
     ft = db.query(FurnishingType).filter(FurnishingType.item_type == furnishing.item_type).first()
     return _enrich_furnishing(furnishing, ft)
@@ -232,6 +235,7 @@ def delete_furnishing(furnishing_id: int, db: Session = Depends(get_db)):
 
     # Recompute metrics (may fall back to density model if no furnishings remain)
     _recompute_space_metrics(db, ifc_guid, floor_id)
+    rebuild_cache(db)
 
     return {"deleted": True, "id": furnishing_id}
 
@@ -314,6 +318,7 @@ def seed_all_furnishings(clear: bool = False, db: Session = Depends(get_db)):
         recomputed += 1
 
     db.commit()
+    rebuild_cache(db)
 
     if clear:
         result["cleared_existing"] = deleted

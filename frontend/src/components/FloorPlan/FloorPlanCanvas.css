@@ -120,6 +120,10 @@
   min-width: 60px;
 }
 
+.fpc__legend-bar--inverted {
+  background: linear-gradient(to right, rgb(255,60,40), rgb(255,200,0), rgb(0,170,100));
+}
+
 /* ── Tooltip ── */
 .fpc__tooltip {
   position: absolute;

@@ -52,6 +52,7 @@ export default function FloorPlanCanvas({ floorIdOverride }) {
   const searchQuery = useStore((s) => s.searchQuery);
   const heatmapMode = useStore((s) => s.heatmapMode);
   const mepVisible = useStore((s) => s.mepVisible);
+  const highlightedGuids = useStore((s) => s.highlightedGuids);
 
   const floorId = floorIdOverride || activeFloorId;
 
@@ -127,6 +128,9 @@ export default function FloorPlanCanvas({ floorIdOverride }) {
       const isActive = catIdx < 0 || activeFunctionFilters[catIdx];
       const area = detail.area_m2 || 0;
       const capacity = parseInt(detail.normal_occupancy || detail.patient_capacity || '0', 10) || 0;
+      const maxOccupancy = parseInt(detail.max_occupancy || '0', 10) || 0;
+      const absoluteOccupancy = parseInt(detail.absolute_occupancy || '0', 10) || 0;
+      const freeArea = parseFloat(detail.free_area_m2) || 0;
       const status = parseStatus(detail.data_status);
       const zone = detail.functional_zone || '';
       const displayName = detail.space_name || s.name || '';
@@ -149,6 +153,9 @@ export default function FloorPlanCanvas({ floorIdOverride }) {
         fn: fnName,
         roomNumber: detail.room_number || '',
         areaPerBed: capacity > 0 ? area / capacity : null,
+        maxOccupancy,
+        absoluteOccupancy,
+        freeArea,
       });
     }
 
@@ -211,6 +218,11 @@ export default function FloorPlanCanvas({ floorIdOverride }) {
     );
   }, [searchQuery, rooms]);
 
+  const highlightSet = useMemo(() => {
+    if (!highlightedGuids || highlightedGuids.length === 0) return null;
+    return new Set(highlightedGuids);
+  }, [highlightedGuids]);
+
   // Heatmap stats
   const heatmapStats = useMemo(() => {
     if (heatmapMode === 'function') return null;
@@ -220,6 +232,9 @@ export default function FloorPlanCanvas({ floorIdOverride }) {
       if (heatmapMode === 'area_per_bed' && r.areaPerBed !== null) values.push(r.areaPerBed);
       else if (heatmapMode === 'utilization') values.push(r.capacity > 0 ? 0.7 : 0.3);
       else if (heatmapMode === 'area') values.push(r.area);
+      else if (heatmapMode === 'occupancy' && r.maxOccupancy > 0) values.push(r.maxOccupancy);
+      else if (heatmapMode === 'occupancy_density' && r.maxOccupancy > 0 && r.area > 0) values.push(r.maxOccupancy / r.area);
+      else if (heatmapMode === 'evacuation' && r.absoluteOccupancy > 0) values.push(r.absoluteOccupancy);
     }
     if (values.length === 0) return null;
     const min = Math.min(...values);
@@ -247,7 +262,12 @@ export default function FloorPlanCanvas({ floorIdOverride }) {
     if (heatmapMode === 'area_per_bed') val = room.areaPerBed ?? 0;
     else if (heatmapMode === 'utilization') val = room.capacity > 0 ? 0.7 : 0.3;
     else if (heatmapMode === 'area') val = room.area;
+    else if (heatmapMode === 'occupancy') val = room.maxOccupancy;
+    else if (heatmapMode === 'occupancy_density') val = room.maxOccupancy > 0 && room.area > 0 ? room.maxOccupancy / room.area : 0;
+    else if (heatmapMode === 'evacuation') val = room.absoluteOccupancy;
     const t = Math.max(0, Math.min(1, (val - heatmapStats.min) / heatmapStats.range));
+    // Evacuation: inverted scale — high capacity = green (good), low = red
+    if (heatmapMode === 'evacuation') return heatColor(1 - t);
     return heatColor(t);
   }, [heatmapMode, heatmapStats]);
 
@@ -371,12 +391,27 @@ export default function FloorPlanCanvas({ floorIdOverride }) {
         ctx.fill();
       }
 
+      // Persistent highlight glow (orange overlay + thicker border)
+      if (highlightSet && highlightSet.has(room.id)) {
+        ctx.globalAlpha = 0.3;
+        ctx.fillStyle = '#E77133';
+        ctx.beginPath();
+        ctx.roundRect(rx, rz, rw, rh, Math.min(3, rw * 0.05));
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = '#E77133';
+        ctx.lineWidth = 2 / transform.scale;
+        ctx.beginPath();
+        ctx.roundRect(rx, rz, rw, rh, Math.min(3, rw * 0.05));
+        ctx.stroke();
+      }
+
     }
 
     ctx.globalAlpha = 1;
 
     ctx.restore();
-  }, [rooms, transform, hovered, selectedSpaceId, searchMatches, getRoomColor, heatmapMode, getLayout]);
+  }, [rooms, transform, hovered, selectedSpaceId, searchMatches, highlightSet, getRoomColor, heatmapMode, getLayout]);
 
   // ── Hit testing — returns all rooms at point (for disambiguation) ──
   const hitTestAll = useCallback((clientX, clientY) => {
@@ -606,12 +641,22 @@ export default function FloorPlanCanvas({ floorIdOverride }) {
         </div>
       )}
 
-      {(heatmapMode === 'area_per_bed' || heatmapMode === 'area' || heatmapMode === 'utilization') && (
+      {(heatmapMode === 'area_per_bed' || heatmapMode === 'area' || heatmapMode === 'utilization' || heatmapMode === 'occupancy' || heatmapMode === 'occupancy_density') && (
         <div className="fpc__legend">
           <div className="fpc__legend-gradient">
             <span className="fpc__legend-label">Low</span>
             <div className="fpc__legend-bar" />
             <span className="fpc__legend-label">High</span>
+          </div>
+        </div>
+      )}
+
+      {heatmapMode === 'evacuation' && (
+        <div className="fpc__legend">
+          <div className="fpc__legend-gradient">
+            <span className="fpc__legend-label">Low capacity</span>
+            <div className="fpc__legend-bar fpc__legend-bar--inverted" />
+            <span className="fpc__legend-label">High capacity</span>
           </div>
         </div>
       )}
@@ -631,6 +676,15 @@ export default function FloorPlanCanvas({ floorIdOverride }) {
           )}
           {hovered.area > 0 && <div className="fpc__tooltip-row"><span className="fpc__tooltip-key">Area</span><span>{hovered.area.toFixed(1)} m²</span></div>}
           {hovered.capacity > 0 && <div className="fpc__tooltip-row"><span className="fpc__tooltip-key">Capacity</span><span>{hovered.capacity}</span></div>}
+          {hovered.maxOccupancy > 0 && hovered.maxOccupancy !== hovered.capacity && (
+            <div className="fpc__tooltip-row"><span className="fpc__tooltip-key">Max occupancy</span><span>{hovered.maxOccupancy}</span></div>
+          )}
+          {hovered.absoluteOccupancy > 0 && (
+            <div className="fpc__tooltip-row"><span className="fpc__tooltip-key">Absolute capacity</span><span>{hovered.absoluteOccupancy}</span></div>
+          )}
+          {hovered.freeArea > 0 && (
+            <div className="fpc__tooltip-row"><span className="fpc__tooltip-key">Free area</span><span>{hovered.freeArea.toFixed(1)} m²</span></div>
+          )}
           {hovered.areaPerBed !== null && hovered.areaPerBed > 0 && (
             <div className="fpc__tooltip-row"><span className="fpc__tooltip-key">Area/bed</span><span>{hovered.areaPerBed.toFixed(1)} m²</span></div>
           )}

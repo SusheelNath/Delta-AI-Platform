@@ -128,6 +128,16 @@ const useStore = create((set, get) => ({
   voiceActive: false,
   voiceState: 'idle', // 'idle' | 'greeting' | 'listening' | 'acknowledging' | 'processing' | 'announcing'
 
+  // Guide booklet
+  guideBookletOpen: false,
+
+  // Highlights (persistent glow on rooms until cleared)
+  highlightedGuids: [],   // ifc_guid list to highlight on the floor plan
+
+  // AI Learnings
+  learningsPanelOpen: false,
+  learnings: [],  // [{ id, learning_type, content, confidence, observation_count, last_observed }]
+
   // ── Actions ──
 
   setFloors: (floors) => {
@@ -289,14 +299,35 @@ const useStore = create((set, get) => ({
   setActiveRoute: (route) => set({ activeRoute: route }),
   clearActiveRoute: () => set({ activeRoute: null }),
 
+  // Highlight actions
+  setHighlightedGuids: (guids) => set({ highlightedGuids: guids }),
+  clearHighlights: () => set({ highlightedGuids: [] }),
+
+  // Universal clear — resets UI state to default (preserves chat history)
+  clearAll: () => set({
+    heatmapMode: 'function',
+    activeFunctionFilters: { 0: true, 1: true, 2: true, 3: true, 4: true, 5: true, 6: true },
+    selectedSpaceId: null,
+    selectedSpace: null,
+    activeRoute: null,
+    highlightedGuids: [],
+    searchQuery: '',
+    drawerOpen: false,
+    compareMode: false,
+    compareFloorId: null,
+    mepVisible: false,
+  }),
+
   // AI-controllable UI state
   directoryExpandGroup: null,      // function name to expand in RoomDirectory
   directorySelectIndex: null,      // index of room to select within expanded group
+  currentExpandedGroup: null,      // tracks which group is currently open (for "select the 4th one")
   routingPanelOpen: false,         // whether SpaceToolkit routing section is open
 
   expandDirectoryGroup: (functionName) => set({ directoryExpandGroup: functionName, directorySelectIndex: null }),
   selectRoomInGroup: (functionName, index) => set({ directoryExpandGroup: functionName, directorySelectIndex: index }),
   clearDirectoryAction: () => set({ directoryExpandGroup: null, directorySelectIndex: null }),
+  setCurrentExpandedGroup: (name) => set({ currentExpandedGroup: name }),
   setRoutingPanelOpen: (open) => set({ routingPanelOpen: open }),
 
   updatePolygonInFloor: (floorId, ifcGuid, updates) => {
@@ -466,6 +497,59 @@ const useStore = create((set, get) => ({
       set({ sessionList: lightweight });
     } catch (e) {
       console.warn('[Sessions] Failed to delete:', e);
+    }
+  },
+
+  // ── Learnings ──
+
+  setGuideBookletOpen: (open) => set({ guideBookletOpen: open }),
+  setLearningsPanelOpen: (open) => set({ learningsPanelOpen: open }),
+
+  fetchLearnings: async () => {
+    try {
+      const { fetchLearnings: apiFetch } = await import('../api/client');
+      const data = await apiFetch();
+      set({ learnings: Array.isArray(data) ? data : [] });
+    } catch (e) {
+      console.warn('[Learnings] Failed to fetch:', e);
+    }
+  },
+
+  generateLearnings: async () => {
+    try {
+      const { generateLearnings: apiGen } = await import('../api/client');
+      const { messages, activeSessionId } = get();
+      const sessionId = activeSessionId || 'default';
+      const conv = messages.map((m) => ({ role: m.role, text: m.text }));
+      await apiGen(sessionId, conv);
+      // Refresh learnings after generation
+      const { fetchLearnings: apiFetch } = await import('../api/client');
+      const data = await apiFetch();
+      set({ learnings: Array.isArray(data) ? data : [] });
+    } catch (e) {
+      console.warn('[Learnings] Failed to generate:', e);
+    }
+  },
+
+  removeLearning: async (learningId) => {
+    try {
+      const { deleteLearning } = await import('../api/client');
+      await deleteLearning(learningId);
+      set((state) => ({
+        learnings: state.learnings.filter((lr) => lr.id !== learningId),
+      }));
+    } catch (e) {
+      console.warn('[Learnings] Failed to delete:', e);
+    }
+  },
+
+  clearAllLearnings: async () => {
+    try {
+      const { clearLearnings } = await import('../api/client');
+      await clearLearnings();
+      set({ learnings: [] });
+    } catch (e) {
+      console.warn('[Learnings] Failed to clear:', e);
     }
   },
 }));

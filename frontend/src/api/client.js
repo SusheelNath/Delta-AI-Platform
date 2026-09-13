@@ -219,21 +219,44 @@ export async function fetchSpaceFurnishings(ifcGuid) {
 }
 
 /**
+ * Lightweight intent detection — returns actions as JSON, no LLM call.
+ * Used to fire actions instantly before streaming LLM narration.
+ */
+export async function fetchIntents(message, selectedSpaceId, activeFloorId, expandedGroup) {
+  const res = await fetch(`${BASE}/intents`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      message,
+      selected_space_id: selectedSpaceId || null,
+      active_floor_id: activeFloorId || null,
+      expanded_group: expandedGroup || null,
+    }),
+  });
+  if (!res.ok) return { actions: [], confirmations: [], content: null };
+  return res.json();
+}
+
+/**
  * Stream a chat response from Delta AI (Ollama backend).
  * Returns a ReadableStream reader; the caller consumes SSE tokens.
  *
  * @param {Array<{role:string, text:string}>} messages  - conversation history
  * @param {string|null} selectedSpaceId - currently selected space ID (or null)
  * @param {AbortSignal} [signal] - optional abort signal
+ * @param {boolean} [skipActions] - skip action emission (already handled via /intents)
  * @returns {Promise<ReadableStreamDefaultReader>}
  */
-export async function streamChat(messages, selectedSpaceId, signal) {
+export async function streamChat(messages, selectedSpaceId, activeFloorId, signal, skipActions = false, expandedGroup = null) {
   const res = await fetch(`${BASE}/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       messages: messages.map((m) => ({ role: m.role, text: m.text })),
       selected_space_id: selectedSpaceId || null,
+      active_floor_id: activeFloorId || null,
+      skip_actions: skipActions,
+      expanded_group: expandedGroup || null,
     }),
     signal,
   });
@@ -312,4 +335,29 @@ export async function speakText(text, cannedKey = null) {
  */
 export async function getVoiceStatus() {
   return request(`${BASE}/voice/status`, 60000);
+}
+
+// ── Learnings ──
+
+export async function fetchLearnings() {
+  return request(`${BASE}/learnings`);
+}
+
+export async function generateLearnings(sessionId, messages) {
+  const res = await fetch(`${BASE}/learnings/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ session_id: sessionId, messages }),
+  });
+  return res.json();
+}
+
+export async function deleteLearning(learningId) {
+  const res = await fetch(`${BASE}/learnings/${learningId}`, { method: 'DELETE' });
+  return res.json();
+}
+
+export async function clearLearnings() {
+  const res = await fetch(`${BASE}/learnings`, { method: 'DELETE' });
+  return res.json();
 }

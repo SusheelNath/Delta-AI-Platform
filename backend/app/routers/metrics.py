@@ -11,6 +11,7 @@ from app.schemas import SpaceMetricsResponse
 from app.services.occupancy import compute_occupancy
 from app.services.furnishings import compute_furnishing_occupancy
 from app.routers.polygons import _read_all
+from app.services.intelligence_cache import rebuild_cache
 
 router = APIRouter(tags=["metrics"])
 
@@ -148,6 +149,7 @@ def recompute_all_metrics(db: Session = Depends(get_db)):
         by_class[cls]["max_occupancy"] += occ["max_occupancy"]
 
     db.commit()
+    rebuild_cache(db)
 
     # Round floor areas
     for f in by_floor.values():

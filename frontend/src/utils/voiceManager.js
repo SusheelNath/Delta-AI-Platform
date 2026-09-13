@@ -1,28 +1,38 @@
 /**
- * Voice manager for Delta AI.
+ * Voice manager for Delta AI — Web Speech API edition.
  *
- * Single unified SpeechRecognition instance that switches behaviour
- * based on voice state (idle → wake-word detection, listening → live
- * transcription + "Submit Delta" trigger).
+ * Uses the browser's Web Speech API for:
+ *   - Real-time interim transcription display
+ *   - Keyword detection (wake / stop / submit / clear)
+ *   - Final text sent directly to the LLM on submit
  *
- * Uses maxAlternatives to check multiple transcription guesses for
- * more reliable keyword detection.
+ * No backend audio pipeline — instant response, zero latency on submit.
  */
 
-// ── Phonetic / fuzzy matching ───────────────────────────────────
+// ── Phonetic / fuzzy matching (keyword detection) ─────────────
 
 const DELTA_VARIANTS = /del(?:ta|t\s*a|la|ts|lt\s*a|lta|da)|dealt\s*a|delt\s*a|dell\s*ta|del\b/i;
 const WAKE_PREFIXES  = /\b(?:hi|hey|hello|hay|hallo|hola)\b/i;
 const STOP_PREFIX    = /\b(?:stop|stopped|stuff|stock|stocked|stab)\b/i;
 const THANKS_PREFIX  = /\b(?:thank\s*you|thanks|thankyou)\b/i;
-const SUBMIT_PREFIX  = /\b(?:send|sent|sand|said)\b/i;
+const SUBMIT_SOLO    = /\bsubmit(?:ted)?\b/i;
+const SUBMIT_DELTA   = /\b(?:send|sent|sand|said)\b.*\b(?:del(?:ta|t\s*a|la|ts|lt\s*a|lta|da)|dealt\s*a|delt\s*a|dell\s*ta)\b/i;
 const CLEAR_PREFIX   = /\b(?:clear|clean|claire|cancel|cancelled|stop|stopped)\b/i;
 
 function hasDelta(text)        { return DELTA_VARIANTS.test(text); }
 function hasWakePhrase(text)   { return WAKE_PREFIXES.test(text) && hasDelta(text); }
 function hasStopPhrase(text)   { return (STOP_PREFIX.test(text) || THANKS_PREFIX.test(text)) && hasDelta(text); }
-function hasSubmitPhrase(text) { return SUBMIT_PREFIX.test(text); } // "Submit" alone is enough in listening mode
-function hasClearPhrase(text)  { return CLEAR_PREFIX.test(text); }
+function hasSubmitPhrase(text) { return SUBMIT_SOLO.test(text) || SUBMIT_DELTA.test(text); }
+function hasClearPhrase(text)  { return CLEAR_PREFIX.test(text) && hasDelta(text); }
+
+const MAX_ALTERNATIVES = 5;
+
+function checkAlternatives(result, testFn) {
+  for (let a = 0; a < result.length; a++) {
+    if (testFn(result[a].transcript.toLowerCase().trim())) return true;
+  }
+  return false;
+}
 
 // ── Canned phrases to filter out (Delta's own TTS picked up by mic) ──
 const SELF_PHRASES = [
@@ -35,57 +45,33 @@ const SELF_PHRASES = [
 
 function stripSelfPhrases(text) {
   let result = text;
-  for (const re of SELF_PHRASES) {
-    result = result.replace(re, '');
-  }
+  for (const re of SELF_PHRASES) result = result.replace(re, '');
   return result.trim();
 }
 
 /** Strip the submit trigger phrase from transcription text. */
 export function stripSubmitPhrase(text) {
-  // Remove "send" and variants from the transcript
-  let result = text.replace(/\s*\b(?:send|sent|sand|said)\b\s*/gi, ' ');
-  // Also strip any leaked self-phrases
+  let result = text.replace(/\s*\bsubmit(?:ted)?\b\s*/gi, ' ');
+  result = result.replace(
+    /\s*\b(?:send|sent|sand|said)\s+(?:del(?:ta|t\s*a|la|ts|lt\s*a|lta|da)|dealt\s*a|delt\s*a|dell\s*ta)\b\s*/gi,
+    ' ',
+  );
   result = stripSelfPhrases(result);
   return result.trim();
 }
 
-/**
- * Check all alternatives (up to maxAlternatives) for a phrase match.
- * Returns true if any alternative matches the test function.
- */
-function checkAlternatives(result, testFn) {
-  for (let a = 0; a < result.length; a++) {
-    if (testFn(result[a].transcript.toLowerCase().trim())) {
-      return true;
-    }
-  }
-  return false;
-}
-
-// ── Unified Voice Manager ───────────────────────────────────────
-//
-// One SpeechRecognition instance, two modes:
-//   'idle'      → only detects wake ("Hello Delta") and stop ("Stop Delta")
-//   'listening' → feeds interim results to onInterim callback,
-//                 detects "Submit Delta" and "Stop Delta"
-//
-// MediaRecorder runs in parallel during 'listening' mode to capture
-// audio for Whisper verification on submit.
-
-const MAX_ALTERNATIVES = 5;
+// ── Voice Manager ──────────────────────────────────────────────
 
 /**
- * Create the unified voice manager.
+ * Create the voice manager.
  *
  * @param {Object} callbacks
- * @param {() => void}                        callbacks.onWake    — wake phrase detected
- * @param {() => void}                        callbacks.onStop    — stop phrase detected
- * @param {(text: string) => void}            callbacks.onInterim — live transcription update
- * @param {(blob: Blob, text: string) => void} callbacks.onSubmit — submit phrase detected
- * @param {() => void}                        callbacks.onClear  — clear phrase detected
- * @param {(err: Error) => void}              callbacks.onError   — error
- * @returns {Object} control handle with start/setMode/startRecording/stopRecording/destroy
+ * @param {() => void}                        callbacks.onWake
+ * @param {() => void}                        callbacks.onStop
+ * @param {(text: string) => void}            callbacks.onInterim
+ * @param {(blob: Blob, text: string) => void} callbacks.onSubmit
+ * @param {() => void}                        callbacks.onClear
+ * @param {(err: Error) => void}              callbacks.onError
  */
 export function createVoiceManager({
   onWake,
@@ -98,48 +84,21 @@ export function createVoiceManager({
   const SpeechRecognition =
     window.SpeechRecognition || window.webkitSpeechRecognition;
 
-  if (!SpeechRecognition) {
-    console.warn('[Voice] Web Speech API not supported');
-    return _nullManager();
-  }
-
   // ── State ──
-  let mode = 'idle';          // 'idle' | 'listening'
+  let mode = 'idle';            // 'idle' | 'listening'
   let destroyed = false;
-  let wakeFired = false;      // prevent duplicate wake triggers per segment
-  let accumulatedText = '';    // committed final segments during listening
+  let muted = false;
+  let accumulatedText = '';     // Web Speech committed finals
+  let lastInterim = '';         // last interim text (promoted on recognition restart)
+  let wakeFired = false;
+
+  // ── Web Speech API ───────────────────────────────────────────
+
   let recognition = null;
-  let muted = false;          // suppress results during TTS playback (prevents self-hearing)
-
-  // ── MediaRecorder (parallel audio capture) ──
-  let mediaRecorder = null;
-  let mediaStream = null;
-  let audioChunks = [];
-
-  // ── Health monitor ──
-  let healthTimer = null;
-  const HEALTH_INTERVAL = 4000; // ms — restart if recognition silently dies
-
-  function resetHealthTimer() {
-    clearInterval(healthTimer);
-    healthTimer = setInterval(() => {
-      if (destroyed) { clearInterval(healthTimer); return; }
-      // If recognition exists but isn't getting results, restart it
-      try {
-        if (recognition) {
-          recognition.stop();
-          // onend handler will restart it
-        }
-      } catch (_) {}
-    }, HEALTH_INTERVAL);
-  }
-
-  // ── SpeechRecognition setup ──
 
   function createRecognition() {
-    if (recognition) {
-      try { recognition.abort(); } catch (_) {}
-    }
+    if (!SpeechRecognition) return;
+    if (recognition) { try { recognition.abort(); } catch (_) {} }
 
     recognition = new SpeechRecognition();
     recognition.continuous = true;
@@ -147,54 +106,57 @@ export function createVoiceManager({
     recognition.maxAlternatives = MAX_ALTERNATIVES;
     recognition.lang = 'en-US';
 
-    recognition.onresult = handleResult;
+    recognition.onresult = handleSpeechResult;
 
     recognition.onerror = (e) => {
       if (e.error !== 'no-speech' && e.error !== 'aborted') {
-        console.warn('[Voice] Recognition error:', e.error);
-        onError?.(new Error(e.error));
+        console.warn('[Voice] Error:', e.error);
       }
     };
 
     recognition.onend = () => {
+      // Promote any in-flight interim text to accumulatedText so it
+      // survives the session restart instead of silently vanishing.
+      if (lastInterim && mode === 'listening') {
+        accumulatedText += (accumulatedText ? ' ' : '') + lastInterim;
+        lastInterim = '';
+        onInterim?.(accumulatedText);
+      }
       if (!destroyed) {
-        // Auto-restart
         try { recognition.start(); } catch (_) {}
       }
     };
 
     try { recognition.start(); } catch (_) {}
-    resetHealthTimer();
   }
 
-  // ── Result handler — behaviour depends on mode ──
-
-  function handleResult(event) {
-    if (muted) return; // Ignore results while TTS is playing (prevents self-hearing)
+  function handleSpeechResult(event) {
+    if (muted) return;
 
     for (let i = event.resultIndex; i < event.results.length; i++) {
       const result = event.results[i];
       const isFinal = result.isFinal;
-
-      // Build combined text: accumulated finals + current transcript
       const currentTranscript = result[0].transcript.trim();
       const combinedText = (accumulatedText + ' ' + currentTranscript).toLowerCase().trim();
 
-      // ── Always check for Stop Delta (both modes) ──
+      // ── Stop Delta (both modes) ──
       if (checkAlternatives(result, hasStopPhrase) || hasStopPhrase(combinedText)) {
+        accumulatedText = '';
+        lastInterim = '';
         onStop?.();
         continue;
       }
 
-      // ── Always check for Clear/Cancel (both modes) ──
+      // ── Clear/Cancel (both modes — requires "delta" guard) ──
       if (checkAlternatives(result, hasClearPhrase) || hasClearPhrase(combinedText)) {
         accumulatedText = '';
+        lastInterim = '';
         onClear?.();
         continue;
       }
 
       if (mode === 'idle') {
-        // ── IDLE: only detect wake phrase ──
+        // ── Wake phrase ──
         if (!wakeFired && (checkAlternatives(result, hasWakePhrase) || hasWakePhrase(combinedText))) {
           wakeFired = true;
           onWake?.();
@@ -202,32 +164,31 @@ export function createVoiceManager({
         if (isFinal) wakeFired = false;
 
       } else if (mode === 'listening') {
-        // ── LISTENING: live transcription + submit detection ──
-
-        // Check current result alternatives AND combined text for submit phrase
+        // ── Submit detection ──
         if (checkAlternatives(result, hasSubmitPhrase) || hasSubmitPhrase(combinedText)) {
-          // Strip the trigger phrase from the full text
           const fullText = accumulatedText +
             (accumulatedText ? ' ' : '') + currentTranscript;
           const cleaned = stripSubmitPhrase(fullText);
 
-          // Stop recording and fire submit
           mode = 'idle';
           accumulatedText = '';
-          _stopRecording().then((blob) => {
-            onSubmit?.(blob, cleaned);
-          });
+          lastInterim = '';
+
+          // Send empty blob — no audio pipeline, just text
+          onSubmit?.(new Blob([], { type: 'audio/webm' }), cleaned);
           return;
         }
 
-        // Build display text from all segments
+        // ── Live interim display ──
         let interim = '';
         let finalText = '';
 
         if (isFinal) {
           finalText = stripSelfPhrases(currentTranscript);
+          lastInterim = '';
         } else {
           interim = stripSelfPhrases(currentTranscript);
+          lastInterim = interim;
         }
 
         if (finalText) {
@@ -242,113 +203,35 @@ export function createVoiceManager({
     }
   }
 
-  // ── MediaRecorder controls ──
-
-  async function _startRecording() {
-    audioChunks = [];
-    try {
-      mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-        ? 'audio/webm;codecs=opus'
-        : '';
-      mediaRecorder = new MediaRecorder(mediaStream, mimeType ? { mimeType } : {});
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) audioChunks.push(e.data);
-      };
-      mediaRecorder.start(250);
-    } catch (err) {
-      onError?.(err);
-    }
-  }
-
-  function _stopRecording() {
-    return new Promise((resolve) => {
-      if (mediaStream) {
-        mediaStream.getTracks().forEach((t) => t.stop());
-        mediaStream = null;
-      }
-      if (mediaRecorder && mediaRecorder.state === 'recording') {
-        const recorder = mediaRecorder;  // capture ref before nulling
-        recorder.onstop = () => {
-          const blob = new Blob(audioChunks, {
-            type: recorder.mimeType || 'audio/webm',
-          });
-          resolve(blob);
-        };
-        mediaRecorder = null;
-        recorder.stop();
-      } else {
-        mediaRecorder = null;
-        resolve(new Blob([], { type: 'audio/webm' }));
-      }
-    });
-  }
-
-  // ── Public API ──
+  // ── Public API ────────────────────────────────────────────────
 
   return {
-    /** Start the recognition engine (call once on mount). */
-    start() {
+    async start() {
       createRecognition();
     },
 
-    /**
-     * Switch mode.
-     * 'idle' — wake-word detection only.
-     * 'listening' — live transcription + submit detection + recording.
-     */
     async setMode(newMode) {
       mode = newMode;
       accumulatedText = '';
+      lastInterim = '';
       wakeFired = false;
-
-      if (newMode === 'listening') {
-        await _startRecording();
-      } else {
-        await _stopRecording();
-      }
     },
 
-    /** Get current mode. */
-    getMode() {
-      return mode;
-    },
+    getMode() { return mode; },
 
-    /** Mute recognition (suppress results during TTS playback). */
     mute() { muted = true; },
 
-    /** Unmute recognition (resume processing results). */
     unmute() { muted = false; },
 
-    /** Clean up everything. */
     destroy() {
       destroyed = true;
-      clearInterval(healthTimer);
-      if (recognition) {
-        try { recognition.abort(); } catch (_) {}
-        recognition = null;
-      }
-      _stopRecording();
+      if (recognition) { try { recognition.abort(); } catch (_) {} recognition = null; }
     },
-  };
-}
-
-/** No-op manager for unsupported browsers. */
-function _nullManager() {
-  return {
-    start() {},
-    async setMode() {},
-    getMode() { return 'idle'; },
-    destroy() {},
   };
 }
 
 // ── Audio playback ──────────────────────────────────────────────
 
-/**
- * Play audio from an ArrayBuffer or Blob.
- * Returns a Promise that resolves when playback finishes.
- */
 export function playAudio(audioData) {
   return new Promise((resolve, reject) => {
     const blob =
@@ -357,16 +240,8 @@ export function playAudio(audioData) {
         : new Blob([audioData], { type: 'audio/mpeg' });
     const url = URL.createObjectURL(blob);
     const audio = new Audio(url);
-
-    audio.onended = () => {
-      URL.revokeObjectURL(url);
-      resolve();
-    };
-    audio.onerror = (e) => {
-      URL.revokeObjectURL(url);
-      reject(e);
-    };
-
+    audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
+    audio.onerror = (e) => { URL.revokeObjectURL(url); reject(e); };
     audio.play().catch(reject);
   });
 }

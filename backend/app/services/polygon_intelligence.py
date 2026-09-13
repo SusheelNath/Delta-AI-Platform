@@ -31,10 +31,10 @@ POLYGONS_FILE = DATA_DIR / "polygons.json"
 
 FLOOR_NAMES = {
     "H003": "Basement 3", "H002": "Basement 2", "H001": "Basement 1",
-    "H000": "Ground Floor", "H010": "Floor 1", "H020": "Floor 2",
-    "H030": "Floor 3", "H040": "Floor 4", "H050": "Floor 5",
+    "H000": "Ground Floor",
+    "H010": "Floor +1", "H020": "Floor +2", "H030": "Floor +3",
+    "H040": "Floor +4", "H050": "Floor +5",
 }
-
 
 # ══════════════════════════════════════════════════════════════════════
 # Polygon I/O

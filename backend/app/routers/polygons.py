@@ -12,6 +12,7 @@ from app.database import get_db
 from app.models import SpaceMetrics
 from app.schemas import PolygonSaveRequest, PolygonSyncItem, SpacePolygonResponse
 from app.services.occupancy import compute_occupancy
+from app.services.intelligence_cache import rebuild_cache
 
 router = APIRouter(tags=["polygons"])
 
@@ -175,6 +176,7 @@ def upsert_polygon(
             _write_all(polygons)
 
         metrics = _upsert_metrics(db, ifc_guid, existing["floor_id"], area_m2, perimeter_m, primary_function, space_name)
+        rebuild_cache(db)
         return SpacePolygonResponse(
             ifc_guid=ifc_guid,
             floor_id=existing["floor_id"],
@@ -208,6 +210,7 @@ def upsert_polygon(
 
     # Compute and store metrics
     metrics = _upsert_metrics(db, ifc_guid, body.floor_id, area_m2, perimeter_m, primary_function, space_name)
+    rebuild_cache(db)
 
     return SpacePolygonResponse(
         ifc_guid=ifc_guid,
@@ -256,6 +259,7 @@ def commit_edits(body: list[dict], db: Session = Depends(get_db)):
 
     if updated > 0:
         _write_all(polygons)
+        rebuild_cache(db)
 
     return {"updated": updated, "total": len(polygons)}
 
@@ -297,6 +301,7 @@ def sync_polygons(body: list[PolygonSyncItem], db: Session = Depends(get_db)):
 
     if added > 0:
         _write_all(polygons)
+        rebuild_cache(db)
     return {"synced": added, "total": len(polygons)}
 
 
@@ -338,6 +343,7 @@ def save_floor_polygons(floor_id: str, body: list[PolygonSyncItem], db: Session 
 
     if added > 0:
         _write_all(polygons)
+        rebuild_cache(db)
     return {"added": added, "total": len(polygons)}
 
 
@@ -421,6 +427,7 @@ def full_save(body: list[PolygonSyncItem], db: Session = Depends(get_db)):
                             item.primary_function, item.space_name)
 
     _write_all(polygons)
+    rebuild_cache(db)
 
     # Git add + commit + push data/polygons.json
     repo_root = DATA_DIR.parent

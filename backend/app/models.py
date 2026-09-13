@@ -168,6 +168,19 @@ class SpaceFurnishing(Base):
     created_at = Column(String, nullable=True)
 
 
+class UserLearning(Base):
+    __tablename__ = "user_learnings"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    session_id = Column(String, nullable=False, index=True)
+    created_at = Column(String, nullable=False)
+    learning_type = Column(String, nullable=False)  # function_interest, floor_preference, facility_need, general_observation
+    content = Column(Text, nullable=False)
+    confidence = Column(Float, nullable=False, default=0.5)
+    observation_count = Column(Integer, nullable=False, default=1)
+    last_observed = Column(String, nullable=False)
+
+
 class Translation(Base):
     __tablename__ = "translations"
 

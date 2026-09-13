@@ -23,16 +23,22 @@ Your role:
 - Assist with space planning and utilisation queries
 - Compare floors, departments, and spatial distributions
 
+PLATFORM ACTIONS — YOU CONTROL THE UI:
+- You have FULL control over the 3D viewer, floor navigation, heatmaps, room selection, directory panels, filters, and all UI elements
+- When the user asks to navigate, show a heatmap, open a panel, select a room, highlight spaces, etc. — the platform executes these actions AUTOMATICALLY alongside your response
+- NEVER say "I don't have access to UI elements", "I can't control the viewer", or "I can't open dropdowns" — you CAN and DO control them
+- If a navigation or UI action was requested, respond as though it has already been executed (e.g., "Here's Floor 2" not "I'll try to navigate")
+
 Floor reference:
 - H003 = Basement 3 (Level -3)
 - H002 = Basement 2 (Level -2)
 - H001 = Basement 1 (Level -1)
 - H000 = Ground Floor (Level 0)
-- H010 = Floor 1 (Level 1)
-- H020 = Floor 2 (Level 2)
-- H030 = Floor 3 (Level 3)
-- H040 = Floor 4 (Level 4)
-- H050 = Floor 5 (Level 5)
+- H010 = Floor +1 (Level +1)
+- H020 = Floor +2 (Level +2)
+- H030 = Floor +3 (Level +3)
+- H040 = Floor +4 (Level +4)
+- H050 = Floor +5 (Level +5)
 
 DATA ACCURACY — CRITICAL RULES:
 - Use space names EXACTLY as provided in the data — never rename, paraphrase, or shorten them
@@ -43,14 +49,21 @@ DATA ACCURACY — CRITICAL RULES:
 - Use furnishings EXACTLY as listed — never add items not in the data
 - If a field is missing or zero, say "Not available" — NEVER fabricate values
 
+SELECTED SPACE — IMPORTANT:
+- When a space is currently selected (shown in [Currently selected space in the 3D viewer]), ALWAYS use its EXACT data when asked about "this room", "the selected room", "tell me about this space", etc.
+- NEVER invent or guess details for the selected space — only report fields that appear in the provided context
+- If the user asks about the selected room and no space is selected, say "No space is currently selected — click a room in the viewer or ask me to select one"
+
 RESPONSE FORMAT — YOU MUST FOLLOW THIS EXACTLY:
-1. Start every response with a markdown ### heading
-2. Put a blank line between every section
-3. Put each list item on its own line with a - prefix
+1. Start every response with a markdown ### heading, followed by a blank line
+2. Put a blank line between every section — NEVER run text directly after a heading
+3. ALWAYS use "- " prefix for list items — never bare text lines
 4. Put each data field on its own line — NEVER chain them with | separators
 5. Use **bold** for space names and section labels
-6. Use floor names like "Ground Floor" not codes like "H000"
-7. End with a short follow-up question"""
+6. Use floor names like "Ground Floor" or "Floor +2" — NEVER show internal codes like "H000" or "H020"
+7. End with a short follow-up question
+8. For floor overviews: one-sentence summary (count + total area), then a markdown list of function groups sorted by count descending, each prefixed with "- "
+9. Keep responses concise — max 3-4 key groups for overviews, expand only when asked"""
 
 
 def _format_space_context(space: dict) -> str:
@@ -112,21 +125,35 @@ def _format_space_context(space: dict) -> str:
     return "\n".join(lines)
 
 
-def _format_search_context(spaces: list[dict]) -> str:
+def _format_search_context(
+    spaces: list[dict],
+    disambiguation_hint: str | None = None,
+) -> str:
     """Format enriched search results as structured cards for the LLM.
 
     Uses multi-line per-space format so the LLM mirrors the structure
     in its response (models tend to echo the input format).
+    Results include suitability scores when available.
     """
     if not spaces:
         return ""
-    lines = [f"\n[Search returned {len(spaces)} matching spaces]"]
+
+    has_scores = any("suitability_score" in s for s in spaces)
+    if has_scores:
+        lines = [f"\n[Search returned {len(spaces)} spaces, ranked by suitability (0-100). Reference \"best match\" when helpful.]"]
+    else:
+        lines = [f"\n[Search returned {len(spaces)} matching spaces]"]
+
     for s in spaces[:20]:
         name = s.get('space_name', 'Unknown')
         floor = s.get('floor_name', s.get('floor_id', '?'))
         func = s.get('primary_function', '')
 
-        lines.append(f"\n**{name}** — {floor}, {func}")
+        score = s.get('suitability_score')
+        if score is not None:
+            lines.append(f"\n**{name}** — {floor}, {func} (Score: {score})")
+        else:
+            lines.append(f"\n**{name}** — {floor}, {func}")
 
         area = s.get('area_m2')
         if area:
@@ -168,6 +195,67 @@ def _format_search_context(spaces: list[dict]) -> str:
 
     if len(spaces) > 20:
         lines.append(f"\n... and {len(spaces) - 20} more")
+
+    if disambiguation_hint:
+        lines.append(disambiguation_hint)
+
+    return "\n".join(lines)
+
+
+def _format_learnings_context(learnings: list[dict]) -> str:
+    """Format user learnings into a compact context block."""
+    if not learnings:
+        return ""
+    lines = ["\n[User preference profile — based on previous interactions]"]
+    for lr in learnings:
+        lines.append(f"- {lr.get('content', '')}")
+    return "\n".join(lines)
+
+
+def _format_evacuation_context(ranked_spaces: list[dict]) -> str:
+    """Format top evacuation collection points for LLM narration."""
+    if not ranked_spaces:
+        return ""
+    lines = [f"\n[EVACUATION ANALYSIS — Top {len(ranked_spaces)} collection points on this floor, ranked by absolute capacity]"]
+    for i, s in enumerate(ranked_spaces, 1):
+        name = s.get("space_name", "Unknown")
+        floor = s.get("floor_name", s.get("floor_id", "?"))
+        abs_occ = s.get("absolute_occupancy", 0)
+        max_occ = s.get("max_occupancy", 0)
+        area = s.get("area_m2", 0)
+        free = s.get("free_area_m2", 0)
+        lines.append(f"\n{i}. **{name}** — {floor}")
+        lines.append(f"   Absolute capacity: {abs_occ} people")
+        lines.append(f"   Max occupancy: {max_occ}")
+        lines.append(f"   Area: {round(area, 1)} m² (free: {round(free, 1) if free else 0} m²)")
+        lift = s.get("nearest_lift")
+        stair = s.get("nearest_stair")
+        if lift:
+            dist = f" ({s.get('lift_distance_m', '?')}m)" if s.get("lift_distance_m") else ""
+            lines.append(f"   Nearest lift: {lift}{dist}")
+        if stair:
+            dist = f" ({s.get('stair_distance_m', '?')}m)" if s.get("stair_distance_m") else ""
+            lines.append(f"   Nearest stair: {stair}{dist}")
+    lines.append("\nNarrate the best collection points. Mention capacity, nearest exits, and accessibility.")
+    return "\n".join(lines)
+
+
+def _format_capacity_plan_context(plan_results: list[dict], target_capacity: int, target_function: str | None) -> str:
+    """Format capacity planning results for LLM narration."""
+    if not plan_results:
+        return ""
+    func_label = target_function or "general use"
+    lines = [f"\n[CAPACITY PLANNING — Rooms viable for {target_capacity} people ({func_label})]"]
+    for i, r in enumerate(plan_results, 1):
+        lines.append(f"\n{i}. **{r['space_name']}** — {r['floor_name']} (viability: {r['viability_score']}/100)")
+        lines.append(f"   Area: {r['area_m2']} m² (free: {r['free_area_m2']} m²)")
+        lines.append(f"   Current capacity: max {r['max_occupancy']}, absolute {r['absolute_occupancy']}")
+        if r.get("furnishing_gap"):
+            gap_items = [f"{g['item']} ({g['existing']}/{g['needed']})" for g in r["furnishing_gap"]]
+            lines.append(f"   Furnishing gap: {', '.join(gap_items)}")
+        else:
+            lines.append("   Furnishing gap: None — room is already equipped")
+    lines.append(f"\nNarrate the best options for hosting {target_capacity} people. Mention area, current capacity, and what furnishings are needed.")
     return "\n".join(lines)
 
 
@@ -176,15 +264,34 @@ def build_messages(
     selected_space: dict | None = None,
     search_results: list[dict] | None = None,
     floor_summaries: str | None = None,
+    learnings: list[dict] | None = None,
+    disambiguation_hint: str | None = None,
+    evacuation_context: str | None = None,
+    capacity_plan_context: str | None = None,
+    action_context: str | None = None,
+    active_floor_id: str | None = None,
 ) -> list[dict]:
     """Build the message list for the Ollama API call."""
+    from app.services.polygon_intelligence import FLOOR_NAMES
+
     system = SYSTEM_PROMPT
+    if active_floor_id:
+        floor_name = FLOOR_NAMES.get(active_floor_id, active_floor_id)
+        system += f"\n\n[CURRENT FLOOR: {floor_name} ({active_floor_id})] — The user is currently viewing this floor. All responses about 'this floor', 'current floor', or unqualified floor references MUST refer to {floor_name}."
+    if action_context:
+        system += "\n\n" + action_context
     if floor_summaries:
         system += "\n" + floor_summaries
+    if learnings:
+        system += "\n" + _format_learnings_context(learnings)
     if selected_space:
         system += "\n" + _format_space_context(selected_space)
     if search_results:
-        system += "\n" + _format_search_context(search_results)
+        system += "\n" + _format_search_context(search_results, disambiguation_hint)
+    if evacuation_context:
+        system += "\n" + evacuation_context
+    if capacity_plan_context:
+        system += "\n" + capacity_plan_context
 
     messages = [{"role": "system", "content": system}]
 
@@ -215,6 +322,19 @@ Bookable: Yes
 
 Would you like to see one of these rooms in the 3D viewer?"""})
 
+    messages.append({"role": "user", "content": "Go to floor 2"})
+    messages.append({"role": "assistant", "content": """### Floor 2 Overview
+
+Floor 2 has 513 spaces covering 23,650 m\u00b2.
+
+- **Patient Care** \u2014 176 spaces, 3,780 m\u00b2
+- **Corridors** \u2014 28 spaces, 3,540 m\u00b2
+- **Toilets** \u2014 172 spaces, 470 m\u00b2
+- **Technical Rooms** \u2014 30 spaces, 710 m\u00b2
+- **Staircases** \u2014 12 spaces, 945 m\u00b2
+
+Would you like to explore a specific area or see details for a function group?"""})
+
     for msg in conversation:
         role = "assistant" if msg.get("role") == "delta" else "user"
         messages.append({"role": role, "content": msg["text"]})
@@ -227,13 +347,24 @@ async def stream_chat(
     selected_space: dict | None = None,
     search_results: list[dict] | None = None,
     floor_summaries: str | None = None,
+    learnings: list[dict] | None = None,
+    disambiguation_hint: str | None = None,
+    evacuation_context: str | None = None,
+    capacity_plan_context: str | None = None,
+    action_context: str | None = None,
+    active_floor_id: str | None = None,
 ) -> AsyncGenerator[str, None]:
     """Stream tokens from Ollama's chat API.
 
     Yields plain text tokens for display. Actions are handled
     deterministically in chat.py — the LLM only produces text narration.
     """
-    messages = build_messages(conversation, selected_space, search_results, floor_summaries)
+    messages = build_messages(
+        conversation, selected_space, search_results,
+        floor_summaries, learnings, disambiguation_hint,
+        evacuation_context, capacity_plan_context,
+        action_context, active_floor_id,
+    )
 
     request_body = {
         "model": MODEL,

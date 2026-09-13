@@ -45,6 +45,7 @@ export default function RoomDirectory() {
   const directoryExpandGroup = useStore((s) => s.directoryExpandGroup);
   const directorySelectIndex = useStore((s) => s.directorySelectIndex);
   const clearDirectoryAction = useStore((s) => s.clearDirectoryAction);
+  const setCurrentExpandedGroup = useStore((s) => s.setCurrentExpandedGroup);
 
   const [collapsedGroups, setCollapsedGroups] = useState(new Set());
   const initializedFloorRef = useRef(null);
@@ -70,7 +71,8 @@ export default function RoomDirectory() {
       map[fn].push(poly);
     }
     for (const polys of Object.values(map)) {
-      polys.sort((a, b) => (a.space_name || '').localeCompare(b.space_name || ''));
+      polys.sort((a, b) => (a.space_name || '').localeCompare(b.space_name || '')
+        || (a.ifc_guid || '').localeCompare(b.ifc_guid || ''));
     }
     return Object.entries(map).sort(([a], [b]) => {
       if (a === 'Unassigned') return 1;
@@ -114,6 +116,7 @@ export default function RoomDirectory() {
       next.delete(fnName);
       return next;
     });
+    setCurrentExpandedGroup(fnName);
 
     // If a specific room index is requested, select it
     if (directorySelectIndex != null && directorySelectIndex >= 0) {
@@ -156,11 +159,17 @@ export default function RoomDirectory() {
   const toggleGroup = useCallback((fn) => {
     setCollapsedGroups((prev) => {
       const next = new Set(prev);
-      if (next.has(fn)) next.delete(fn);
-      else next.add(fn);
+      if (next.has(fn)) {
+        next.delete(fn);
+        setCurrentExpandedGroup(fn);
+      } else {
+        next.add(fn);
+        // Collapsed — clear if this was the tracked group
+        setCurrentExpandedGroup(null);
+      }
       return next;
     });
-  }, []);
+  }, [setCurrentExpandedGroup]);
 
   const isSearching = searchQuery.trim().length > 0;
 
