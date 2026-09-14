@@ -50,6 +50,23 @@ function throttle(fn, ms) {
 
 const EMPTY = [];
 
+const TYPE_MATERIALS = {
+  'IfcWall':             { color: [0.92, 0.90, 0.86], opacity: 1.0 },
+  'IfcWallStandardCase': { color: [0.92, 0.90, 0.86], opacity: 1.0 },
+  'IfcWindow':           { color: [0.70, 0.82, 0.88], opacity: 0.30 },
+  'IfcCurtainWall':      { color: [0.65, 0.78, 0.85], opacity: 0.25 },
+  'IfcDoor':             { color: [0.72, 0.65, 0.55], opacity: 0.95 },
+  'IfcSlab':             { color: [0.82, 0.80, 0.78], opacity: 1.0 },
+  'IfcRoof':             { color: [0.75, 0.73, 0.70], opacity: 1.0 },
+  'IfcRailing':          { color: [0.65, 0.67, 0.70], opacity: 0.90 },
+  'IfcMember':           { color: [0.70, 0.72, 0.75], opacity: 1.0 },
+  'IfcBeam':             { color: [0.75, 0.73, 0.70], opacity: 1.0 },
+  'IfcPlate':            { color: [0.80, 0.82, 0.85], opacity: 0.90 },
+  'IfcStair':            { color: [0.85, 0.83, 0.80], opacity: 1.0 },
+  'IfcStairFlight':      { color: [0.85, 0.83, 0.80], opacity: 1.0 },
+  'IfcCovering':         { color: [0.88, 0.86, 0.82], opacity: 1.0 },
+};
+
 let cachedXKT = null;
 
 let cachedExclusions = null;
@@ -98,6 +115,8 @@ export default function XeokitViewer() {
   const [showTransition, setShowTransition] = useState(false);
   const [transitionFading, setTransitionFading] = useState(false);
   const showTransitionRef = useRef(false);
+  const [colorMode, setColorMode] = useState('function'); // 'function' | 'realistic'
+  const colorModeRef = useRef('function');
   const [saving, setSaving] = useState(false);
   const [saveResult, setSaveResult] = useState(null); // { ok, msg }
 
@@ -130,6 +149,9 @@ export default function XeokitViewer() {
       setTimeout(() => setSaveResult(null), 4000);
     }
   }, []);
+
+  // Sync colorMode ref for access in non-dependent effects
+  useEffect(() => { colorModeRef.current = colorMode; }, [colorMode]);
 
   // Fade-out transition overlay over 300ms before unmounting
   useEffect(() => {
@@ -187,14 +209,15 @@ export default function XeokitViewer() {
       viewer.scene.canvas.backgroundColor = [235/255, 235/255, 240/255];
       viewer.camera.projection = 'perspective';
       viewer.camera.perspective.near = 1.0;
+      viewer.camera.perspective.fov = 50;
 
-      // ── SAO (Scalable Ambient Occlusion) — enhanced depth ──
+      // ── SAO (Scalable Ambient Occlusion) — deeper contact shadows ──
       viewer.scene.sao.enabled = true;
-      viewer.scene.sao.intensity = 0.35;
+      viewer.scene.sao.intensity = 0.5;
       viewer.scene.sao.bias = 0.5;
       viewer.scene.sao.scale = 600;
       viewer.scene.sao.minResolution = 0.0;
-      viewer.scene.sao.kernelRadius = 80;
+      viewer.scene.sao.kernelRadius = 100;
       viewer.scene.sao.blendFactor = 1.0;
 
       // ── Warm ambient light ──
@@ -213,6 +236,7 @@ export default function XeokitViewer() {
           color: [1.0, 0.95, 0.88],
           intensity: 0.7,
           space: 'view',
+          castsShadow: true,
         });
         new XDirLight(viewer.scene, {
           id: 'fillLight',
@@ -230,9 +254,10 @@ export default function XeokitViewer() {
         });
       }
 
-      // ── Edge material — disabled (no black outlines) ──
-      viewer.scene.edgeMaterial.edgeAlpha = 0;
-      viewer.scene.edgeMaterial.edgeWidth = 0;
+      // ── Edge material — subtle architectural definition ──
+      viewer.scene.edgeMaterial.edgeAlpha = 0.2;
+      viewer.scene.edgeMaterial.edgeWidth = 1;
+      viewer.scene.edgeMaterial.edgeColor = [0.3, 0.3, 0.35];
 
       // Highlight material (primary selection)
       viewer.scene.highlightMaterial.fill = true;
@@ -349,7 +374,7 @@ export default function XeokitViewer() {
       setLoadProgress(82);
 
       try {
-        const model = xktLoader.load({ id: 'hospital', xkt: xktData, edges: false });
+        const model = xktLoader.load({ id: 'hospital', xkt: xktData, edges: true });
         modelRef.current = model;
 
         model.on('loaded', () => {
@@ -368,10 +393,40 @@ export default function XeokitViewer() {
           hideStructuralElements(viewer);
           applyExclusions(viewer);
           buildStoreyMapping(viewer);
+          applyMaterialsByType(viewer);
           colorByFunction(viewer);
           applyElementColorOverrides(viewer);
           extractFloorGeometry(viewer);
           buildMepSet();
+
+          // ── Ground plane — anchors the building ──
+          if (XMesh && XReadableGeometry && XPhongMaterial) {
+            const gY = aabb[1] - 0.5;
+            const gcx = (aabb[0] + aabb[3]) / 2;
+            const gcz = (aabb[2] + aabb[5]) / 2;
+            const span = Math.max(aabb[3] - aabb[0], aabb[5] - aabb[2]) * 2;
+            new XMesh(viewer.scene, {
+              id: 'ground-plane',
+              geometry: new XReadableGeometry(viewer.scene, {
+                positions: new Float32Array([
+                  gcx - span, gY, gcz - span,
+                  gcx + span, gY, gcz - span,
+                  gcx + span, gY, gcz + span,
+                  gcx - span, gY, gcz + span,
+                ]),
+                normals: new Float32Array([0,1,0, 0,1,0, 0,1,0, 0,1,0]),
+                indices: [0, 1, 2, 0, 2, 3],
+                primitive: 'triangles',
+              }),
+              material: new XPhongMaterial(viewer.scene, {
+                diffuse: [0.88, 0.87, 0.85],
+                emissive: [0.05, 0.05, 0.05],
+                alpha: 1.0,
+                backfaces: true,
+              }),
+              pickable: false, clippable: false, collidable: false, edges: false,
+            });
+          }
 
           // Initialize StoreyViewsPlugin for rendered floor plans
           try {
@@ -608,6 +663,23 @@ export default function XeokitViewer() {
     return ids;
   }
 
+  // ── Apply realistic materials by IFC type ──
+  function applyMaterialsByType(viewer) {
+    const metaObjects = viewer.metaScene?.metaObjects;
+    if (!metaObjects) return;
+    let applied = 0;
+    for (const [id, metaObj] of Object.entries(metaObjects)) {
+      const mat = TYPE_MATERIALS[metaObj.type];
+      if (!mat) continue;
+      const obj = viewer.scene.objects[id];
+      if (!obj) continue;
+      obj.colorize = mat.color;
+      obj.opacity = mat.opacity;
+      applied++;
+    }
+    console.log(`[Delta] Applied material-by-type to ${applied} elements`);
+  }
+
   // ── Color by function ──
   function colorByFunction(viewer) {
     const metaObjects = viewer.metaScene?.metaObjects;
@@ -617,6 +689,7 @@ export default function XeokitViewer() {
       if (metaObj && metaObj.type === 'IfcSpace') {
         obj.colorize = getColorForFunction(metaObj.name || '');
         obj.opacity = 0.85;
+        obj.edges = false;
       }
     }
   }
@@ -1167,14 +1240,15 @@ export default function XeokitViewer() {
       if (!meta || meta.type !== 'IfcSpace') continue;
       const catIdx = getCategoryIndex(meta.name || '');
       const active = catIdx < 0 || activeFunctionFilters[catIdx];
-      obj.opacity = active ? 0.85 : 0.08;
+      const realistic = colorMode === 'realistic';
+      obj.opacity = active ? (realistic ? 0.40 : 0.85) : 0.08;
       if (active) {
-        obj.colorize = getColorForFunction(meta.name || '');
+        obj.colorize = realistic ? [0.95, 0.93, 0.88] : getColorForFunction(meta.name || '');
       } else {
         obj.colorize = [0.15, 0.15, 0.18];
       }
     }
-  }, [activeFunctionFilters]);
+  }, [activeFunctionFilters, colorMode]);
 
   // ── Helper: create a 3D polygon mesh from 2D percentage vertices ──
   function createPolygonMesh(viewer, vertices2D, viewMatrix, projMatrix, planeY, opts = {}) {
@@ -1371,16 +1445,21 @@ export default function XeokitViewer() {
         bimDarkenedRef.current = true;
       } else if (!hasRoute && bimDarkenedRef.current) {
         const metaObjects = viewer.metaScene?.metaObjects;
+        const isRealistic = colorModeRef.current === 'realistic';
         for (const [id, obj] of Object.entries(viewer.scene.objects)) {
           try {
             const meta = metaObjects?.[id];
             if (meta?.type === 'IfcSpace') {
               const catIdx = getCategoryIndex(meta.name || '');
               const active = catIdx < 0 || useStore.getState().activeFunctionFilters[catIdx];
-              obj.opacity = active ? 0.85 : 0.08;
-              obj.colorize = active ? getColorForFunction(meta.name || '') : [0.15, 0.15, 0.18];
+              obj.opacity = active ? (isRealistic ? 0.40 : 0.85) : 0.08;
+              obj.colorize = active
+                ? (isRealistic ? [0.95, 0.93, 0.88] : getColorForFunction(meta.name || ''))
+                : [0.15, 0.15, 0.18];
             } else {
-              obj.colorize = null; obj.opacity = 1.0;
+              const typeMat = TYPE_MATERIALS[meta?.type];
+              obj.colorize = typeMat ? typeMat.color : null;
+              obj.opacity = typeMat ? typeMat.opacity : 1.0;
             }
           } catch {}
         }
@@ -1689,7 +1768,16 @@ export default function XeokitViewer() {
       )}
 
 
-      {/* Save button — hidden (kept for future use) */}
+      {/* Color mode toggle */}
+      {!loading && !modelError && (
+        <button
+          className="xeokit-viewer__color-toggle"
+          onClick={() => setColorMode(m => m === 'function' ? 'realistic' : 'function')}
+          title={colorMode === 'function' ? 'Switch to realistic materials' : 'Switch to function coloring'}
+        >
+          {colorMode === 'function' ? 'Realistic' : 'Functions'}
+        </button>
+      )}
 
       {/* Polygon hover tooltip */}
       {polygonTooltip && (

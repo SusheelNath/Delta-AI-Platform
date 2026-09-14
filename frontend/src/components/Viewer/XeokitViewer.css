@@ -196,6 +196,31 @@
   border-color: #E77133;
 }
 
+/* ── Color mode toggle ── */
+.xeokit-viewer__color-toggle {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 8;
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  color: var(--c-text-secondary);
+  border: 1px solid var(--c-border);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  letter-spacing: 0.3px;
+}
+
+.xeokit-viewer__color-toggle:hover {
+  background: #ffffff;
+  color: var(--c-accent);
+  border-color: var(--c-accent);
+}
+
 /* ── Polygon hover tooltip ── */
 .xeokit-viewer__polygon-tooltip {
   position: absolute;
