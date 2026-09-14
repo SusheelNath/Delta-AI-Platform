@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import useStore from '../../store/useStore';
-import { savePolygon, updateSpace, fetchSpaceByGuid } from '../../api/client';
+import { savePolygon, updateSpace } from '../../api/client';
 import { computePolygonMetrics, unprojectPolygon } from '../../utils/unprojectPolygon';
 
 export default function MatchConfirmCard() {
@@ -40,22 +40,21 @@ export default function MatchConfirmCard() {
     setPreviewMetrics(m ? { area_m2: Math.round(m.area_m2 * 100) / 100, perimeter_m: m.perimeter_m } : null);
   }, [candidate?.id]);
 
-  // Fetch full space data whenever candidate changes
+  // Load space data from intelligence cache whenever candidate changes
   useEffect(() => {
     if (!candidate) { setSpaceData(null); return; }
     setLoading(true);
-    fetchSpaceByGuid(candidate.id)
-      .then((data) => {
-        setSpaceData(data);
-        setEditName(data.space_name || candidate.name || '');
-        setEditFunction(data.primary_function || '');
-      })
-      .catch(() => {
-        setSpaceData(null);
-        setEditName(candidate.name || '');
-        setEditFunction('');
-      })
-      .finally(() => setLoading(false));
+    const intel = useStore.getState().getIntelligence(candidate.id);
+    if (intel) {
+      setSpaceData(intel);
+      setEditName(intel.space_name || candidate.name || '');
+      setEditFunction(intel.primary_function || '');
+    } else {
+      setSpaceData(null);
+      setEditName(candidate.name || '');
+      setEditFunction('');
+    }
+    setLoading(false);
   }, [candidate?.id]);
 
   const handleAccept = useCallback(async () => {

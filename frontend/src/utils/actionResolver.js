@@ -7,7 +7,6 @@
  */
 
 import useStore from '../store/useStore';
-import { fetchSpaceByGuid } from '../api/client';
 import { computeRouting } from './routing';
 import { selectSpaceFromPolygon } from './polygonOverrides';
 
@@ -67,10 +66,6 @@ export async function resolveAction(action) {
 
   switch (type) {
     case 'select_space': {
-      // Skip if this select_space was appended by backend enrichment after
-      // a select_room_in_group that already selected the space correctly.
-      if (action.from_enrichment) break;
-
       // Support both space_id (direct guid) and space_name (name lookup)
       let guid = action.space_id;
       let poly = null;
@@ -91,14 +86,12 @@ export async function resolveAction(action) {
 
       if (poly) {
         const floorId = poly._floorId || poly.floor_id || store.activeFloorId;
-        await selectSpaceFromPolygon(poly, floorId, fetchSpaceByGuid);
+        selectSpaceFromPolygon(poly, floorId);
       } else {
-        // No local polygon — fall back to API-only (rare)
-        try {
-          const spaceData = await fetchSpaceByGuid(guid);
-          store.selectSpace(guid, spaceData);
-        } catch (err) {
-          console.warn('[Action] Failed to select space:', err);
+        // No local polygon — use intelligence cache directly
+        const intel = store.getIntelligence(guid);
+        if (intel) {
+          store.selectSpace(guid, intel);
         }
       }
       break;
@@ -106,14 +99,28 @@ export async function resolveAction(action) {
 
     case 'route_to_elevator':
     case 'route_to_staircase': {
-      const poly = findPolygonByName(action.space_name);
+      // Prefer direct GUID lookup over ambiguous name search
+      let poly = null;
+      if (action.space_id) {
+        const allFloorPolygons = store.floorPolygons || {};
+        for (const fid of Object.keys(allFloorPolygons)) {
+          const found = (allFloorPolygons[fid] || []).find((p) => p.ifc_guid === action.space_id);
+          if (found) { poly = { ...found, _floorId: fid }; break; }
+        }
+      }
+      if (!poly && action.space_name) {
+        poly = findPolygonByName(action.space_name);
+      }
       if (!poly) break;
       const floorId = poly._floorId || poly.floor_id;
       const floorPolys = getFloorPolygons(floorId);
       if (!floorPolys.length) break;
 
-      // Select the space first (with overrides)
-      await selectSpaceFromPolygon(poly, floorId, fetchSpaceByGuid);
+      // Only select the space if it isn't already selected
+      const alreadySelected = store.selectedSpaceId === poly.ifc_guid;
+      if (!alreadySelected) {
+        selectSpaceFromPolygon(poly, floorId);
+      }
 
       // Compute routing
       const routing = computeRouting(floorPolys, poly.ifc_guid);
@@ -123,11 +130,9 @@ export async function resolveAction(action) {
       const data = routeType === 'elevator' ? routing.toElevator : routing.toStaircase;
       if (!data) break;
 
-      // Defer route activation so React effects from selectSpace (which clears
-      // activeRoute and resets routingOpen) settle before we set the new route.
-      setTimeout(() => {
-        const s = useStore.getState();
-        s.setActiveRoute({
+      // Selection is now synchronous, so activate route immediately
+      {
+        store.setActiveRoute({
           type: routeType,
           path: data.path,
           targetGuid: data.target.ifc_guid,
@@ -136,9 +141,9 @@ export async function resolveAction(action) {
           distanceM: data.distanceM,
           waypoints: data.waypoints,
         });
-        s.setDrawerOpen(true);
-        s.setRoutingPanelOpen(true);
-      }, 80);
+        store.setDrawerOpen(true);
+        store.setRoutingPanelOpen(true);
+      }
       break;
     }
 
@@ -196,7 +201,7 @@ export async function resolveAction(action) {
             || (a.ifc_guid || '').localeCompare(b.ifc_guid || ''));
         const idx = Math.min(roomIdx, grouped.length - 1);
         if (idx >= 0 && grouped[idx]) {
-          await selectSpaceFromPolygon(grouped[idx], floorId, fetchSpaceByGuid);
+          selectSpaceFromPolygon(grouped[idx], floorId);
           store.setDrawerOpen(true);
         }
       }

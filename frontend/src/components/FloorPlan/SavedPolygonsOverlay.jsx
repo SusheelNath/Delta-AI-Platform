@@ -1,6 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
 import useStore from '../../store/useStore';
-import { fetchSpaceByGuid } from '../../api/client';
 import { computePolygonMetrics } from '../../utils/unprojectPolygon';
 
 /** Get polygon-derived area (stored) and perimeter (computed) for Space Toolkit. */
@@ -48,7 +47,7 @@ export default function SavedPolygonsOverlay({ floorId, onTooltipChange }) {
     return map;
   }, [activeRoute]);
 
-  const handleClick = useCallback(async (e, polygon) => {
+  const handleClick = useCallback((e, polygon) => {
     e.stopPropagation();
     let overrides = {};
     try {
@@ -56,11 +55,10 @@ export default function SavedPolygonsOverlay({ floorId, onTooltipChange }) {
     } catch (err) {
       console.warn('[Delta] getPolygonOverrides failed:', err);
     }
-    try {
-      const spaceData = await fetchSpaceByGuid(polygon.ifc_guid);
-      selectSpace(polygon.ifc_guid, { ...spaceData, ...overrides });
-    } catch (err) {
-      // No DB record (e.g. cloned H040 polygons) — use polygon metadata directly
+    const intel = useStore.getState().getIntelligence(polygon.ifc_guid);
+    if (intel) {
+      selectSpace(polygon.ifc_guid, { ...intel, ...overrides });
+    } else {
       selectSpace(polygon.ifc_guid, {
         ifc_guid: polygon.ifc_guid,
         space_name: polygon.space_name,

@@ -221,6 +221,94 @@
   margin-top: 1px;
 }
 
+/* ── Heatmap legend ── */
+.xeokit-viewer__heatmap-legend {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid #e5e2de;
+  border-radius: 8px;
+  padding: 8px 12px;
+  min-width: 180px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  animation: heatmapLegendIn 0.2s ease-out;
+}
+
+@keyframes heatmapLegendIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.xeokit-viewer__heatmap-legend-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.xeokit-viewer__heatmap-legend-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #374151;
+  letter-spacing: 0.2px;
+}
+
+.xeokit-viewer__heatmap-legend-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 0;
+  transition: all 0.12s ease;
+}
+
+.xeokit-viewer__heatmap-legend-close:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.xeokit-viewer__heatmap-legend-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.xeokit-viewer__heatmap-legend-gradient {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to right,
+    rgb(0, 255, 153),
+    rgb(128, 255, 0),
+    rgb(255, 255, 0),
+    rgb(255, 128, 0),
+    rgb(255, 0, 0)
+  );
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.xeokit-viewer__heatmap-legend-label {
+  font-size: 10px;
+  color: #6b7280;
+  white-space: nowrap;
+  min-width: 24px;
+}
+
+.xeokit-viewer__heatmap-legend-count {
+  font-size: 10px;
+  color: #9ca3af;
+  margin-top: 4px;
+  text-align: center;
+}
+
 /* ── Save button ── */
 .xeokit-viewer__save-btn {
   position: absolute;

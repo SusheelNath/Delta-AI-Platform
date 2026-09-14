@@ -46,43 +46,39 @@ export function getPolygonOverrides(polygon, floorId) {
 }
 
 /**
- * Full select-space helper: fetch API data, apply polygon overrides, call selectSpace.
+ * Synchronous select-space: reads from floorIntelligence cache,
+ * applies polygon geometry overrides, writes to store.
  *
- * Used by actionResolver and RoomDirectory to ensure identical behaviour.
+ * No network calls. Instant.
  *
  * @param {Object} polygon - polygon from store.floorPolygons
  * @param {string} floorId - floor ID
- * @param {Function} fetchSpaceByGuid - API fetch function
- * @returns {Promise<Object|null>} the merged spaceData written to store, or null on failure
+ * @returns {Object|null} the merged spaceData written to store
  */
-export async function selectSpaceFromPolygon(polygon, floorId, fetchSpaceByGuid) {
+export function selectSpaceFromPolygon(polygon, floorId) {
   const store = useStore.getState();
   let overrides = {};
   try {
     overrides = getPolygonOverrides(polygon, floorId);
   } catch { /* non-critical */ }
 
-  try {
-    const spaceData = await fetchSpaceByGuid(polygon.ifc_guid);
-    // API data is authoritative for metrics — don't let stale polygon overrides mask it
-    const METRIC_KEYS = ['normal_occupancy', 'max_occupancy', 'absolute_occupancy',
-      'occupiable', 'used_area_m2', 'free_area_m2'];
-    const safeOverrides = { ...overrides };
-    for (const k of METRIC_KEYS) {
-      if (spaceData[k] != null) delete safeOverrides[k];
-    }
-    const merged = { ...spaceData, ...safeOverrides };
+  // Read from pre-loaded intelligence cache (synchronous)
+  const intel = store.getIntelligence(polygon.ifc_guid);
+
+  if (intel) {
+    const merged = { ...intel, ...overrides };
     store.selectSpace(polygon.ifc_guid, merged);
     return merged;
-  } catch {
-    const fallback = {
-      ifc_guid: polygon.ifc_guid,
-      space_name: polygon.space_name,
-      primary_function: polygon.primary_function,
-      floor_id: floorId,
-      ...overrides,
-    };
-    store.selectSpace(polygon.ifc_guid, fallback);
-    return fallback;
   }
+
+  // Fallback: build minimal data from polygon fields
+  const fallback = {
+    ifc_guid: polygon.ifc_guid,
+    space_name: polygon.space_name,
+    primary_function: polygon.primary_function,
+    floor_id: floorId,
+    ...overrides,
+  };
+  store.selectSpace(polygon.ifc_guid, fallback);
+  return fallback;
 }

@@ -18,6 +18,7 @@ from app.services.polygon_intelligence import (
 )
 from app.services.classifier import classify_function
 from app.services.geometry import compute_floor_spatial
+from app.services.intelligence_cache import get_floor_intelligence
 
 router = APIRouter(tags=["spaces"])
 
@@ -102,6 +103,19 @@ def search_spaces_endpoint(
             break
 
     return filtered
+
+
+@router.get("/floors/{floor_id}/intelligence")
+def get_floor_intelligence_endpoint(floor_id: str):
+    """Return pre-computed intelligence for all spaces on a floor.
+
+    Reads from the in-memory cache (~0ms). Used by the frontend at boot
+    to load full space metadata so room selection is synchronous.
+    """
+    data = get_floor_intelligence(floor_id)
+    if not data:
+        return {}
+    return data
 
 
 @router.get("/spaces/by-guid/{ifc_guid}")

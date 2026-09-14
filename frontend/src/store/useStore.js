@@ -101,6 +101,9 @@ const useStore = create((set, get) => ({
   floorSnapshots: {},         // { [floorId]: { imageUrl, spacePositions } }
   floorTransitioning: false,  // true while camera is flying to a new floor
 
+  // Pre-computed intelligence (loaded at boot from backend cache)
+  floorIntelligence: {},  // { [floorId]: { [guid]: intelligenceDict } }
+
   // Polygon mapping mode
   mappingMode: false,
   floorPolygons: loadPolygonsFromStorage(),  // persisted to localStorage
@@ -239,6 +242,26 @@ const useStore = create((set, get) => ({
     matchCandidateList: [],
     matchCandidateIndex: 0,
   })),
+
+  setFloorIntelligence: (floorId, intelMap) => {
+    set({ floorIntelligence: { ...get().floorIntelligence, [floorId]: intelMap } });
+  },
+
+  /** Look up intelligence for a space by guid. Checks active floor first, then all. */
+  getIntelligence: (guid) => {
+    const state = get();
+    // Fast path: check active floor
+    if (state.activeFloorId) {
+      const intel = (state.floorIntelligence[state.activeFloorId] || {})[guid];
+      if (intel) return intel;
+    }
+    // Fallback: search all floors
+    for (const fid of Object.keys(state.floorIntelligence)) {
+      const intel = (state.floorIntelligence[fid] || {})[guid];
+      if (intel) return intel;
+    }
+    return null;
+  },
 
   setFloorPolygons: (floorId, polygons) => {
     const updated = { ...get().floorPolygons, [floorId]: polygons };

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import useStore from '../../store/useStore';
-import { searchSpaces, fetchSpaceByGuid } from '../../api/client';
+import { searchSpaces } from '../../api/client';
 import { FUNCTION_CATEGORIES, getCategoryIndex, getCssColorForFunction } from '../../utils/colorScheme';
 import './FloorPlanCanvas.css';
 
@@ -469,7 +469,7 @@ export default function FloorPlanCanvas({ floorIdOverride }) {
     }
   }, []);
 
-  const handleMouseUp = useCallback(async (e) => {
+  const handleMouseUp = useCallback((e) => {
     isPanning.current = false;
     if (didPan.current) return;
 
@@ -478,12 +478,10 @@ export default function FloorPlanCanvas({ floorIdOverride }) {
     if (hits.length === 0) return;
 
     if (hits.length === 1) {
-      // Single room — select directly
+      // Single room — select directly from intelligence cache
       const room = hits[0];
-      try {
-        const detail = await fetchSpaceByGuid(room.id);
-        selectSpace(room.id, detail);
-      } catch { selectSpace(room.id, null); }
+      const intel = useStore.getState().getIntelligence(room.id);
+      selectSpace(room.id, intel || { ifc_guid: room.id });
     } else {
       // Multiple rooms overlap — show disambiguation
       const container = containerRef.current;
@@ -498,12 +496,10 @@ export default function FloorPlanCanvas({ floorIdOverride }) {
     }
   }, [hitTestAll, selectSpace]);
 
-  const handleDisambigSelect = useCallback(async (room) => {
+  const handleDisambigSelect = useCallback((room) => {
     setDisambig(null);
-    try {
-      const detail = await fetchSpaceByGuid(room.id);
-      selectSpace(room.id, detail);
-    } catch { selectSpace(room.id, null); }
+    const intel = useStore.getState().getIntelligence(room.id);
+    selectSpace(room.id, intel || { ifc_guid: room.id });
   }, [selectSpace]);
 
   const handleMouseLeave = useCallback(() => {

@@ -73,6 +73,15 @@ export async function fetchSpaceByGuid(guid) {
 }
 
 /**
+ * Fetch pre-computed intelligence for all spaces on a floor.
+ * GET /api/floors/{floorId}/intelligence
+ * Returns { [guid]: intelligenceDict }
+ */
+export async function fetchFloorIntelligence(floorId) {
+  return request(`${BASE}/floors/${encodeURIComponent(floorId)}/intelligence`);
+}
+
+/**
  * Search spaces with optional query parameters.
  * GET /api/spaces/search?...
  * @param {Object} params - key/value pairs for query string

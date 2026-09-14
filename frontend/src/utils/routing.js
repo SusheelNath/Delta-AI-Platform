@@ -364,8 +364,6 @@ function findRouteViaCorridors(fullAdj, corrAdj, byGuid, centroidMap, startGuid,
   const startPoly = byGuid.get(startGuid);
   const startCentroid = centroidMap.get(startGuid);
 
-  if (isTargetFn(startPoly)) return null;
-
   // ---- Step 1: collect ALL corridor entry points from source ----
   const entries = new Map();
 

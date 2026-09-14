@@ -331,6 +331,15 @@ def get_all_intelligence() -> dict[str, dict]:
     return _intelligence
 
 
+def get_floor_intelligence(floor_id: str) -> dict[str, dict]:
+    """Return intelligence dicts for all spaces on a floor. O(n) filter."""
+    return {
+        guid: intel
+        for guid, intel in _intelligence.items()
+        if intel.get("floor_id") == floor_id
+    }
+
+
 def get_search_blobs() -> dict[str, str]:
     """Return the full search blob dict."""
     return _search_blobs

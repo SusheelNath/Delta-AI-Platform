@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import useStore from './store/useStore';
-import { fetchFloors, fetchFloorPolygons } from './api/client';
+import { fetchFloors, fetchFloorPolygons, fetchFloorIntelligence } from './api/client';
 import XeokitViewer from './components/Viewer/XeokitViewer';
 import FloorPlanPanel from './components/FloorPlan/FloorPlanPanel';
 import ChatPanel from './components/Chat/ChatPanel';
@@ -20,7 +20,7 @@ export default function App() {
   // Preload all data (floors + polygons for every floor)
   useEffect(() => {
     async function preload() {
-      const { setLoadProgress, setLoadStage, setFloors, setFloorPolygons, setDataReady } = useStore.getState();
+      const { setLoadProgress, setLoadStage, setFloors, setFloorPolygons, setFloorIntelligence, setDataReady } = useStore.getState();
 
       // 1. Fetch floor list
       setLoadStage('Loading floor data...');
@@ -63,6 +63,20 @@ export default function App() {
           loaded++;
           setLoadProgress(3 + Math.round((loaded / floorList.length) * 5));
         }));
+      }
+
+      // 3. Fetch intelligence for every floor (parallel)
+      if (floorList.length > 0) {
+        setLoadStage('Loading space intelligence...');
+        await Promise.all(floorList.map(async (floor) => {
+          try {
+            const intel = await fetchFloorIntelligence(floor.id);
+            setFloorIntelligence(floor.id, intel);
+          } catch {
+            // Non-critical — fallback to API calls if cache unavailable
+          }
+        }));
+        setLoadProgress(10);
       }
 
       setDataReady(true);

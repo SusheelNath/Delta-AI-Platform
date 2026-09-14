@@ -86,6 +86,8 @@ RESET_KEYWORDS = {
     "clear colors": "heatmap", "clear colours": "heatmap", "turn off heatmap": "heatmap",
     "remove heatmap": "heatmap", "no heatmap": "heatmap", "back to normal": "heatmap",
     "standard view": "heatmap", "plain view": "heatmap",
+    "close heatmap": "heatmap", "hide heatmap": "heatmap", "dismiss heatmap": "heatmap",
+    "reset heatmap": "heatmap", "close the heatmap": "heatmap", "stop heatmap": "heatmap",
     "show all types": "filters", "reset filters": "filters", "all categories": "filters",
     "clear filters": "filters", "show all categories": "filters",
     "show all rooms": "filters", "all room types": "filters",
@@ -161,6 +163,8 @@ DRAWER_KEYWORDS = {
     "close toolkit": "close", "close drawer": "close", "close side panel": "close",
     "hide toolkit": "close", "hide drawer": "close",
     "close metadata": "close", "close space card": "close",
+    "close metadata panel": "close", "close space metadata": "close",
+    "close space metadata panel": "close", "hide metadata panel": "close",
     "close info panel": "close", "close details panel": "close",
     "collapse drawer": "close", "minimize drawer": "close",
     "dismiss drawer": "close", "collapse toolkit": "close",
@@ -910,8 +914,8 @@ def parse_intents(message: str, polygons: list[dict] | None = None, expanded_gro
             ))
             used_types.add("select_room_relative")
 
-    # 11. Expand directory group
-    if expand_group_fn and "expand_group" not in used_types and "select_room" not in used_types:
+    # 11. Expand directory group (skip when route already handles the target)
+    if expand_group_fn and "expand_group" not in used_types and "select_room" not in used_types and "route" not in used_types:
         intents.append(ParsedIntent(intent_type="expand_group", function_name=expand_group_fn))
         used_types.add("expand_group")
 
@@ -952,9 +956,18 @@ def parse_intents(message: str, polygons: list[dict] | None = None, expanded_gro
             break
 
     # 15. Drawer open/close
+    _close_verbs = {"close", "hide", "dismiss", "collapse", "minimize"}
+    _has_close_verb = any(v in msg_lower for v in _close_verbs)
+    # Strip filler words so "close the toolkit panel" matches "close toolkit"
+    _drawer_msg = re.sub(r'\b(the|my|this|that|a|an|please|can you|could you)\b', '', msg_lower)
+    _drawer_msg = re.sub(r'\s+', ' ', _drawer_msg).strip()
     for alias, action in sorted(DRAWER_KEYWORDS.items(), key=lambda x: -len(x[0])):
-        if alias in msg_lower and "drawer" not in used_types:
-            intents.append(ParsedIntent(intent_type="drawer", drawer_action=action))
+        if (alias in msg_lower or alias in _drawer_msg) and "drawer" not in used_types:
+            # Ambiguous entries (no verb, e.g. "metadata panel") default to
+            # "open" in the dict.  Override to "close" when the message
+            # contains an explicit close verb.
+            effective = "close" if action == "open" and _has_close_verb else action
+            intents.append(ParsedIntent(intent_type="drawer", drawer_action=effective))
             used_types.add("drawer")
             break
 
@@ -1114,11 +1127,12 @@ def intents_to_actions(
             actions.append(({"type": "clear_all"}, "Resetting everything to default."))
 
         elif t == "route":
+            space_id = (selected_space or {}).get("ifc_guid", "")
             space_name = (selected_space or {}).get("space_name", "")
             target = intent.route_target or "elevator"
-            if space_name:
+            if space_id:
                 actions.append((
-                    {"type": f"route_to_{target}", "space_name": space_name},
+                    {"type": f"route_to_{target}", "space_id": space_id, "space_name": space_name},
                     f"Routing to nearest {target} from **{space_name}**...",
                 ))
             else:

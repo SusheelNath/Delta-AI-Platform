@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useCallback, useState, useMemo } from 'react';
 import useStore from '../../store/useStore';
-import { fetchSpaceByGuid, searchSpaces, fullSavePolygons } from '../../api/client';
+import { searchSpaces, fullSavePolygons } from '../../api/client';
 import { getColorForFunction, getCategoryIndex } from '../../utils/colorScheme';
 import { unprojectPolygon, earClipTriangulate, computePolygonMetrics } from '../../utils/unprojectPolygon';
 import { selectSpaceFromPolygon } from '../../utils/polygonOverrides';
@@ -32,6 +32,14 @@ const MEP_SPACE_CLASSES = new Set([
   'Circulation',
   'Transition / circulation',
 ]);
+
+// Heatmap gradient: t=0 → green (low), t=1 → red (high) — matches FloorPlanCanvas
+function heatColorRGB(t) {
+  const r = Math.min(1, t * 2);
+  const g = Math.min(1, 2 - t * 2);
+  const b = (1 - t) * 0.6;
+  return [r, g, b];
+}
 
 function throttle(fn, ms) {
   let last = 0, timer = null;
@@ -93,6 +101,7 @@ export default function XeokitViewer() {
   const setFloorSnapshot = useStore((s) => s.setFloorSnapshot);
   const floorTransitioning = useStore((s) => s.floorTransitioning);
   const setFloorTransitioning = useStore((s) => s.setFloorTransitioning);
+  const heatmapMode = useStore((s) => s.heatmapMode);
 
   const [modelError, setModelError] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -408,15 +417,11 @@ export default function XeokitViewer() {
         const floorPolys = floorId ? (useStore.getState().floorPolygons[floorId] || []) : [];
         const polyData = floorPolys.find((p) => p.ifc_guid === ifcGuid);
         if (polyData) {
-          await selectSpaceFromPolygon(polyData, floorId, fetchSpaceByGuid);
+          selectSpaceFromPolygon(polyData, floorId);
         } else {
-          // Polygon not in store (rare) — API-only fallback
-          try {
-            const spaceData = await fetchSpaceByGuid(ifcGuid);
-            selectSpace(ifcGuid, spaceData);
-          } catch (err) {
-            selectSpace(ifcGuid, { ifc_guid: ifcGuid, floor_id: floorId });
-          }
+          // Polygon not in store (rare) — use intelligence cache fallback
+          const intel = useStore.getState().getIntelligence(ifcGuid);
+          selectSpace(ifcGuid, intel || { ifc_guid: ifcGuid, floor_id: floorId });
         }
       });
 
@@ -1380,6 +1385,41 @@ export default function XeokitViewer() {
       }
     }
 
+    // ── Heatmap value lookup (occupancy modes) ──
+    const isHeatmap = heatmapMode && heatmapMode !== 'function';
+    let heatValues = null; // guid → normalized t (0–1)
+    if (isHeatmap) {
+      const vals = [];
+      const raw = new Map();
+      for (const p of floorPolygons) {
+        let v = null;
+        if (heatmapMode === 'occupancy' && (p.max_occupancy || 0) > 0) v = p.max_occupancy;
+        else if (heatmapMode === 'occupancy_density' && (p.max_occupancy || 0) > 0 && (p.area_m2 || 0) > 0) v = p.max_occupancy / p.area_m2;
+        else if (heatmapMode === 'evacuation' && (p.absolute_occupancy || 0) > 0) v = p.absolute_occupancy;
+        else if (heatmapMode === 'area') v = p.area_m2 || 0;
+        else if (heatmapMode === 'area_per_bed' && p.area_per_bed != null) v = p.area_per_bed;
+        else if (heatmapMode === 'utilization') v = (p.max_occupancy || 0) > 0 ? 0.7 : 0.3;
+        if (v != null && v > 0) { vals.push(v); raw.set(p.ifc_guid, v); }
+      }
+      if (vals.length > 0) {
+        const mn = Math.min(...vals);
+        const mx = Math.max(...vals);
+        const range = mx - mn || 1;
+        heatValues = new Map();
+        for (const [g, v] of raw) {
+          let t = Math.max(0, Math.min(1, (v - mn) / range));
+          if (heatmapMode === 'evacuation') t = 1 - t; // inverted: high capacity = green
+          heatValues.set(g, t);
+        }
+      }
+    }
+
+    // When heatmapMode changes, invalidate cached mesh states to force re-render
+    if (isHeatmap || meshStateRef.current._prevHeatmap !== heatmapMode) {
+      meshStateRef.current.clear();
+      meshStateRef.current._prevHeatmap = heatmapMode;
+    }
+
     // ── Apply colors to overlay polygon meshes (skip unchanged) ──
     for (const [guid, mesh] of savedMeshesRef.current) {
       const isRouteStart = routeStartGuid === guid;
@@ -1419,6 +1459,12 @@ export default function XeokitViewer() {
           lerpMeshAlpha(guid, mesh, 0.50);
           mesh.material.diffuse = [1.0, 0.55, 0.2];
           mesh.material.emissive = [0.2, 0.075, 0.0];
+        } else if (isHeatmap && heatValues?.has(guid)) {
+          // Occupancy heatmap overlay
+          const hc = heatColorRGB(heatValues.get(guid));
+          lerpMeshAlpha(guid, mesh, 0.55);
+          mesh.material.diffuse = hc;
+          mesh.material.emissive = [hc[0] * 0.35, hc[1] * 0.35, hc[2] * 0.35];
         } else {
           lerpMeshAlpha(guid, mesh, 0.01);
           mesh.material.diffuse = [0, 0, 0];
@@ -1633,8 +1679,48 @@ export default function XeokitViewer() {
         }));
       } catch {}
     }
-  }, [hoveredPolygonGuid, selectedSpaceId, activeRoute, activeFloorId, expandedGroups, floorPolygons]);
+  }, [hoveredPolygonGuid, selectedSpaceId, activeRoute, activeFloorId, expandedGroups, floorPolygons, heatmapMode]);
 
+  // ── Heatmap legend stats ──
+  const setHeatmapMode = useStore((s) => s.setHeatmapMode);
+  const heatmapLegend = useMemo(() => {
+    if (!heatmapMode || heatmapMode === 'function') return null;
+    const labels = {
+      occupancy: 'Occupancy Capacity',
+      occupancy_density: 'Occupancy Density (ppl/m²)',
+      evacuation: 'Evacuation Capacity',
+      area: 'Area (m²)',
+      area_per_bed: 'Area per Bed (m²)',
+      utilization: 'Utilization',
+      status: 'Status',
+    };
+    const units = {
+      occupancy: '', occupancy_density: ' ppl/m²', evacuation: '',
+      area: ' m²', area_per_bed: ' m²', utilization: '', status: '',
+    };
+    const vals = [];
+    for (const p of floorPolygons) {
+      let v = null;
+      if (heatmapMode === 'occupancy' && (p.max_occupancy || 0) > 0) v = p.max_occupancy;
+      else if (heatmapMode === 'occupancy_density' && (p.max_occupancy || 0) > 0 && (p.area_m2 || 0) > 0) v = p.max_occupancy / p.area_m2;
+      else if (heatmapMode === 'evacuation' && (p.absolute_occupancy || 0) > 0) v = p.absolute_occupancy;
+      else if (heatmapMode === 'area') v = p.area_m2 || 0;
+      else if (heatmapMode === 'area_per_bed' && p.area_per_bed != null) v = p.area_per_bed;
+      else if (heatmapMode === 'utilization') v = (p.max_occupancy || 0) > 0 ? 0.7 : 0.3;
+      if (v != null && v > 0) vals.push(v);
+    }
+    if (vals.length === 0) return null;
+    const mn = Math.min(...vals);
+    const mx = Math.max(...vals);
+    const fmt = (v) => v >= 10 ? Math.round(v) : v.toFixed(1);
+    const inverted = heatmapMode === 'evacuation';
+    return {
+      label: labels[heatmapMode] || heatmapMode,
+      minLabel: fmt(inverted ? mx : mn) + (units[heatmapMode] || ''),
+      maxLabel: fmt(inverted ? mn : mx) + (units[heatmapMode] || ''),
+      count: vals.length,
+    };
+  }, [heatmapMode, floorPolygons]);
 
   return (
     <div className="xeokit-viewer">
@@ -1667,6 +1753,30 @@ export default function XeokitViewer() {
         <div className="xeokit-viewer__polygon-tooltip" style={{ left: polygonTooltip.x, top: polygonTooltip.y }}>
           <div className="xeokit-viewer__polygon-tooltip-name">{polygonTooltip.name}</div>
           {polygonTooltip.area && <div className="xeokit-viewer__polygon-tooltip-area">{polygonTooltip.area}</div>}
+        </div>
+      )}
+
+      {/* Heatmap legend */}
+      {heatmapLegend && (
+        <div className="xeokit-viewer__heatmap-legend">
+          <div className="xeokit-viewer__heatmap-legend-header">
+            <span className="xeokit-viewer__heatmap-legend-title">{heatmapLegend.label}</span>
+            <button
+              className="xeokit-viewer__heatmap-legend-close"
+              onClick={() => setHeatmapMode('function')}
+              title="Close heatmap"
+            >
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+              </svg>
+            </button>
+          </div>
+          <div className="xeokit-viewer__heatmap-legend-bar">
+            <span className="xeokit-viewer__heatmap-legend-label">{heatmapLegend.minLabel}</span>
+            <div className="xeokit-viewer__heatmap-legend-gradient" />
+            <span className="xeokit-viewer__heatmap-legend-label">{heatmapLegend.maxLabel}</span>
+          </div>
+          <div className="xeokit-viewer__heatmap-legend-count">{heatmapLegend.count} spaces</div>
         </div>
       )}
     </div>

@@ -297,21 +297,9 @@ def _format_room_context(intel: dict, index: int | None = None, group: str | Non
     if intel.get("visitor_access"):
         lines.append(f"- Visitor access: {intel['visitor_access']}")
 
-    # Spatial
-    if intel.get("nearest_lift"):
-        dist = f" ({intel['lift_distance_m']}m)" if intel.get("lift_distance_m") else ""
-        lines.append(f"- Nearest elevator: {intel['nearest_lift']}{dist}")
-    if intel.get("nearest_stair"):
-        dist = f" ({intel['stair_distance_m']}m)" if intel.get("stair_distance_m") else ""
-        lines.append(f"- Nearest staircase: {intel['nearest_stair']}{dist}")
-    if intel.get("step_free_access"):
-        lines.append(f"- Step-free access: {intel['step_free_access']}")
+    # Spatial (routing handled by frontend SpaceToolkit)
     if intel.get("adjacent_spaces"):
         lines.append(f"- Adjacent: {intel['adjacent_spaces']}")
-
-    # Furnishings
-    if intel.get("facilities_available"):
-        lines.append(f"- Furnishings: {intel['facilities_available']}")
 
     # Flexibility
     if intel.get("flexibility"):

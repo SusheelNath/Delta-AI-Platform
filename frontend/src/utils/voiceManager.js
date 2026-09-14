@@ -152,7 +152,10 @@ export function createVoiceManager({
         accumulatedText = '';
         lastInterim = '';
         onClear?.();
-        continue;
+        // Abort + restart recognition to flush the browser's result buffer
+        // so stale finals from the same utterance don't re-accumulate.
+        if (recognition) { try { recognition.abort(); } catch (_) {} }
+        return;
       }
 
       if (mode === 'idle') {
@@ -223,6 +226,13 @@ export function createVoiceManager({
     },
 
     getMode() { return mode; },
+
+    /** Sync internal accumulated text with the visible input field.
+     *  Call this when the user manually edits (types/backspaces) the input. */
+    syncText(text) {
+      accumulatedText = text;
+      lastInterim = '';
+    },
 
     mute() { muted = true; },
 

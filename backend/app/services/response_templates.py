@@ -11,6 +11,7 @@ from app.services.intelligence_cache import (
     get_cached_intelligence,
     get_floor_group_summary,
     get_rooms_by_function,
+    get_all_intelligence,
 )
 from app.services.polygon_intelligence import FLOOR_NAMES
 
@@ -164,48 +165,9 @@ def render_room_detail(
     if access_items:
         parts.append("**Access:** " + " · ".join(access_items))
 
-    # ── Nearest elevators (top 3 with occupancy) ──
-    nearby_lifts = intel.get("nearby_lifts") or []
-    if nearby_lifts:
-        lift_lines = ["**Nearest elevators**"]
-        for lf in nearby_lifts:
-            line = f"- {lf['space_name']} ({lf['distance_m']}m)"
-            occ_parts = []
-            if lf.get("normal_occupancy"):
-                occ_parts.append(f"Normal: {lf['normal_occupancy']}")
-            if lf.get("max_occupancy"):
-                occ_parts.append(f"Max: {lf['max_occupancy']}")
-            if lf.get("absolute_occupancy"):
-                occ_parts.append(f"Absolute: {lf['absolute_occupancy']}")
-            if occ_parts:
-                line += f" — {' · '.join(occ_parts)}"
-            lift_lines.append(line)
-        parts.append("\n".join(lift_lines))
-    elif intel.get("nearest_lift"):
-        dist = f" ({intel['lift_distance_m']}m)" if intel.get("lift_distance_m") else ""
-        parts.append(f"**Nearest elevator:** {intel['nearest_lift']}{dist}")
-
-    # ── Nearest staircases (top 3, distance only) ──
-    nearby_stairs = intel.get("nearby_stairs") or []
-    if nearby_stairs:
-        stair_lines = ["**Nearest staircases**"]
-        for st in nearby_stairs:
-            stair_lines.append(f"- {st['space_name']} ({st['distance_m']}m)")
-        parts.append("\n".join(stair_lines))
-    elif intel.get("nearest_stair"):
-        dist = f" ({intel['stair_distance_m']}m)" if intel.get("stair_distance_m") else ""
-        parts.append(f"**Nearest staircase:** {intel['nearest_stair']}{dist}")
-
-    if intel.get("step_free_access"):
-        parts.append(f"**Step-free access:** {intel['step_free_access']}")
-
     # ── Adjacent spaces ──
     if intel.get("adjacent_spaces"):
         parts.append(f"**Adjacent:** {intel['adjacent_spaces']}")
-
-    # ── Furnishings ──
-    if intel.get("facilities_available"):
-        parts.append(f"**Furnishings:** {intel['facilities_available']}")
 
     # ── Flexibility ──
     flex_items = []
@@ -226,50 +188,47 @@ def render_room_detail(
 
 def render_route(ifc_guid: str, target_type: str, frontend_space: dict | None = None) -> str | None:
     """Render markdown for 'route to elevator/staircase'."""
-    intel = frontend_space or get_cached_intelligence(ifc_guid)
+    # Always use cache for routing data (distances, nearby lifts/stairs);
+    # frontend_space only carries identity fields, not routing.
+    intel = get_cached_intelligence(ifc_guid)
     if not intel:
         return None
 
-    name = intel.get("space_name", "Unknown")
+    # Prefer frontend name if available (matches what user sees)
+    name = (frontend_space or {}).get("space_name") or intel.get("space_name", "Unknown")
     fname = FLOOR_NAMES.get(intel.get("floor_id", ""), "")
     step_free = intel.get("step_free_access", "Unknown")
+    label = "Elevator" if target_type == "elevator" else "Staircase"
 
     if target_type == "elevator":
         target = intel.get("nearest_lift", "Unknown")
         dist = intel.get("lift_distance_m", "?")
+        nearby = intel.get("nearby_lifts") or []
     else:
         target = intel.get("nearest_stair", "Unknown")
         dist = intel.get("stair_distance_m", "?")
-
-    lines = [f"### Route from {name}\n"]
-    lines.append(f"**Target:** {target}")
-    lines.append(f"**Distance:** {dist}m")
-    lines.append(f"**Step-free access:** {step_free}")
-    lines.append(f"**Floor:** {fname}")
-
-    # Show all nearby alternatives
-    if target_type == "elevator":
-        nearby = intel.get("nearby_lifts") or []
-        if len(nearby) > 1:
-            lines.append("\n**Other nearby elevators**")
-            for lf in nearby[1:]:
-                line = f"- {lf['space_name']} ({lf['distance_m']}m)"
-                occ_parts = []
-                if lf.get("normal_occupancy"):
-                    occ_parts.append(f"Normal: {lf['normal_occupancy']}")
-                if lf.get("max_occupancy"):
-                    occ_parts.append(f"Max: {lf['max_occupancy']}")
-                if lf.get("absolute_occupancy"):
-                    occ_parts.append(f"Absolute: {lf['absolute_occupancy']}")
-                if occ_parts:
-                    line += f" — {' · '.join(occ_parts)}"
-                lines.append(line)
-    else:
         nearby = intel.get("nearby_stairs") or []
-        if len(nearby) > 1:
-            lines.append("\n**Other nearby staircases**")
-            for st in nearby[1:]:
-                lines.append(f"- {st['space_name']} ({st['distance_m']}m)")
+
+    lines = [f"### Nearest {label} from {name}\n"]
+    lines.append(f"**{target}** · **{dist}m** · {fname}")
+    lines.append(f"Step-free: {step_free}")
+
+    # Show top 3 alternatives (nearest already shown above)
+    alternatives = nearby[1:4]
+    if alternatives:
+        lines.append(f"\n**Alternatives:**")
+        for i, alt in enumerate(alternatives, 1):
+            d = alt.get("distance_m", "?")
+            n = alt.get("space_name", "Unknown")
+            parts = [f"{i}. **{n}** · **{d}m**"]
+            occ = []
+            if alt.get("max_occupancy"):
+                occ.append(f"Max: {alt['max_occupancy']}")
+            if alt.get("absolute_occupancy"):
+                occ.append(f"Absolute: {alt['absolute_occupancy']}")
+            if occ:
+                parts.append(f" · {' · '.join(occ)}")
+            lines.append("".join(parts))
 
     return "\n".join(lines)
 
@@ -346,6 +305,108 @@ def render_comparison(floor_id_1: str, floor_id_2: str) -> str | None:
         c2 = fns2.get(fn, {}).get("count", 0)
         if c1 or c2:
             lines.append(f"| {fn} | {c1} | {c2} |")
+
+    return "\n".join(lines)
+
+
+# ── Heatmap summary ─────────────────────────────────────────────
+
+_HEATMAP_LABELS = {
+    "occupancy": "Occupancy Capacity",
+    "occupancy_density": "Occupancy Density",
+    "evacuation": "Evacuation Capacity",
+    "area": "Area",
+    "area_per_bed": "Area per Bed",
+    "utilization": "Utilization",
+    "status": "Status",
+}
+
+
+def render_heatmap_summary(floor_id: str, mode: str) -> str | None:
+    """Render narrative + hotspot summary for occupancy-related heatmap modes."""
+    if mode not in ("occupancy", "occupancy_density", "evacuation"):
+        return None
+
+    fname = FLOOR_NAMES.get(floor_id)
+    if not fname:
+        return None
+
+    groups = get_floor_group_summary(floor_id)
+    if not groups:
+        return None
+
+    label = _HEATMAP_LABELS.get(mode, mode)
+
+    # Collect all rooms on this floor with occupancy data
+    all_intel = get_all_intelligence()
+    floor_rooms = []
+    for guid, intel in all_intel.items():
+        if intel.get("floor_id") != floor_id:
+            continue
+        floor_rooms.append(intel)
+
+    total_normal = sum(r.get("normal_occupancy") or 0 for r in floor_rooms)
+    total_max = sum(r.get("max_occupancy") or 0 for r in floor_rooms)
+    total_absolute = sum(r.get("absolute_occupancy") or 0 for r in floor_rooms)
+    occupiable = [r for r in floor_rooms if (r.get("max_occupancy") or 0) > 0]
+    total_area = sum(r.get("area_m2") or 0 for r in occupiable)
+
+    lines = [f"### {label} — {fname}\n"]
+
+    # Narrative (B2)
+    if mode == "occupancy":
+        density_str = f" ({total_max / total_area:.1f} ppl/m²)" if total_area > 0 else ""
+        lines.append(
+            f"{fname} has capacity for **{total_max} people** (max) across "
+            f"**{len(occupiable)} occupiable spaces**{density_str}. "
+            f"Normal daily occupancy is **{total_normal}**."
+        )
+    elif mode == "occupancy_density":
+        avg_density = total_max / total_area if total_area > 0 else 0
+        lines.append(
+            f"{fname} averages **{avg_density:.2f} people/m²** across "
+            f"**{len(occupiable)} occupiable spaces** ({total_area:,.0f} m²)."
+        )
+    elif mode == "evacuation":
+        lines.append(
+            f"{fname} has an absolute evacuation capacity of **{total_absolute} people** "
+            f"across **{len(occupiable)} spaces**. "
+            f"This includes standing room in furnished areas."
+        )
+
+    # Breakdown by function group
+    group_stats = []
+    for g in groups:
+        occ = g.get("max_occupancy") or 0
+        if occ > 0:
+            pct = round(100 * occ / total_max) if total_max > 0 else 0
+            group_stats.append((g["function"], g["count"], occ, pct))
+
+    if group_stats:
+        group_stats.sort(key=lambda x: -x[2])  # highest capacity first
+        lines.append("")
+        for fn, count, occ, pct in group_stats[:6]:
+            lines.append(f"- **{fn}** — {count} rooms, {occ} max occ ({pct}%)")
+
+    # Hotspots — top 5 individual rooms (B3)
+    if mode in ("occupancy", "occupancy_density"):
+        key = "max_occupancy"
+    else:
+        key = "absolute_occupancy"
+
+    hotspots = sorted(
+        [r for r in floor_rooms if (r.get(key) or 0) > 0],
+        key=lambda r: -(r.get(key) or 0),
+    )[:5]
+
+    if hotspots:
+        lines.append(f"\n**Top capacity spaces:**")
+        for i, r in enumerate(hotspots, 1):
+            name = r.get("space_name", "?")
+            val = r.get(key, 0)
+            area = r.get("area_m2")
+            extra = f", {round(area, 1)} m²" if area else ""
+            lines.append(f"{i}. **{name}** — {val} max occ{extra}")
 
     return "\n".join(lines)
 
@@ -443,16 +504,17 @@ def try_render_template(
 
         elif atype == "route_to_elevator" or atype == "route_to_staircase":
             target_type = "elevator" if "elevator" in atype else "staircase"
-            # Find the selected space GUID
-            space_name = action.get("space_name", "")
-            guid = None
-            if effective_fid and space_name:
-                from app.services.intelligence_cache import get_all_intelligence
-                for g, intel in get_all_intelligence().items():
-                    if (intel.get("space_name") == space_name
-                            and intel.get("floor_id") == effective_fid):
-                        guid = g
-                        break
+            # Use direct GUID from action; fall back to name lookup
+            guid = action.get("space_id")
+            if not guid:
+                space_name = action.get("space_name", "")
+                if effective_fid and space_name:
+                    from app.services.intelligence_cache import get_all_intelligence
+                    for g, intel in get_all_intelligence().items():
+                        if (intel.get("space_name") == space_name
+                                and intel.get("floor_id") == effective_fid):
+                            guid = g
+                            break
             if guid:
                 text = render_route(guid, target_type, frontend_space=selected_space)
                 if text:
@@ -479,6 +541,13 @@ def try_render_template(
             text = render_comparison(f1, f2)
             if text:
                 parts.append(text)
+
+        elif atype == "set_heatmap":
+            mode = action.get("mode", "")
+            if effective_fid and mode in ("occupancy", "occupancy_density", "evacuation"):
+                text = render_heatmap_summary(effective_fid, mode)
+                if text:
+                    parts.append(text)
 
     if parts:
         return "\n\n".join(parts)

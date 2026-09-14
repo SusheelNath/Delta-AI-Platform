@@ -1,6 +1,5 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import useStore from '../../store/useStore';
-import { fetchSpaceByGuid } from '../../api/client';
 import { selectSpaceFromPolygon } from '../../utils/polygonOverrides';
 import './RoomDirectory.css';
 
@@ -85,6 +84,8 @@ export default function RoomDirectory() {
 
   // On selection: collapse all groups, expand only the selected item's parent, scroll to it
   // On deselection (null): leave dropdowns as-is
+  // Global store writes (setExpandedGroups, setCurrentExpandedGroup) are deferred via
+  // queueMicrotask so they don't trigger sibling re-renders (XeokitViewer) mid-commit.
   React.useEffect(() => {
     if (!selectedSpaceId || groups.length === 0) return;
     const selectedPoly = filtered.find((p) => p.ifc_guid === selectedSpaceId);
@@ -92,8 +93,10 @@ export default function RoomDirectory() {
     const selectedFn = selectedPoly.primary_function || 'Unassigned';
     const allGroupNames = groups.map(([name]) => name);
     setCollapsedGroups(new Set(allGroupNames.filter((name) => name !== selectedFn)));
-    setExpandedGroups([selectedFn]);
-    setCurrentExpandedGroup(selectedFn);
+    queueMicrotask(() => {
+      setExpandedGroups([selectedFn]);
+      setCurrentExpandedGroup(selectedFn);
+    });
   }, [selectedSpaceId, groups, filtered, setExpandedGroups, setCurrentExpandedGroup]);
 
   React.useEffect(() => {
@@ -152,15 +155,17 @@ export default function RoomDirectory() {
 
     const [fnName, fnPolygons] = match;
 
-    // Expand the group
+    // Expand the group — defer store writes to avoid mid-render cascade
     setCollapsedGroups((prev) => {
       const next = new Set(prev);
       next.delete(fnName);
       const allGroupNames = groups.map(([name]) => name);
-      setExpandedGroups(allGroupNames.filter((name) => !next.has(name)));
+      queueMicrotask(() => {
+        setExpandedGroups(allGroupNames.filter((name) => !next.has(name)));
+        setCurrentExpandedGroup(fnName);
+      });
       return next;
     });
-    setCurrentExpandedGroup(fnName);
 
     // If a specific room index is requested, select it
     if (directorySelectIndex != null && directorySelectIndex >= 0) {
@@ -174,8 +179,8 @@ export default function RoomDirectory() {
     clearDirectoryAction();
   }, [directoryExpandGroup, directorySelectIndex, groups]);
 
-  const handleCardClick = useCallback(async (polygon) => {
-    await selectSpaceFromPolygon(polygon, activeFloorId, fetchSpaceByGuid);
+  const handleCardClick = useCallback((polygon) => {
+    selectSpaceFromPolygon(polygon, activeFloorId);
   }, [activeFloorId]);
 
   const toggleGroup = useCallback((fn) => {

@@ -304,21 +304,87 @@ export default function ChatPanel() {
     setCompletedActions([]);
     setPendingPhase('detecting');
 
-    // Play "One moment, please." if voice is active (blocks until done)
     const voiceOn = voiceActiveRef.current;
-    if (voiceOn) {
-      voiceManagerRef.current?.mute();
-      try {
-        setVoiceState('acknowledging');
-        const ackAudio = await speakText('', 'acknowledging');
-        await playAudio(ackAudio);
-        await new Promise((r) => setTimeout(r, 400));
-      } catch (_) {
-        /* non-critical */
-      } finally {
-        voiceManagerRef.current?.unmute();
+
+    // ── Resolve live context from store ──
+    const liveState = useStore.getState();
+    let effectiveFloor = liveState.activeFloorId;
+    if (!effectiveFloor) {
+      const visFloors = (liveState.floors || []).filter((f) => liveState.floorVisibility[f.id]);
+      if (visFloors.length === 1) effectiveFloor = visFloors[0].id;
+    }
+    const effectiveSpace = liveState.selectedSpaceId;
+    const effectiveSpaceData = liveState.selectedSpace;
+    const effectiveGroup = liveState.currentExpandedGroup;
+
+    // ── Phase 1: Instant intent detection — fire BEFORE voice ──
+    // Fetch intents first so we can classify instant vs data actions.
+    const INSTANT_ACTIONS = new Set([
+      'toggle_drawer', 'clear_selection', 'clear_route', 'clear_all',
+      'clear_highlights', 'clear_search', 'zoom_view', 'set_heatmap',
+      'reset_heatmap', 'reset_filters', 'toggle_mep', 'set_panel_mode',
+      'close_card', 'toggle_profile', 'set_floor_visibility',
+      'enter_compare_mode', 'exit_compare_mode', 'voice_on', 'voice_off',
+      'set_floor', 'set_floor_relative', 'show_all_floors',
+      'toggle_function_filter', 'no_selection_hint', 'new_session',
+      'open_toolkit_section', 'toggle_drawer',
+      'expand_directory_group', 'highlight_spaces', 'highlight_adjacent',
+      'count_highlight', 'set_search', 'fly_to_zone', 'clear_learnings',
+      'load_session',
+      'select_space', 'select_room_in_group',
+      'route_to_elevator', 'route_to_staircase', 'compare_floors',
+    ]);
+
+    let actionsHandled = false;
+    let phase1Content = null;
+    let phase1Actions = [];
+    try {
+      const { actions, confirmations, content } = await fetchIntents(text, effectiveSpace, effectiveFloor, effectiveGroup, effectiveSpaceData);
+      phase1Actions = actions;
+      if (actions.length > 0) {
+        const isInstant = actions.every((a) => INSTANT_ACTIONS.has(a.type));
+
+        if (isInstant) {
+          // ── Fast path: execute immediately, no voice overhead ──
+          for (const action of actions) {
+            await resolveAction(action);
+          }
+          const cleanLabels = confirmations
+            .map((c) => c.replace(/\*\*/g, '').replace(/\.{3,}$/, '').trim());
+          setCompletedActions(cleanLabels);
+
+          // Show confirmation in chat
+          const confirmText = content || cleanLabels.join(' ');
+          const deltaMsg = { role: 'delta', text: confirmText, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+          addMessage(deltaMsg);
+          setPendingPhase('idle');
+          setCompletedActions([]);
+          useStore.getState().saveCurrentSession();
+
+          // Restore voice listening mode (instant path never sets isGenerating,
+          // so the post-generation useEffect won't fire)
+          if (voiceOn) {
+            setInput('');
+            setVoiceState('listening');
+            voiceManagerRef.current?.setMode('listening');
+          }
+          return;
+        }
+
+        // ── Data actions: execute actions now, voice comes after ──
+        for (const action of actions) {
+          await resolveAction(action);
+        }
+        const cleanLabels = confirmations
+          .map((c) => c.replace(/\*\*/g, '').replace(/\.{3,}$/, '').trim());
+        setCompletedActions(cleanLabels);
+        actionsHandled = true;
       }
-      setVoiceState('processing');
+      if (content) {
+        phase1Content = content;
+      }
+    } catch (e) {
+      console.warn('[Chat] Intent detection failed, falling back to stream:', e);
     }
 
     // Create placeholder for streaming
@@ -335,42 +401,27 @@ export default function ChatPanel() {
         (m, i) => i < currentMessages.length - 1,
       );
 
-      // Resolve live context from store — covers user clicks, AI actions, visibility toggles
-      const liveState = useStore.getState();
-      let effectiveFloor = liveState.activeFloorId;
-      if (!effectiveFloor) {
-        // Infer floor from visibility: if exactly one floor is visible, use it
-        const visFloors = (liveState.floors || []).filter((f) => liveState.floorVisibility[f.id]);
-        if (visFloors.length === 1) effectiveFloor = visFloors[0].id;
-      }
-      const effectiveSpace = liveState.selectedSpaceId;
-      const effectiveSpaceData = liveState.selectedSpace;
-      const effectiveGroup = liveState.currentExpandedGroup;
-
-      // Phase 1: Instant intent detection — fire actions before LLM
-      let actionsHandled = false;
-      let phase1Content = null;
-      try {
-        const { actions, confirmations, content } = await fetchIntents(text, effectiveSpace, effectiveFloor, effectiveGroup, effectiveSpaceData);
-        if (actions.length > 0) {
-          for (const action of actions) {
-            await resolveAction(action);
-          }
-
-          const cleanLabels = confirmations
-            .map((c) => c.replace(/\*\*/g, '').replace(/\.{3,}$/, '').trim());
-          setCompletedActions(cleanLabels);
-          actionsHandled = true;
-        }
-        if (content) {
-          phase1Content = content;
-        }
-      } catch (e) {
-        console.warn('[Chat] Intent detection failed, falling back to stream:', e);
-      }
-
       // Phase 1 fully resolved — display content and skip LLM
       if (phase1Content) {
+        // Play "Here is what I found." for data results (skip for instant actions)
+        if (voiceOn) {
+          (async () => {
+            const muteTimer = setTimeout(() => { voiceManagerRef.current?.unmute(); }, 8000);
+            try {
+              voiceManagerRef.current?.mute();
+              setVoiceState('announcing');
+              const annPhrase = selectedSpaceId ? 'announcing_space' : 'announcing';
+              const annAudio = await speakText('', annPhrase);
+              await playAudio(annAudio);
+              await new Promise((r) => setTimeout(r, 700));
+            } catch (_) {
+              /* non-critical */
+            } finally {
+              clearTimeout(muteTimer);
+              voiceManagerRef.current?.unmute();
+            }
+          })();
+        }
         const now2 = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const msgs = useStore.getState().messages;
         const last = msgs[msgs.length - 1];
@@ -394,6 +445,23 @@ export default function ChatPanel() {
       }
 
       // Phase 2: Stream LLM narration (only for queries, evacuate, capacity_plan)
+      // Play "One moment, please." only for LLM-bound requests (not instant actions)
+      if (voiceOn) {
+        voiceManagerRef.current?.mute();
+        const ackTimer = setTimeout(() => { voiceManagerRef.current?.unmute(); }, 8000);
+        try {
+          setVoiceState('acknowledging');
+          const ackAudio = await speakText('', 'acknowledging');
+          await playAudio(ackAudio);
+          await new Promise((r) => setTimeout(r, 400));
+        } catch (_) {
+          /* non-critical */
+        } finally {
+          clearTimeout(ackTimer);
+          voiceManagerRef.current?.unmute();
+        }
+        setVoiceState('processing');
+      }
       setPendingPhase('generating');
 
       // Re-read from store — intent actions may have navigated or selected a space
@@ -417,6 +485,7 @@ export default function ChatPanel() {
       // Play "Here is what I found." concurrently — voice speaks while text streams
       if (voiceOn) {
         (async () => {
+          const annTimer = setTimeout(() => { voiceManagerRef.current?.unmute(); }, 8000);
           try {
             voiceManagerRef.current?.mute();
             setVoiceState('announcing');
@@ -427,6 +496,7 @@ export default function ChatPanel() {
           } catch (_) {
             /* non-critical */
           } finally {
+            clearTimeout(annTimer);
             voiceManagerRef.current?.unmute();
           }
         })();
@@ -707,7 +777,10 @@ export default function ChatPanel() {
                   : 'Ask Delta about any space...'
             }
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value);
+              voiceManagerRef.current?.syncText(e.target.value);
+            }}
             onKeyDown={handleKeyDown}
             disabled={isGenerating}
           />
