@@ -236,7 +236,6 @@ export default function XeokitViewer() {
           color: [1.0, 0.95, 0.88],
           intensity: 0.7,
           space: 'view',
-          castsShadow: true,
         });
         new XDirLight(viewer.scene, {
           id: 'fillLight',
@@ -254,10 +253,9 @@ export default function XeokitViewer() {
         });
       }
 
-      // ── Edge material — subtle architectural definition ──
-      viewer.scene.edgeMaterial.edgeAlpha = 0.2;
-      viewer.scene.edgeMaterial.edgeWidth = 1;
-      viewer.scene.edgeMaterial.edgeColor = [0.3, 0.3, 0.35];
+      // ── Edge material — disabled (edge indices too expensive for 227MB model) ──
+      viewer.scene.edgeMaterial.edgeAlpha = 0;
+      viewer.scene.edgeMaterial.edgeWidth = 0;
 
       // Highlight material (primary selection)
       viewer.scene.highlightMaterial.fill = true;
@@ -374,7 +372,7 @@ export default function XeokitViewer() {
       setLoadProgress(82);
 
       try {
-        const model = xktLoader.load({ id: 'hospital', xkt: xktData, edges: true });
+        const model = xktLoader.load({ id: 'hospital', xkt: xktData, edges: false });
         modelRef.current = model;
 
         model.on('loaded', () => {
@@ -689,7 +687,6 @@ export default function XeokitViewer() {
       if (metaObj && metaObj.type === 'IfcSpace') {
         obj.colorize = getColorForFunction(metaObj.name || '');
         obj.opacity = 0.85;
-        obj.edges = false;
       }
     }
   }
