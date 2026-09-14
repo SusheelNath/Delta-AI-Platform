@@ -64,6 +64,8 @@ export default function ChatPanel() {
   const [pendingPhase, setPendingPhase] = useState('idle'); // 'idle' | 'detecting' | 'generating'
   const [completedActions, setCompletedActions] = useState([]);
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+  const msgScrollState = useRef({ target: 0, current: 0, raf: null });
   const inputRef = useRef(null);
   const abortRef = useRef(null);
 
@@ -104,6 +106,41 @@ export default function ChatPanel() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // ── Lerped smooth scroll for messages ──
+  useEffect(() => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    const s = msgScrollState.current;
+    s.current = el.scrollTop;
+    s.target = el.scrollTop;
+
+    const tick = () => {
+      const diff = s.target - s.current;
+      if (Math.abs(diff) < 0.3) {
+        s.current = s.target;
+        el.scrollTop = s.target;
+        s.raf = null;
+        return;
+      }
+      s.current += diff * 0.18;
+      el.scrollTop = Math.round(s.current);
+      s.raf = requestAnimationFrame(tick);
+    };
+
+    const onWheel = (e) => {
+      e.preventDefault();
+      const max = el.scrollHeight - el.clientHeight;
+      s.target = Math.max(0, Math.min(max, s.target + e.deltaY * 0.8));
+      if (!s.raf) s.raf = requestAnimationFrame(tick);
+    };
+
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+      if (s.raf) cancelAnimationFrame(s.raf);
+    };
+  }, []);
 
   // ── Expose input ref for MetadataCard "Ask Delta" prefill ──
   useEffect(() => {
@@ -599,7 +636,7 @@ export default function ChatPanel() {
       )}
 
       {/* Messages */}
-      <div className="chat-panel__messages">
+      <div className="chat-panel__messages" ref={messagesContainerRef}>
         {messages.map((msg, i) => {
           const prev = messages[i - 1];
           const showDivider = i > 0 && msg.role === 'user' && prev?.role === 'delta';

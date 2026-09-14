@@ -10,9 +10,9 @@
    ══════════════════════════════════════ */
 .floorplan-panel__hero {
   padding: var(--sp-4) var(--sp-4) var(--sp-3);
-  background: #ffffff;
+  background: var(--c-surface);
   border-radius: 12px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-md);
   margin: var(--sp-2) var(--sp-2) 0 var(--sp-2);
   position: relative;
 }
@@ -68,7 +68,7 @@
   border-radius: 8px;
   padding: 4px 0;
   z-index: 20;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-lg);
   animation: dropdown-fade-in 0.12s ease-out;
   max-height: 320px;
   overflow-y: auto;
@@ -122,7 +122,7 @@
 }
 
 .floorplan-panel__hero-dot {
-  color: #c8c3ba;
+  color: var(--c-text-faint);
 }
 
 /* ══════════════════════════════════════
@@ -133,9 +133,9 @@
   align-items: center;
   gap: var(--sp-2);
   padding: var(--sp-2) var(--sp-4);
-  background: #ffffff;
+  background: var(--c-surface);
   border-radius: 12px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-sm);
   margin: var(--sp-1) var(--sp-2) 0 var(--sp-2);
   animation: panel-reveal 0.2s ease-out;
 }
@@ -159,7 +159,7 @@
 }
 
 .floorplan-panel__search-input::placeholder {
-  color: #c0bbb3;
+  color: var(--c-text-faint);
 }
 
 .floorplan-panel__search-input:focus {
@@ -204,9 +204,9 @@
   display: flex;
   align-items: center;
   padding: var(--sp-2) var(--sp-4);
-  background: #ffffff;
+  background: var(--c-surface);
   border-radius: 12px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-sm);
   margin: var(--sp-1) var(--sp-2) 0 var(--sp-2);
   overflow: hidden;
   gap: var(--sp-1);
@@ -343,11 +343,21 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
-  background: #ffffff;
+  background: var(--c-surface);
   border-radius: 12px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-md);
   margin: var(--sp-1) var(--sp-2) var(--sp-2) var(--sp-2);
   animation: panel-reveal 0.25s ease-out 0.1s both;
+}
+
+/* ── Content crossfade on mode switch ── */
+.floorplan-panel__content > * {
+  animation: content-fade-in 0.2s ease both;
+}
+
+@keyframes content-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 /* ── Panel reveal animation ── */
@@ -506,24 +516,24 @@
 .saved-polygon__tooltip {
   position: absolute;
   pointer-events: none;
-  background: rgba(255, 255, 255, 0.97);
-  border: 1px solid #E77133;
-  border-radius: 8px;
+  background: var(--tooltip-bg);
+  border: 1px solid var(--tooltip-border);
+  border-radius: var(--tooltip-radius);
   padding: 6px 10px;
   z-index: 20;
   white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--tooltip-shadow);
 }
 
 .saved-polygon__tooltip-name {
-  font-size: 11px;
+  font-size: var(--text-sm);
   font-weight: 600;
-  color: #E77133;
+  color: var(--c-accent);
 }
 
 .saved-polygon__tooltip-area {
-  font-size: 10px;
-  color: #6b7280;
+  font-size: var(--text-xs);
+  color: var(--c-text-secondary);
   margin-top: 1px;
 }
 

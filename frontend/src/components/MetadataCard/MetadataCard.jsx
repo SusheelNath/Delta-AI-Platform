@@ -106,7 +106,7 @@ export default function MetadataCard() {
       </div>
 
       {/* Expanded full profile */}
-      {expanded && (
+      <div className={`metadata-card__expand-wrapper ${expanded ? '' : 'metadata-card__expand-wrapper--collapsed'}`}>
         <div className="metadata-card__full">
           {/* 1. Identification */}
           <div className="metadata-card__section">
@@ -194,7 +194,7 @@ export default function MetadataCard() {
             </div>
           )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

@@ -5,13 +5,19 @@
   width: 340px;
   max-height: 60vh;
   overflow-y: auto;
-  background: rgba(255, 255, 255, 0.97);
+  background: var(--tooltip-bg);
   backdrop-filter: blur(12px);
-  border: 1px solid #e5e2de;
+  border: 1px solid var(--c-border);
   border-radius: 12px;
-  padding: 14px 16px;
+  padding: var(--sp-3) var(--sp-4);
   z-index: 10;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-lg);
+  animation: metadata-slide-in 0.25s ease-out;
+}
+
+@keyframes metadata-slide-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .metadata-card--expanded {
@@ -159,10 +165,20 @@
 }
 
 /* ── Expanded / Full Profile ── */
+.metadata-card__expand-wrapper {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.25s ease;
+}
+
+.metadata-card__expand-wrapper--collapsed {
+  grid-template-rows: 0fr;
+}
+
 .metadata-card__full {
-  margin-top: 16px;
+  overflow: hidden;
+  padding-top: 16px;
   border-top: 1px solid #e5e2de;
-  padding-top: 12px;
 }
 
 .metadata-card__section {

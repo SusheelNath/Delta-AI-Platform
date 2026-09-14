@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import useStore from '../../store/useStore';
 import { translateFR } from '../../utils/translateFR';
 import { computeRouting } from '../../utils/routing';
@@ -19,6 +19,8 @@ export default function SpaceToolkit() {
   const routingPanelOpen = useStore((s) => s.routingPanelOpen);
   const setRoutingPanelOpen = useStore((s) => s.setRoutingPanelOpen);
   const [routingOpen, setRoutingOpen] = useState(false);
+  const contentRef = useRef(null);
+  const tkScrollState = useRef({ target: 0, current: 0, raf: null });
   const [descOpen, setDescOpen] = useState(false);
   const [metricsOpen, setMetricsOpen] = useState(false);
   const [furnishingsOpen, setFurnishingsOpen] = useState(false);
@@ -41,12 +43,47 @@ export default function SpaceToolkit() {
       .catch(() => setFurnishings([]));
   }, [selectedSpaceId]);
 
+  // Lerped smooth scroll
+  useEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+    const s = tkScrollState.current;
+    s.current = el.scrollTop;
+    s.target = el.scrollTop;
+
+    const tick = () => {
+      const diff = s.target - s.current;
+      if (Math.abs(diff) < 0.3) {
+        s.current = s.target;
+        el.scrollTop = s.target;
+        s.raf = null;
+        return;
+      }
+      s.current += diff * 0.18;
+      el.scrollTop = Math.round(s.current);
+      s.raf = requestAnimationFrame(tick);
+    };
+
+    const onWheel = (e) => {
+      e.preventDefault();
+      const max = el.scrollHeight - el.clientHeight;
+      s.target = Math.max(0, Math.min(max, s.target + e.deltaY * 0.8));
+      if (!s.raf) s.raf = requestAnimationFrame(tick);
+    };
+
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+      if (s.raf) cancelAnimationFrame(s.raf);
+    };
+  }, []);
+
   // Compute routing when dropdown opens
   const routing = useMemo(() => {
-    if (!routingOpen || !selectedSpaceId || !activeFloorId) return null;
+    if (!selectedSpaceId || !activeFloorId) return null;
     if (activeFloorPolygons.length === 0) return null;
     return computeRouting(activeFloorPolygons, selectedSpaceId);
-  }, [routingOpen, selectedSpaceId, activeFloorId, activeFloorPolygons]);
+  }, [selectedSpaceId, activeFloorId, activeFloorPolygons]);
 
   // AI-driven: open routing section when store signals
   useEffect(() => {
@@ -131,7 +168,7 @@ export default function SpaceToolkit() {
       </div>
 
       {/* Content */}
-      <div className="space-toolkit__content">
+      <div className="space-toolkit__content" ref={contentRef}>
         {/* Description dropdown */}
         <button
           className={`space-toolkit__dropdown-toggle ${descOpen ? 'space-toolkit__dropdown-toggle--active' : ''}`}
@@ -140,13 +177,13 @@ export default function SpaceToolkit() {
           <span className={`space-toolkit__dropdown-arrow ${descOpen ? 'space-toolkit__dropdown-arrow--open' : ''}`}>&#9656;</span>
           Description
         </button>
-        {descOpen && (
+        <div className={`space-toolkit__dropdown-body ${descOpen ? '' : 'space-toolkit__dropdown-body--collapsed'}`}>
           <div className="space-toolkit__section space-toolkit__section--nested">
             <Row label="Primary Function" value={primaryFunction} />
             <Row label="Room Number" value={get('room_number')} />
             <Row label="IFC GUID" value={get('ifc_guid')} mono />
           </div>
-        )}
+        </div>
 
         {/* Metrics dropdown */}
         <button
@@ -156,7 +193,7 @@ export default function SpaceToolkit() {
           <span className={`space-toolkit__dropdown-arrow ${metricsOpen ? 'space-toolkit__dropdown-arrow--open' : ''}`}>&#9656;</span>
           Metrics
         </button>
-        {metricsOpen && (
+        <div className={`space-toolkit__dropdown-body ${metricsOpen ? '' : 'space-toolkit__dropdown-body--collapsed'}`}>
           <div className="space-toolkit__section space-toolkit__section--nested">
             <Row label="Area" value={area !== '--' ? `${area} m\u00B2` : '--'} />
             <Row label="Perimeter" value={s.perimeter_cm ? `${(Number(s.perimeter_cm) / 100).toFixed(1)} m` : '--'} />
@@ -172,7 +209,7 @@ export default function SpaceToolkit() {
               <Row label="Absolute Occupancy" value={String(s.absolute_occupancy)} />
             )}
           </div>
-        )}
+        </div>
 
         {/* Furnishings dropdown */}
         <button
@@ -185,7 +222,7 @@ export default function SpaceToolkit() {
             <span className="space-toolkit__furnishing-count">{furnishings.length}</span>
           )}
         </button>
-        {furnishingsOpen && (
+        <div className={`space-toolkit__dropdown-body ${furnishingsOpen ? '' : 'space-toolkit__dropdown-body--collapsed'}`}>
           <div className="space-toolkit__section space-toolkit__section--nested">
             {furnishings.length === 0 ? (
               <div className="space-toolkit__empty-msg">No furnishings assigned</div>
@@ -202,7 +239,7 @@ export default function SpaceToolkit() {
               ))
             )}
           </div>
-        )}
+        </div>
 
         {/* Routing dropdown */}
         <button
@@ -212,7 +249,7 @@ export default function SpaceToolkit() {
           <span className={`space-toolkit__dropdown-arrow ${routingOpen ? 'space-toolkit__dropdown-arrow--open' : ''}`}>&#9656;</span>
           Routing
         </button>
-        {routingOpen && (
+        <div className={`space-toolkit__dropdown-body ${routingOpen ? '' : 'space-toolkit__dropdown-body--collapsed'}`}>
           <div className="space-toolkit__route-cards">
             {routing?.toElevator ? (
               <button
@@ -283,7 +320,7 @@ export default function SpaceToolkit() {
               </div>
             )}
           </div>
-        )}
+        </div>
 
         {/* Components Library — hidden (kept for future use) */}
       </div>

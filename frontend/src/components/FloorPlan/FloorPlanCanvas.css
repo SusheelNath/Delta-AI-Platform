@@ -130,13 +130,13 @@
   position: absolute;
   pointer-events: none;
   z-index: 10;
-  background: rgba(255, 255, 255, 0.96);
-  border: 1px solid #e5e2de;
-  border-radius: 12px;
+  background: var(--tooltip-bg);
+  border: 1px solid var(--tooltip-border);
+  border-radius: var(--tooltip-radius);
   padding: 10px 12px;
   min-width: 180px;
   max-width: 240px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--tooltip-shadow);
 }
 
 .fpc__tooltip-header {

@@ -264,7 +264,16 @@ export default function FloorPlanImage({ floorIdOverride }) {
   if (!activeFloorId) {
     return (
       <div className="floor-plan-image__empty">
-        <p>Select a floor to view plan</p>
+        <svg width="56" height="56" viewBox="0 0 56 56" fill="none" opacity="0.5">
+          <rect x="8" y="12" width="40" height="32" rx="2" stroke="#c0bbb3" strokeWidth="1.2" />
+          <line x1="8" y1="28" x2="48" y2="28" stroke="#c0bbb3" strokeWidth="0.8" strokeDasharray="3 2" />
+          <line x1="28" y1="28" x2="28" y2="44" stroke="#c0bbb3" strokeWidth="0.8" strokeDasharray="3 2" />
+          <line x1="20" y1="12" x2="20" y2="28" stroke="#c0bbb3" strokeWidth="0.8" strokeDasharray="3 2" />
+          <line x1="38" y1="12" x2="38" y2="28" stroke="#c0bbb3" strokeWidth="0.8" strokeDasharray="3 2" />
+          <path d="M28 20l5 8h-10z" fill="none" stroke="#E77133" strokeWidth="1" strokeLinejoin="round" opacity="0.6" />
+        </svg>
+        <p style={{ fontWeight: 600, color: '#6b7280', fontSize: '14px' }}>Select a floor</p>
+        <p style={{ color: '#9ca3af', fontSize: '11.5px' }}>Choose a floor from the dropdown to view plan</p>
       </div>
     );
   }

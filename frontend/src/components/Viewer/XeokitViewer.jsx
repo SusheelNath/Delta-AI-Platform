@@ -95,6 +95,9 @@ export default function XeokitViewer() {
   const [loadStatus, setLoadStatus] = useState('Initialising viewer...');
   const [polygonTooltip, setPolygonTooltip] = useState(null); // { name, area, x, y }
   const [transitionLabel, setTransitionLabel] = useState('');
+  const [showTransition, setShowTransition] = useState(false);
+  const [transitionFading, setTransitionFading] = useState(false);
+  const showTransitionRef = useRef(false);
   const [saving, setSaving] = useState(false);
   const [saveResult, setSaveResult] = useState(null); // { ok, msg }
 
@@ -127,6 +130,23 @@ export default function XeokitViewer() {
       setTimeout(() => setSaveResult(null), 4000);
     }
   }, []);
+
+  // Fade-out transition overlay over 300ms before unmounting
+  useEffect(() => {
+    if (floorTransitioning) {
+      showTransitionRef.current = true;
+      setShowTransition(true);
+      setTransitionFading(false);
+    } else if (showTransitionRef.current) {
+      setTransitionFading(true);
+      const timer = setTimeout(() => {
+        showTransitionRef.current = false;
+        setShowTransition(false);
+        setTransitionFading(false);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [floorTransitioning]);
 
   const storeyObjectsRef = useRef({});
   const mepIdsRef = useRef(new Set());
@@ -1312,6 +1332,31 @@ export default function XeokitViewer() {
   const meshStateRef = useRef(new Map()); // guid → 'start'|'target'|'path'|'hover'|'default'
   const breatheRafRef = useRef(null);
   const breatheMeshRef = useRef(null);
+  const alphaLerpsRef = useRef(new Map());
+
+  function lerpMeshAlpha(guid, mesh, target, duration = 120) {
+    const prev = alphaLerpsRef.current.get(guid);
+    if (prev) cancelAnimationFrame(prev.raf);
+    const start = mesh.material.alpha;
+    if (Math.abs(start - target) < 0.01) {
+      mesh.material.alpha = target;
+      alphaLerpsRef.current.delete(guid);
+      return;
+    }
+    const t0 = performance.now();
+    const tick = (now) => {
+      const p = Math.min(1, (now - t0) / duration);
+      const e = p * (2 - p);
+      try { mesh.material.alpha = start + (target - start) * e; } catch {}
+      if (p < 1) {
+        const entry = alphaLerpsRef.current.get(guid);
+        if (entry) entry.raf = requestAnimationFrame(tick);
+      } else {
+        alphaLerpsRef.current.delete(guid);
+      }
+    };
+    alphaLerpsRef.current.set(guid, { raf: requestAnimationFrame(tick) });
+  }
 
   useEffect(() => {
     const viewer = viewerRef.current;
@@ -1382,27 +1427,27 @@ export default function XeokitViewer() {
 
       try {
         if (newState === 'start') {
-          mesh.material.alpha = 0.65;
+          lerpMeshAlpha(guid, mesh, 0.65);
           mesh.material.diffuse = [0.95, 0.30, 0.10];
           mesh.material.emissive = [0.70, 0.20, 0.05];
         } else if (newState === 'target') {
-          mesh.material.alpha = 0.65;
+          lerpMeshAlpha(guid, mesh, 0.65);
           mesh.material.diffuse = [0.10, 0.90, 0.60];
           mesh.material.emissive = [0.05, 0.50, 0.30];
         } else if (newState === 'path') {
-          mesh.material.alpha = 0.45;
+          lerpMeshAlpha(guid, mesh, 0.45);
           mesh.material.diffuse = [0.25, 0.58, 1.0];
           mesh.material.emissive = [0.08, 0.22, 0.55];
         } else if (newState === 'hover') {
-          mesh.material.alpha = 0.65;
+          lerpMeshAlpha(guid, mesh, 0.65);
           mesh.material.diffuse = [1.0, 0.55, 0.2];
           mesh.material.emissive = [0.7, 0.3, 0.05];
         } else if (newState === 'group') {
-          mesh.material.alpha = 0.50;
+          lerpMeshAlpha(guid, mesh, 0.50);
           mesh.material.diffuse = [1.0, 0.55, 0.2];
           mesh.material.emissive = [0.2, 0.075, 0.0];
         } else {
-          mesh.material.alpha = 0.01;
+          lerpMeshAlpha(guid, mesh, 0.01);
           mesh.material.diffuse = [0, 0, 0];
           mesh.material.emissive = [0, 0, 0];
         }
@@ -1415,6 +1460,8 @@ export default function XeokitViewer() {
     if (selectedSpaceId) {
       const selMesh = savedMeshesRef.current.get(selectedSpaceId);
       if (selMesh) {
+        const prevLerp = alphaLerpsRef.current.get(selectedSpaceId);
+        if (prevLerp) { cancelAnimationFrame(prevLerp.raf); alphaLerpsRef.current.delete(selectedSpaceId); }
         breatheMeshRef.current = selMesh;
         const startTime = performance.now();
         const tick = (now) => {
@@ -1627,8 +1674,8 @@ export default function XeokitViewer() {
         </div>
       )}
 
-      {floorTransitioning && !loading && (
-        <div className="xeokit-viewer__transition-overlay">
+      {showTransition && !loading && (
+        <div className={`xeokit-viewer__transition-overlay ${transitionFading ? 'xeokit-viewer__transition-overlay--fading' : ''}`}>
           <DeltaSpinner size={64} label={transitionLabel} />
         </div>
       )}

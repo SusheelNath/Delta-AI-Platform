@@ -65,7 +65,7 @@
 
 .floor-selector__btn--dimmed {
   background: #fafaf8;
-  color: #c8c3ba;
+  color: var(--c-text-faint);
   border-color: #f0ede8;
 }
 

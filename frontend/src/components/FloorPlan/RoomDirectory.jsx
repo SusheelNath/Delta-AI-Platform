@@ -67,13 +67,19 @@ export default function RoomDirectory() {
     return new Set(allGroupNames);
   });
   const initializedFloorRef = useRef(activeFloorId);
+  const [fading, setFading] = useState(false);
 
-  // Reset when floor changes
+  // Reset when floor changes — with fade transition
   React.useEffect(() => {
     if (groups.length > 0 && initializedFloorRef.current !== activeFloorId) {
-      setCollapsedGroups(new Set(groups.map(([fn]) => fn)));
-      setExpandedGroups([]);
-      initializedFloorRef.current = activeFloorId;
+      setFading(true);
+      const timer = setTimeout(() => {
+        setCollapsedGroups(new Set(groups.map(([fn]) => fn)));
+        setExpandedGroups([]);
+        initializedFloorRef.current = activeFloorId;
+        setFading(false);
+      }, 150);
+      return () => clearTimeout(timer);
     }
   }, [groups, activeFloorId, setExpandedGroups]);
 
@@ -220,7 +226,7 @@ export default function RoomDirectory() {
   }
 
   return (
-    <div className="room-directory" ref={directoryRef}>
+    <div className={`room-directory ${fading ? 'room-directory--fading' : 'room-directory--visible'}`} ref={directoryRef}>
       {groups.map(([fn, fnPolygons], groupIdx) => {
         const collapsed = collapsedGroups.has(fn);
         const totalOcc = fnPolygons.reduce((s, p) => s + (p.max_occupancy || 0), 0);
