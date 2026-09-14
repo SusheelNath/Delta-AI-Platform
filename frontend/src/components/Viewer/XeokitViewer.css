@@ -119,10 +119,10 @@
 }
 
 .xeokit-viewer__transition-label {
-  font-size: 13px;
+  font-size: var(--text-base);
   font-weight: 500;
   color: #374151;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
 }
 
 .xeokit-viewer__error-icon {
@@ -132,14 +132,15 @@
 }
 
 .xeokit-viewer__error-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1a1a2e;
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--c-text);
+  letter-spacing: -0.3px;
 }
 
 .xeokit-viewer__error-sub {
-  color: #6b7280;
-  font-size: 13px;
+  color: var(--c-text-secondary);
+  font-size: var(--text-base);
   max-width: 320px;
   text-align: center;
   line-height: 1.5;

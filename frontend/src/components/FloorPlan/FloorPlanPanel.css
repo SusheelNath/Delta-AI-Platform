@@ -9,11 +9,11 @@
    Hero floor selector
    ══════════════════════════════════════ */
 .floorplan-panel__hero {
-  padding: 16px 16px 12px;
+  padding: var(--sp-4) var(--sp-4) var(--sp-3);
   background: #ffffff;
   border-radius: 12px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
-  margin: 8px 8px 0 8px;
+  margin: var(--sp-2) var(--sp-2) 0 var(--sp-2);
   position: relative;
 }
 
@@ -22,19 +22,20 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  height: 40px;
-  padding: 0 14px;
+  height: 36px;
+  padding: 0 var(--sp-3);
   border: 1px solid #e0ddd8;
-  border-radius: 10px;
+  border-radius: var(--sp-2);
   background: #ffffff;
-  color: #1a1a2e;
-  font-size: 14px;
+  color: var(--c-text);
+  font-size: var(--text-md);
   font-weight: 600;
   cursor: pointer;
   outline: none;
   transition: all 0.15s ease;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
   text-align: left;
+  letter-spacing: -0.2px;
 }
 
 .floorplan-panel__hero-select:hover {
@@ -81,12 +82,12 @@
 .floorplan-panel__dropdown-item {
   display: block;
   width: 100%;
-  padding: 10px 14px;
+  padding: var(--sp-2) var(--sp-3);
   background: none;
   border: none;
   border-left: 2px solid transparent;
   color: #374151;
-  font-size: 13px;
+  font-size: var(--text-base);
   font-weight: 500;
   text-align: left;
   cursor: pointer;
@@ -113,10 +114,11 @@
 .floorplan-panel__hero-stats {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 8px;
-  font-size: 11px;
-  color: #9ca3af;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+  font-size: var(--text-sm);
+  color: var(--c-text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .floorplan-panel__hero-dot {
@@ -129,12 +131,13 @@
 .floorplan-panel__search {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-4);
   background: #ffffff;
   border-radius: 12px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
-  margin: 6px 8px 0 8px;
+  margin: var(--sp-1) var(--sp-2) 0 var(--sp-2);
+  animation: panel-reveal 0.2s ease-out;
 }
 
 .floorplan-panel__search-icon {
@@ -145,12 +148,12 @@
 .floorplan-panel__search-input {
   flex: 1;
   height: 32px;
-  padding: 0 10px;
-  border: 1px solid #e5e2de;
-  border-radius: 8px;
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--c-border);
+  border-radius: var(--sp-2);
   background: #faf9f7;
-  color: #1a1a2e;
-  font-size: 12px;
+  color: var(--c-text);
+  font-size: var(--text-sm);
   outline: none;
   transition: all 0.15s ease;
 }
@@ -185,34 +188,45 @@
   color: #1a1a2e;
 }
 
+.floorplan-panel__search-count {
+  flex-shrink: 0;
+  font-size: var(--text-xs);
+  color: var(--c-text-muted);
+  letter-spacing: 0.2px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 /* ══════════════════════════════════════
    Mode bar (segmented toggle)
    ══════════════════════════════════════ */
 .floorplan-panel__mode-bar {
   display: flex;
   align-items: center;
-  padding: 6px 16px 10px;
+  padding: var(--sp-2) var(--sp-4);
   background: #ffffff;
   border-radius: 12px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
-  margin: 6px 8px 0 8px;
+  margin: var(--sp-1) var(--sp-2) 0 var(--sp-2);
   overflow: hidden;
-  gap: 4px;
+  gap: var(--sp-1);
+  animation: panel-reveal 0.2s ease-out 0.05s both;
 }
 
 .floorplan-panel__seg-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: var(--sp-1);
   flex: 1;
   height: 32px;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--sp-2);
   background: transparent;
-  color: #9ca3af;
-  font-size: 11.5px;
-  font-weight: 500;
+  color: var(--c-text-muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: 0.2px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
@@ -332,7 +346,14 @@
   background: #ffffff;
   border-radius: 12px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
-  margin: 6px 8px 8px 8px;
+  margin: var(--sp-1) var(--sp-2) var(--sp-2) var(--sp-2);
+  animation: panel-reveal 0.25s ease-out 0.1s both;
+}
+
+/* ── Panel reveal animation ── */
+@keyframes panel-reveal {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ══════════════════════════════════════
@@ -363,9 +384,18 @@
 .floor-plan-image__img {
   display: block;
   pointer-events: auto;
-  transition: filter 0.2s ease;
+  transition: filter 0.2s ease, opacity 0.35s ease;
   image-rendering: high-quality;
   -ms-interpolation-mode: bicubic;
+}
+
+.floor-plan-image__img--fade-in {
+  animation: fpi-fade-in 0.35s ease both;
+}
+
+@keyframes fpi-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 /* ── Labels (search matches) ── */

@@ -4,6 +4,7 @@ import { fetchSpaceByGuid, searchSpaces, fullSavePolygons } from '../../api/clie
 import { getColorForFunction, getCategoryIndex } from '../../utils/colorScheme';
 import { unprojectPolygon, earClipTriangulate, computePolygonMetrics } from '../../utils/unprojectPolygon';
 import { selectSpaceFromPolygon } from '../../utils/polygonOverrides';
+import DeltaSpinner from '../shared/DeltaSpinner';
 import './XeokitViewer.css';
 
 let Viewer, XKTLoaderPlugin, NavCubePlugin, StoreyViewsPlugin, SectionPlanesPlugin;
@@ -1622,20 +1623,13 @@ export default function XeokitViewer() {
 
       {loading && (
         <div className="xeokit-viewer__overlay">
-          <div className="xeokit-viewer__spinner" />
-          <p>{loadStatus}</p>
+          <DeltaSpinner size={72} label={loadStatus} />
         </div>
       )}
 
       {floorTransitioning && !loading && (
         <div className="xeokit-viewer__transition-overlay">
-          <div className="xeokit-viewer__transition-ring">
-            <svg viewBox="0 0 50 50">
-              <circle className="xeokit-viewer__transition-track" cx="25" cy="25" r="22" />
-              <circle className="xeokit-viewer__transition-arc" cx="25" cy="25" r="22" />
-            </svg>
-          </div>
-          <p className="xeokit-viewer__transition-label">{transitionLabel}</p>
+          <DeltaSpinner size={64} label={transitionLabel} />
         </div>
       )}
 

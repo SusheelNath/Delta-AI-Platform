@@ -10,13 +10,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 48px;
-  min-height: 48px;
-  padding: 0 16px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0 var(--sp-4);
   background: #ffffff;
   border-radius: 12px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
-  margin: 8px 8px 0 8px;
+  margin: var(--sp-2) var(--sp-2) 0 var(--sp-2);
 }
 
 .chat-panel__header-left {
@@ -26,10 +26,10 @@
 }
 
 .chat-panel__title {
-  font-size: 15px;
+  font-size: var(--text-md);
   font-weight: 700;
-  color: #1a1a2e;
-  letter-spacing: 0.3px;
+  color: var(--c-text);
+  letter-spacing: -0.2px;
 }
 
 .chat-panel__status-dot {
@@ -604,17 +604,17 @@
 }
 
 .chat-panel__bubble-text {
-  font-size: 13px;
+  font-size: var(--text-base);
   line-height: 1.55;
-  color: #1a1a2e;
+  color: var(--c-text);
   word-wrap: break-word;
 }
 
 /* ── Markdown rendering in Delta bubbles ── */
 .chat-panel__markdown {
-  font-size: 13px;
+  font-size: var(--text-base);
   line-height: 1.55;
-  color: #1a1a2e;
+  color: var(--c-text);
 }
 
 .chat-panel__markdown p {
@@ -755,7 +755,7 @@
   background: #ffffff;
   border-radius: 12px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
-  margin: 0 8px 8px 8px;
+  margin: 0 var(--sp-2) var(--sp-2) var(--sp-2);
 }
 
 /* ── Input row ── */
@@ -768,13 +768,13 @@
 
 .chat-panel__input {
   flex: 1;
-  height: 44px;
-  padding: 0 18px;
+  height: 40px;
+  padding: 0 var(--sp-4);
   background: #faf9f7;
-  border: 1px solid #e5e2de;
-  border-radius: 22px;
-  color: #1a1a2e;
-  font-size: 13px;
+  border: 1px solid var(--c-border);
+  border-radius: 20px;
+  color: var(--c-text);
+  font-size: var(--text-base);
   outline: none;
   transition: all 0.2s ease;
 }

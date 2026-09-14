@@ -1,3 +1,38 @@
+/* ══════════════════════════════════════
+   Design tokens
+   ══════════════════════════════════════ */
+:root {
+  /* Typography */
+  --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+
+  /* Type scale */
+  --text-xs: 10px;
+  --text-sm: 11.5px;
+  --text-base: 13px;
+  --text-md: 14px;
+  --text-lg: 16px;
+  --text-xl: 20px;
+
+  /* Spacing (4px grid) */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+
+  /* Accent */
+  --c-accent: #E77133;
+  --c-accent-hover: #d46425;
+  --c-text: #1a1a2e;
+  --c-text-secondary: #6b7280;
+  --c-text-muted: #9ca3af;
+  --c-border: #e5e2de;
+  --c-surface: #ffffff;
+  --c-bg: #f8f7f4;
+}
+
 /* CSS Reset */
 *, *::before, *::after {
   margin: 0;
@@ -12,10 +47,10 @@ html, body, #root {
 }
 
 body {
-  background: #f8f7f4;
-  color: #1a1a2e;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  font-size: 14px;
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-family: var(--font-ui);
+  font-size: var(--text-base);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -26,7 +61,7 @@ button {
   cursor: pointer;
 }
 
-input, textarea {
+input, textarea, select {
   font-family: inherit;
 }
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback, useState } from 'react';
+import React, { useEffect, useRef, useCallback, useState, useMemo } from 'react';
 import useStore from '../../store/useStore';
 import { fetchFloors, fetchFloorPolygons, syncPolygons, savePolygon } from '../../api/client';
 import { computePolygonMetrics } from '../../utils/unprojectPolygon';
@@ -177,8 +177,19 @@ export default function FloorPlanPanel() {
   }, [setSearchQuery]);
 
   const activeFloor = floors.find((f) => f.id === activeFloorId);
-  const floorPolygons = useStore.getState().floorPolygons;
-  const polyCount = activeFloorId ? (floorPolygons[activeFloorId] || []).length : 0;
+  const activeFloorPolygons = useStore((s) => s.activeFloorId ? (s.floorPolygons[s.activeFloorId] || []) : []);
+  const polyCount = activeFloorPolygons.length;
+
+  // Search match count
+  const searchMatchCount = useMemo(() => {
+    if (!searchQuery || !searchQuery.trim()) return null;
+    const q = searchQuery.toLowerCase().trim();
+    return activeFloorPolygons.filter((p) => {
+      const name = (p.space_name || '').toLowerCase();
+      const fn = (p.primary_function || '').toLowerCase();
+      return name.includes(q) || fn.includes(q);
+    }).length;
+  }, [searchQuery, activeFloorPolygons]);
 
   return (
     <div ref={panelRef} className="floorplan-panel">
@@ -207,6 +218,11 @@ export default function FloorPlanPanel() {
             defaultValue={searchQuery}
             onChange={handleSearchChange}
           />
+          {searchMatchCount !== null && (
+            <span className="floorplan-panel__search-count">
+              {searchMatchCount}/{polyCount}
+            </span>
+          )}
           {searchQuery && (
             <button className="floorplan-panel__search-clear" onClick={handleSearchClear}>
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -335,7 +351,7 @@ function FloorDropdown({ floors, activeFloorId, activeFloor, polyCount, onSelect
         <div className="floorplan-panel__hero-stats">
           <span>{polyCount} spaces</span>
           <span className="floorplan-panel__hero-dot">&middot;</span>
-          <span>{activeFloor.total_area_m2 != null ? `${Number(activeFloor.total_area_m2).toLocaleString(undefined, { maximumFractionDigits: 0 })} m\u00B2` : '--'}</span>
+          <span>{activeFloor.total_area_m2 != null ? `${Math.round(Number(activeFloor.total_area_m2))} m\u00B2` : '--'}</span>
         </div>
       )}
     </div>

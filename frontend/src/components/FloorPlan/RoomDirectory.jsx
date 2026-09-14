@@ -195,11 +195,18 @@ export default function RoomDirectory() {
   if (!activeFloorId && !isSearching) {
     return (
       <div className="room-directory__empty">
-        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.2">
-          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" strokeLinecap="round" strokeLinejoin="round"/>
-          <polyline points="9 22 9 12 15 12 15 22" strokeLinecap="round" strokeLinejoin="round"/>
+        <svg className="room-directory__empty-icon" width="48" height="48" viewBox="0 0 48 48" fill="none">
+          {/* Floor plan outline */}
+          <rect x="6" y="10" width="36" height="28" rx="2" stroke="#d0cbc3" strokeWidth="1.2" />
+          <line x1="6" y1="24" x2="42" y2="24" stroke="#d0cbc3" strokeWidth="1" strokeDasharray="3 2" />
+          <line x1="24" y1="24" x2="24" y2="38" stroke="#d0cbc3" strokeWidth="1" strokeDasharray="3 2" />
+          <line x1="18" y1="10" x2="18" y2="24" stroke="#d0cbc3" strokeWidth="1" strokeDasharray="3 2" />
+          <line x1="32" y1="10" x2="32" y2="24" stroke="#d0cbc3" strokeWidth="1" strokeDasharray="3 2" />
+          {/* Delta accent */}
+          <path d="M24 16l4 7h-8z" fill="none" stroke="#E77133" strokeWidth="1.2" strokeLinejoin="round" opacity="0.5" />
         </svg>
-        <p>Select a floor to browse rooms</p>
+        <p className="room-directory__empty-title">Select a floor</p>
+        <p className="room-directory__empty-sub">Choose a floor from the dropdown above to explore rooms and spaces</p>
       </div>
     );
   }
@@ -217,6 +224,8 @@ export default function RoomDirectory() {
       {groups.map(([fn, fnPolygons], groupIdx) => {
         const collapsed = collapsedGroups.has(fn);
         const totalOcc = fnPolygons.reduce((s, p) => s + (p.max_occupancy || 0), 0);
+        const totalArea = fnPolygons.reduce((s, p) => s + (p.area_m2 || 0), 0);
+        const areaLabel = totalArea >= 10 ? String(Math.round(totalArea)) : totalArea.toFixed(1);
         const groupNumber = groupIdx + 1;
 
         return (
@@ -237,8 +246,12 @@ export default function RoomDirectory() {
                   <span className="room-directory__col-value">{fnPolygons.length}</span>
                   <span className="room-directory__col-label">{fnPolygons.length === 1 ? 'unit' : 'units'}</span>
                 </span>
+                <span className="room-directory__group-col room-directory__group-col--area">
+                  <span className="room-directory__col-value">{areaLabel}</span>
+                  <span className="room-directory__col-label">m²</span>
+                </span>
                 <span className="room-directory__group-col room-directory__group-col--occ">
-                  <span className="room-directory__col-value">{totalOcc > 0 ? totalOcc.toLocaleString() : '—'}</span>
+                  <span className="room-directory__col-value">{totalOcc > 0 ? totalOcc : '—'}</span>
                   <span className="room-directory__col-label">occ</span>
                 </span>
               </span>
@@ -265,8 +278,7 @@ export default function RoomDirectory() {
 }
 
 function PolygonCard({ polygon, roomIndex, isSelected, onClick, selectedRef }) {
-  const area = polygon.area_m2 != null ? `${Number(polygon.area_m2).toFixed(1)} m\u00b2` : null;
-  const occ = polygon.max_occupancy > 0 ? polygon.max_occupancy : null;
+  const area = polygon.area_m2 != null ? `${Number(polygon.area_m2).toFixed(1)}` : null;
   const setHoveredGuid = useStore((s) => s.setHoveredPolygonGuid);
 
   return (
@@ -280,12 +292,8 @@ function PolygonCard({ polygon, roomIndex, isSelected, onClick, selectedRef }) {
       <span className="room-card__index">{roomIndex}</span>
       <div className="room-card__info">
         <span className="room-card__name">{polygon.space_name || polygon.ifc_guid}</span>
-        <span className="room-card__sub">
-          {area && <span>{area}</span>}
-          {area && occ ? <span className="room-card__sub-dot">&middot;</span> : null}
-          {occ && <span>{occ} occ</span>}
-        </span>
       </div>
+      {area && <span className="room-card__area">{area} m&sup2;</span>}
     </div>
   );
 }

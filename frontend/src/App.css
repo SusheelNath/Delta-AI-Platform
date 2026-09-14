@@ -11,9 +11,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 52px;
-  min-height: 52px;
-  padding: 0 16px;
+  height: 48px;
+  min-height: 48px;
+  padding: 0 var(--sp-4);
   background: #ffffff;
   border-bottom: none;
   background-image: linear-gradient(to right, transparent, #E77133 20%, #E77133 80%, transparent);
@@ -27,20 +27,20 @@
 .app-header__brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--sp-2);
 }
 
 .app-header__icon {
-  font-size: 22px;
+  font-size: 20px;
   color: #E77133;
   filter: none;
 }
 
 .app-header__title {
-  font-size: 20px;
-  font-weight: 600;
-  color: #1a1a2e;
-  letter-spacing: 0.5px;
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--c-text);
+  letter-spacing: -0.3px;
 }
 
 .app-header__meta {
@@ -50,8 +50,9 @@
 }
 
 .app-header__version {
-  font-size: 11px;
-  color: #9ca3af;
+  font-size: var(--text-xs);
+  color: var(--c-text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 

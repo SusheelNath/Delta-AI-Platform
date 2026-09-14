@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import useStore from '../../store/useStore';
 import { getCategoryIndex } from '../../utils/colorScheme';
 import SavedPolygonsOverlay from './SavedPolygonsOverlay';
+import DeltaSpinner from '../shared/DeltaSpinner';
 
 const ZOOM_FACTOR = 0.85;
 const MIN_SCALE = 0.01;
@@ -25,10 +26,24 @@ export default function FloorPlanImage({ floorIdOverride }) {
   const panStart = useRef({ x: 0, y: 0 });
   const didPan = useRef(false);
   const rafId = useRef(0);
+  const zoomTarget = useRef(null); // { scale, tx, ty }
+  const zoomRaf = useRef(null);
 
   const snapshot = activeFloorId ? floorSnapshots[activeFloorId] : null;
   const imageUrl = snapshot?.imageUrl || null;
   const spacePositionsRaw = snapshot?.spacePositions || null;
+
+  // Crossfade: keep previous image visible while new one loads
+  const prevImageRef = useRef(null);
+  const [crossfading, setCrossfading] = useState(false);
+  useEffect(() => {
+    if (imageUrl && prevImageRef.current && prevImageRef.current !== imageUrl) {
+      setCrossfading(true);
+      const timer = setTimeout(() => setCrossfading(false), 350);
+      return () => clearTimeout(timer);
+    }
+    if (imageUrl) prevImageRef.current = imageUrl;
+  }, [imageUrl]);
 
   // Pre-decode image to get dimensions, then fit to container
   useEffect(() => {
@@ -75,35 +90,78 @@ export default function FloorPlanImage({ floorIdOverride }) {
     );
   }, [searchQuery, spacePositions]);
 
-  // Pan/zoom handlers
+  // Pan/zoom handlers — lerped smooth zoom
+  const LERP_FACTOR = 0.18;
+
+  const startZoomLerp = useCallback(() => {
+    if (zoomRaf.current) return;
+    const tick = () => {
+      const target = zoomTarget.current;
+      if (!target) { zoomRaf.current = null; return; }
+      setTransform((prev) => {
+        const ds = target.scale - prev.scale;
+        const dx = target.tx - prev.tx;
+        const dy = target.ty - prev.ty;
+        if (Math.abs(ds) < 0.0005 && Math.abs(dx) < 0.3 && Math.abs(dy) < 0.3) {
+          zoomTarget.current = null;
+          return target; // snap to final
+        }
+        const next = {
+          scale: prev.scale + ds * LERP_FACTOR,
+          tx: prev.tx + dx * LERP_FACTOR,
+          ty: prev.ty + dy * LERP_FACTOR,
+        };
+        if (transformElRef.current) {
+          transformElRef.current.style.transform = `translate(${next.tx}px, ${next.ty}px) scale(${next.scale})`;
+        }
+        return next;
+      });
+      if (zoomTarget.current) {
+        zoomRaf.current = requestAnimationFrame(tick);
+      } else {
+        zoomRaf.current = null;
+      }
+    };
+    zoomRaf.current = requestAnimationFrame(tick);
+  }, []);
+
   const handleWheel = useCallback((e) => {
     e.preventDefault();
     const zoomIn = e.deltaY < 0;
     const factor = zoomIn ? 1 / ZOOM_FACTOR : ZOOM_FACTOR;
+
+    // Compute target from current target (for chaining rapid scrolls) or current transform
+    const base = zoomTarget.current || { scale: 0, tx: 0, ty: 0 };
     setTransform((prev) => {
-      const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, prev.scale * factor));
-      if (newScale === prev.scale) return prev;
+      const from = zoomTarget.current || prev;
+      const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, from.scale * factor));
+      if (newScale === from.scale) return prev;
 
       const container = containerRef.current;
-      if (!container) return { ...prev, scale: newScale };
+      if (!container) { zoomTarget.current = { ...from, scale: newScale }; startZoomLerp(); return prev; }
       const rect = container.getBoundingClientRect();
       const cx = e.clientX - rect.left;
       const cy = e.clientY - rect.top;
 
-      const ratio = newScale / prev.scale;
-      return {
+      const ratio = newScale / from.scale;
+      zoomTarget.current = {
         scale: newScale,
-        tx: cx - (cx - prev.tx) * ratio,
-        ty: cy - (cy - prev.ty) * ratio,
+        tx: cx - (cx - from.tx) * ratio,
+        ty: cy - (cy - from.ty) * ratio,
       };
+      startZoomLerp();
+      return prev; // don't jump — lerp will animate
     });
-  }, []);
+  }, [startZoomLerp]);
 
   const handleMouseDown = useCallback((e) => {
     if (e.button === 0 || e.button === 1) {
       isPanning.current = true;
       didPan.current = false;
       panStart.current = { x: e.clientX, y: e.clientY };
+      // Cancel any in-flight zoom lerp so pan doesn't fight it
+      zoomTarget.current = null;
+      if (zoomRaf.current) { cancelAnimationFrame(zoomRaf.current); zoomRaf.current = null; }
     }
   }, []);
 
@@ -141,7 +199,8 @@ export default function FloorPlanImage({ floorIdOverride }) {
   const handleDoubleClick = useCallback(() => {
     const container = containerRef.current;
     if (!container || !imgDims) {
-      setTransform({ scale: 1, tx: 0, ty: 0 });
+      zoomTarget.current = { scale: 1, tx: 0, ty: 0 };
+      startZoomLerp();
       return;
     }
     const cw = container.clientWidth;
@@ -149,8 +208,9 @@ export default function FloorPlanImage({ floorIdOverride }) {
     const fitScale = Math.min(cw / imgDims.w, ch / imgDims.h, 1);
     const scaledW = imgDims.w * fitScale;
     const scaledH = imgDims.h * fitScale;
-    setTransform({ scale: fitScale, tx: (cw - scaledW) / 2, ty: (ch - scaledH) / 2 });
-  }, [imgDims]);
+    zoomTarget.current = { scale: fitScale, tx: (cw - scaledW) / 2, ty: (ch - scaledH) / 2 };
+    startZoomLerp();
+  }, [imgDims, startZoomLerp]);
 
   // Zoom 2D view to center on selected polygon
   useEffect(() => {
@@ -183,13 +243,14 @@ export default function FloorPlanImage({ floorIdOverride }) {
     const padding = 3;
     const targetScale = Math.min(cw / (polyW * padding), ch / (polyH * padding), MAX_SCALE);
 
-    // Center polygon centroid in container
-    setTransform({
+    // Center polygon centroid in container — lerped
+    zoomTarget.current = {
       scale: targetScale,
       tx: cw / 2 - cx * targetScale,
       ty: ch / 2 - cy * targetScale,
-    });
-  }, [selectedSpaceId, activeFloorId, imgDims]);
+    };
+    startZoomLerp();
+  }, [selectedSpaceId, activeFloorId, imgDims, startZoomLerp]);
 
   // Attach non-passive wheel listener
   useEffect(() => {
@@ -212,8 +273,7 @@ export default function FloorPlanImage({ floorIdOverride }) {
   if (!imageUrl) {
     return (
       <div className="floor-plan-image__empty">
-        <div className="floor-plan-image__spinner" />
-        <p>Capturing floor plan...</p>
+        <DeltaSpinner size={64} label="Capturing floor plan..." />
       </div>
     );
   }
@@ -240,9 +300,10 @@ export default function FloorPlanImage({ floorIdOverride }) {
         <img
           src={imageUrl}
           alt="Floor plan"
-          className="floor-plan-image__img"
+          className={`floor-plan-image__img ${crossfading ? 'floor-plan-image__img--fade-in' : ''}`}
           draggable={false}
           style={isSearching ? { filter: 'brightness(0.6)' } : activeRoute ? { filter: 'brightness(0.35)' } : undefined}
+          onLoad={() => { prevImageRef.current = imageUrl; }}
         />
 
         {/* Saved polygon outlines */}
