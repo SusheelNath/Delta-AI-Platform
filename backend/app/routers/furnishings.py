@@ -13,7 +13,11 @@ from app.schemas import (
     SpaceFurnishingCreate,
     SpaceFurnishingUpdate,
     SpaceFurnishingResponse,
+    FurnishingPreviewRequest,
+    FurnishingPreviewResponse,
+    BulkFurnishingRequest,
 )
+from app.services.furnishings import MAX_FURNISHING_PCT
 from app.services.furnishings import (
     seed_furnishing_types,
     seed_space_furnishings,
@@ -137,6 +141,165 @@ def seed_types(db: Session = Depends(get_db)):
     added = seed_furnishing_types(db)
     total = db.query(FurnishingType).count()
     return {"added": added, "total": total}
+
+
+# ══════════════════════════════════════════════════════════════════════
+# Preview & Bulk operations (must be before parameterized routes)
+# ══════════════════════════════════════════════════════════════════════
+
+@router.post("/furnishings/preview", response_model=FurnishingPreviewResponse)
+def preview_furnishings(req: FurnishingPreviewRequest, db: Session = Depends(get_db)):
+    """Compute metrics for a proposed furnishing list WITHOUT committing.
+
+    Used by the live validation bar in the FurnishingEditor and by the AI
+    action resolver to check feasibility before executing changes.
+    """
+    ft_map = {ft.item_type: ft for ft in db.query(FurnishingType).all()}
+
+    # Validate all item types
+    for item in req.furnishings:
+        if item.item_type not in ft_map:
+            raise HTTPException(status_code=400, detail=f"Unknown item_type: {item.item_type}")
+
+    # Get polygon area
+    polygons = _read_all()
+    poly = next((p for p in polygons if p.get("ifc_guid") == req.ifc_guid), None)
+    area_m2 = poly.get("area_m2", 0) if poly else 0
+
+    # Build mock SpaceFurnishing objects for the occupancy calculator
+    class _MockFurnishing:
+        def __init__(self, item_type, quantity):
+            self.item_type = item_type
+            self.quantity = quantity
+
+    mock_list = [_MockFurnishing(f.item_type, f.quantity) for f in req.furnishings if f.quantity > 0]
+
+    occ = compute_furnishing_occupancy(mock_list, ft_map, area_m2)
+
+    max_allowed = area_m2 * MAX_FURNISHING_PCT
+    over = occ["used_area_m2"] > max_allowed
+    used_pct = (occ["used_area_m2"] / area_m2 * 100) if area_m2 > 0 else 0
+
+    message = None
+    if over:
+        excess = occ["used_area_m2"] - max_allowed
+        message = (
+            f"Exceeds {int(MAX_FURNISHING_PCT * 100)}% area limit by {excess:.1f} m². "
+            f"Reduce furnishings by {excess:.1f} m² for fire and safety compliance."
+        )
+
+    return FurnishingPreviewResponse(
+        area_m2=round(area_m2, 2),
+        used_area_m2=occ["used_area_m2"],
+        free_area_m2=occ["free_area_m2"],
+        used_pct=round(used_pct, 1),
+        normal_occupancy=occ["normal_occupancy"],
+        max_occupancy=occ["max_occupancy"],
+        absolute_occupancy=occ["absolute_occupancy"],
+        over_capacity=over,
+        max_allowed_m2=round(max_allowed, 2),
+        message=message,
+    )
+
+
+@router.post("/furnishings/bulk")
+def bulk_modify_furnishings(req: BulkFurnishingRequest, db: Session = Depends(get_db)):
+    """Apply a batch of furnishing add/update/remove operations atomically.
+
+    Each change: { action: "add"|"update"|"remove", item_type, quantity, furnishing_id }
+    Returns the refreshed furnishing list + updated metrics.
+    """
+    ft_map = {ft.item_type: ft for ft in db.query(FurnishingType).all()}
+    now = datetime.utcnow().isoformat()
+
+    added = 0
+    updated = 0
+    removed = 0
+
+    for change in req.changes:
+        if change.action == "add":
+            if not change.item_type or change.item_type not in ft_map:
+                raise HTTPException(status_code=400, detail=f"Unknown item_type: {change.item_type}")
+            qty = change.quantity or 1
+            if qty <= 0:
+                continue
+            # Merge with existing row if same item_type already exists
+            existing = db.query(SpaceFurnishing).filter(
+                SpaceFurnishing.ifc_guid == req.ifc_guid,
+                SpaceFurnishing.item_type == change.item_type,
+            ).first()
+            if existing:
+                existing.quantity = qty
+                updated += 1
+            else:
+                db.add(SpaceFurnishing(
+                    ifc_guid=req.ifc_guid,
+                    floor_id=req.floor_id,
+                    item_type=change.item_type,
+                    quantity=qty,
+                    created_at=now,
+                ))
+                added += 1
+
+        elif change.action == "update":
+            if not change.furnishing_id:
+                continue
+            f = db.query(SpaceFurnishing).filter(SpaceFurnishing.id == change.furnishing_id).first()
+            if f:
+                if change.quantity is not None and change.quantity <= 0:
+                    db.delete(f)
+                    removed += 1
+                elif change.quantity is not None:
+                    f.quantity = change.quantity
+                    updated += 1
+
+        elif change.action == "remove":
+            if change.furnishing_id:
+                f = db.query(SpaceFurnishing).filter(SpaceFurnishing.id == change.furnishing_id).first()
+                if f:
+                    db.delete(f)
+                    removed += 1
+            elif change.item_type:
+                # Remove all of this item type for this space
+                deleted_count = db.query(SpaceFurnishing).filter(
+                    SpaceFurnishing.ifc_guid == req.ifc_guid,
+                    SpaceFurnishing.item_type == change.item_type,
+                ).delete()
+                removed += deleted_count
+
+        elif change.action == "remove_all":
+            deleted_count = db.query(SpaceFurnishing).filter(
+                SpaceFurnishing.ifc_guid == req.ifc_guid,
+            ).delete()
+            removed += deleted_count
+
+    db.commit()
+
+    # Recompute metrics + rebuild cache
+    _recompute_space_metrics(db, req.ifc_guid, req.floor_id)
+    rebuild_cache(db)
+
+    # Return refreshed furnishing list + metrics
+    furnishings = db.query(SpaceFurnishing).filter(
+        SpaceFurnishing.ifc_guid == req.ifc_guid
+    ).all()
+    metrics = db.query(SpaceMetrics).filter(SpaceMetrics.ifc_guid == req.ifc_guid).first()
+
+    return {
+        "added": added,
+        "updated": updated,
+        "removed": removed,
+        "furnishings": [_enrich_furnishing(f, ft_map.get(f.item_type)) for f in furnishings],
+        "metrics": {
+            "area_m2": metrics.area_m2 if metrics else 0,
+            "used_area_m2": metrics.used_area_m2 if metrics else None,
+            "free_area_m2": metrics.free_area_m2 if metrics else None,
+            "normal_occupancy": metrics.normal_occupancy if metrics else 0,
+            "max_occupancy": metrics.max_occupancy if metrics else 0,
+            "absolute_occupancy": metrics.absolute_occupancy if metrics else 0,
+            "furnishing_source": metrics.furnishing_source if metrics else None,
+        } if metrics else None,
+    }
 
 
 # ══════════════════════════════════════════════════════════════════════

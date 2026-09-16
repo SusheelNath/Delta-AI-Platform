@@ -243,6 +243,90 @@ FLOOR_VISIBILITY_VERBS = {
     "disable": "hide",
 }
 
+# ── Furnishing action keywords ──
+
+FURNISHING_ALIASES = {
+    "patient bed": "patient_bed", "bed": "patient_bed", "beds": "patient_bed",
+    "patient bed double": "patient_bed_double", "double bed": "patient_bed_double",
+    "icu bed": "icu_bed",
+    "surgical table": "surgical_table", "operating table": "surgical_table",
+    "examination table": "examination_table", "exam table": "examination_table",
+    "recovery bed": "recovery_bed",
+    "crib": "crib", "cribs": "crib",
+    "visitor chair": "visitor_chair", "chair": "visitor_chair", "chairs": "visitor_chair",
+    "desk chair": "desk_chair", "office chair": "desk_chair",
+    "waiting bench": "waiting_bench", "bench": "waiting_bench", "benches": "waiting_bench",
+    "stool": "stool", "stools": "stool",
+    "wheelchair bay": "wheelchair_bay", "wheelchair": "wheelchair_bay",
+    "wardrobe": "wardrobe", "wardrobes": "wardrobe",
+    "closet": "closet",
+    "cabinet": "cabinet", "cabinets": "cabinet",
+    "shelving": "shelving", "shelves": "shelving", "shelf": "shelving",
+    "medication cart": "medication_cart",
+    "supply cart": "supply_cart",
+    "ventilator": "ventilator", "ventilators": "ventilator",
+    "monitor": "monitor", "patient monitor": "monitor", "monitors": "monitor",
+    "infusion pump": "infusion_pump", "iv pump": "infusion_pump",
+    "anaesthesia unit": "anaesthesia_unit", "anesthesia unit": "anaesthesia_unit",
+    "defibrillator": "defibrillator",
+    "imaging unit": "imaging_unit", "scanner": "imaging_unit",
+    "autoclave": "autoclave",
+    "sink": "sink", "sinks": "sink",
+    "toilet": "toilet", "toilets": "toilet",
+    "shower": "shower", "showers": "shower",
+    "scrub station": "scrub_station",
+    "gas outlet": "gas_outlet",
+    "nurse call": "nurse_call",
+    "desk": "desk", "desks": "desk",
+    "table": "table", "tables": "table",
+    "countertop": "countertop", "counter": "countertop",
+    "bedside table": "bedside_table",
+    "curtain divider": "curtain_divider", "curtain": "curtain_divider",
+    "hvac unit": "hvac_unit", "hvac": "hvac_unit",
+    "electrical panel": "electrical_panel",
+    "pump": "pump",
+    "elevator panel": "elevator_panel",
+    "handrail": "handrail",
+}
+
+FURNISH_ADD_KEYWORDS = [
+    "add furnishing", "add furniture", "add a ", "add an ", "add some ",
+    "place a ", "place an ", "place some ", "install a ", "install an ",
+    "put a ", "put an ", "put some ", "put in a ", "put in an ",
+    "equip with", "furnish with",
+]
+
+FURNISH_REMOVE_KEYWORDS = [
+    "remove furnishing", "remove furniture", "remove the ", "remove a ",
+    "remove all furnishing", "remove all furniture", "clear furnishing",
+    "clear furniture", "delete furnishing", "delete furniture",
+    "take out the ", "take out a ", "get rid of ",
+    "strip the room", "empty the room", "clear the room",
+    "unfurnish",
+]
+
+FURNISH_SUGGEST_KEYWORDS = [
+    "what can i add", "what furniture", "what furnishing",
+    "suggest furniture", "suggest furnishing", "recommend furniture",
+    "what fits", "what else can i add", "available furniture",
+    "furnishing options", "furniture options",
+    "what can go in", "what should i add",
+]
+
+_RE_FURNISH_ADD = re.compile(
+    r"\b(?:add|place|install|put(?:\s+in)?|equip\s+with|furnish\s+with)\s+"
+    r"(\d+)?\s*(?:x\s+|×\s+)?"
+    r"(.+?)(?:\s+to\s+(?:this|the)\s+(?:room|space))?\s*$",
+    re.IGNORECASE,
+)
+
+_RE_FURNISH_REMOVE = re.compile(
+    r"\b(?:remove|delete|take\s+out|get\s+rid\s+of)\s+"
+    r"(?:all\s+)?(?:the\s+)?(\d+)?\s*(?:x\s+|×\s+)?"
+    r"(.+?)(?:\s+from\s+(?:this|the)\s+(?:room|space))?\s*$",
+    re.IGNORECASE,
+)
+
 ZONE_ALIASES = {
     "surgical": "Surgical", "surgery": "Surgical",
     "inpatient": "Inpatient Care", "inpatient care": "Inpatient Care",
@@ -530,6 +614,10 @@ class ParsedIntent:
     # Floor visibility (3D)
     floor_visibility_id: str | None = None
     floor_visibility_action: str | None = None
+    # Furnishing
+    furnish_action: str | None = None      # "add" | "remove" | "remove_all" | "suggest"
+    furnish_item_type: str | None = None   # catalog item_type key
+    furnish_quantity: int | None = None
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -816,7 +904,11 @@ def parse_intents(message: str, polygons: list[dict] | None = None, expanded_gro
     used_types = set()  # prevent duplicate type emissions
 
     # 0. Universal clear — "clear everything", "reset all"
-    if any(kw in msg_lower for kw in CLEAR_ALL_KEYWORDS):
+    # Skip if message mentions furnishings (handled by furnishing intent instead)
+    _furnish_guard = {"furnishing", "furniture", "furnish", "the room"}
+    _has_clear_all = any(kw in msg_lower for kw in CLEAR_ALL_KEYWORDS)
+    _is_furnish_clear = _has_clear_all and any(g in msg_lower for g in _furnish_guard)
+    if _has_clear_all and not _is_furnish_clear:
         intents.append(ParsedIntent(intent_type="clear_all"))
         used_types.add("clear_all")
 
@@ -1022,6 +1114,77 @@ def parse_intents(message: str, polygons: list[dict] | None = None, expanded_gro
     if any(kw in msg_lower for kw in CLEAR_LEARNINGS_KEYWORDS) and "clear_learnings" not in used_types:
         intents.append(ParsedIntent(intent_type="clear_learnings"))
         used_types.add("clear_learnings")
+
+    # 21b. Furnishing actions (add / remove / suggest)
+    if "furnish" not in used_types:
+        # Suggest / query
+        if any(kw in msg_lower for kw in FURNISH_SUGGEST_KEYWORDS):
+            intents.append(ParsedIntent(intent_type="furnish", furnish_action="suggest"))
+            used_types.add("furnish")
+
+        # Remove all
+        elif any(kw in msg_lower for kw in [
+            "remove all furnishing", "remove all furniture", "clear furnishing",
+            "clear furniture", "strip the room", "empty the room",
+            "clear the room", "unfurnish", "remove everything",
+        ]):
+            intents.append(ParsedIntent(intent_type="furnish", furnish_action="remove_all"))
+            used_types.add("furnish")
+
+        else:
+            # Add pattern: "add 3 patient beds"
+            m_add = _RE_FURNISH_ADD.search(msg)
+            if m_add:
+                qty_str = m_add.group(1)
+                item_text = m_add.group(2).strip().rstrip("s").lower()
+                qty = int(qty_str) if qty_str else 1
+                # Resolve alias — prefer exact match, then alias-in-text, then text-in-alias
+                item_type = FURNISHING_ALIASES.get(item_text)
+                if not item_type:
+                    for alias, itype in sorted(FURNISHING_ALIASES.items(), key=lambda x: -len(x[0])):
+                        if alias in item_text:
+                            item_type = itype
+                            break
+                if not item_type:
+                    for alias, itype in sorted(FURNISHING_ALIASES.items(), key=lambda x: len(x[0])):
+                        if item_text in alias:
+                            item_type = itype
+                            break
+                if item_type:
+                    intents.append(ParsedIntent(
+                        intent_type="furnish",
+                        furnish_action="add",
+                        furnish_item_type=item_type,
+                        furnish_quantity=qty,
+                    ))
+                    used_types.add("furnish")
+
+            # Remove pattern: "remove 2 visitor chairs"
+            if "furnish" not in used_types:
+                m_rem = _RE_FURNISH_REMOVE.search(msg)
+                if m_rem:
+                    qty_str = m_rem.group(1)
+                    item_text = m_rem.group(2).strip().rstrip("s").lower()
+                    qty = int(qty_str) if qty_str else None
+                    item_type = FURNISHING_ALIASES.get(item_text)
+                    if not item_type:
+                        for alias, itype in sorted(FURNISHING_ALIASES.items(), key=lambda x: -len(x[0])):
+                            if alias in item_text:
+                                item_type = itype
+                                break
+                    if not item_type:
+                        for alias, itype in sorted(FURNISHING_ALIASES.items(), key=lambda x: len(x[0])):
+                            if item_text in alias:
+                                item_type = itype
+                                break
+                    if item_type:
+                        intents.append(ParsedIntent(
+                            intent_type="furnish",
+                            furnish_action="remove",
+                            furnish_item_type=item_type,
+                            furnish_quantity=qty,
+                        ))
+                        used_types.add("furnish")
 
     # 22. Compare mode toggle (not pair — just on/off)
     for alias, action in sorted(COMPARE_MODE_KEYWORDS.items(), key=lambda x: -len(x[0])):
@@ -1396,6 +1559,39 @@ def intents_to_actions(
                 actions.append((
                     {"type": "search_largest_rooms"},
                     "Finding the largest rooms on this floor...",
+                ))
+
+        elif t == "furnish":
+            act = intent.furnish_action or "suggest"
+            itype = intent.furnish_item_type
+            qty = intent.furnish_quantity
+
+            # Resolve label for confirmation text
+            from app.services.furnishings import FURNISHING_CATALOG
+            label_map = {c[0]: c[2] for c in FURNISHING_CATALOG}
+            label = label_map.get(itype, itype or "")
+
+            if act == "suggest":
+                actions.append((
+                    {"type": "suggest_furnishings"},
+                    "Checking what can be added to this room...",
+                ))
+            elif act == "remove_all":
+                actions.append((
+                    {"type": "modify_furnishing", "action": "remove_all"},
+                    "Removing all furnishings from this room...",
+                ))
+            elif act == "add" and itype:
+                actions.append((
+                    {"type": "modify_furnishing", "action": "add",
+                     "item_type": itype, "quantity": qty or 1},
+                    f"Adding **{qty or 1}× {label}**...",
+                ))
+            elif act == "remove" and itype:
+                actions.append((
+                    {"type": "modify_furnishing", "action": "remove",
+                     "item_type": itype, "quantity": qty},
+                    f"Removing **{label}**...",
                 ))
 
         # "query" type produces no actions — LLM handles narratively

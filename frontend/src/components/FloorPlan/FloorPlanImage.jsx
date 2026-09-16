@@ -222,8 +222,9 @@ export default function FloorPlanImage({ floorIdOverride }) {
       return;
     }
 
-    // Default: clear highlights on click in empty space
-    useStore.getState().clearHighlights();
+    // Default: clear selection on click in empty space
+    // (find-room highlights persist until explicitly dismissed via Room Finder legend)
+    useStore.getState().selectSpace(null, null);
   }, []);
 
   const handleMouseLeave = useCallback(() => {

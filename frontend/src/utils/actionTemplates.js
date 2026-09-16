@@ -56,6 +56,10 @@ export function getActionTemplate(actions) {
       return buildHighlightResponse(primary.filter);
     case 'find_room':
       return buildFindRoomResponse();
+    case 'modify_furnishing':
+      return buildFurnishingModifyResponse(primary);
+    case 'suggest_furnishings':
+      return buildSuggestFurnishingsResponse();
     default:
       return null;
   }
@@ -267,30 +271,259 @@ function buildFindRoomResponse() {
   const direct = entries.filter((e) => e.type === 'direct').sort((a, b) => b.score - a.score);
   const repurpose = entries.filter((e) => e.type === 'repurpose').sort((a, b) => b.score - a.score);
 
+  // Group rooms by floor, preserving score order within each floor
+  const groupByFloor = (rooms) => {
+    const grouped = new Map();
+    for (const r of rooms) {
+      const fid = r.floorId;
+      if (!grouped.has(fid)) grouped.set(fid, []);
+      grouped.get(fid).push(r);
+    }
+    // Sort floors by FLOOR_ORDER
+    return [...grouped.entries()].sort((a, b) =>
+      FLOOR_ORDER.indexOf(a[0]) - FLOOR_ORDER.indexOf(b[0])
+    );
+  };
+
+  // Build concise suitability tag from reason (strip redundant function name)
+  const shortReason = (r) => {
+    const tags = [];
+    if (r.reason.includes('high-suitability')) tags.push('high suitability');
+    else if (r.reason.includes('moderate-suitability')) tags.push('moderate suitability');
+    if (r.reason.includes('well-accessible floor')) tags.push('accessible floor');
+    if (r.reason.includes('accessible zone')) tags.push('accessible zone');
+    if (r.type === 'repurpose') tags.push(`capacity ${r.capacity} → repurposable`);
+    return tags.length > 0 ? tags.join(' · ') : '';
+  };
+
   const lines = [];
+  let idx = 1;
 
   if (direct.length > 0) {
-    lines.push(`**${direct.length} room${direct.length !== 1 ? 's' : ''} matching capacity** (highlighted in orange):`, '');
-    direct.forEach((r, i) => {
-      const floor = FLOOR_NAMES[r.floorId] || r.floorId;
-      const area = r.area ? `${r.area.toFixed(1)} m²` : '';
-      lines.push(`${i + 1}. **${r.name}** — capacity ${r.capacity} · ${area} · ${floor} · ${r.fn}`);
-      lines.push(`   _${r.reason}_`);
-    });
+    lines.push(`**${direct.length} room${direct.length !== 1 ? 's' : ''} matching capacity** (orange):\n`);
+    for (const [fid, rooms] of groupByFloor(direct)) {
+      const fname = FLOOR_NAMES[fid] || fid;
+      lines.push(`**${fname}**\n`);
+      for (const r of rooms) {
+        const area = r.area ? ` · ${r.area.toFixed(1)} m²` : '';
+        const tag = shortReason(r);
+        lines.push(`${idx}. **${r.name}** — ${r.fn} · cap. ${r.capacity}${area}${tag ? `\n   _${tag}_` : ''}\n`);
+        idx++;
+      }
+    }
   }
 
   if (repurpose.length > 0) {
-    if (direct.length > 0) lines.push('');
-    lines.push(`**${repurpose.length} repurpose candidate${repurpose.length !== 1 ? 's' : ''}** (highlighted in blue):`, '');
-    repurpose.forEach((r, i) => {
-      const floor = FLOOR_NAMES[r.floorId] || r.floorId;
-      const area = r.area ? `${r.area.toFixed(1)} m²` : '';
-      const idx = direct.length + i + 1;
-      lines.push(`${idx}. **${r.name}** — capacity ${r.capacity} · ${area} · ${floor} · ${r.fn}`);
-      lines.push(`   _${r.reason}_`);
-    });
+    lines.push(`**${repurpose.length} repurpose candidate${repurpose.length !== 1 ? 's' : ''}** (blue):\n`);
+    for (const [fid, rooms] of groupByFloor(repurpose)) {
+      const fname = FLOOR_NAMES[fid] || fid;
+      lines.push(`**${fname}**\n`);
+      for (const r of rooms) {
+        const area = r.area ? ` · ${r.area.toFixed(1)} m²` : '';
+        const tag = shortReason(r);
+        lines.push(`${idx}. **${r.name}** — ${r.fn} · cap. ${r.capacity}${area}${tag ? `\n   _${tag}_` : ''}\n`);
+        idx++;
+      }
+    }
   }
 
   return lines.join('\n');
+}
+
+/**
+ * Build the facilities_available text from enriched furnishings.
+ * Mirrors backend _get_facilities_cached() format: "2x Desk, Cabinet, 3x Visitor Chair"
+ */
+export function buildFacilitiesText(furnishings) {
+  if (!furnishings || furnishings.length === 0) return null;
+  const counts = {};
+  for (const f of furnishings) {
+    const label = f.label || f.item_type.replace(/_/g, ' ');
+    counts[label] = (counts[label] || 0) + (f.quantity || 0);
+  }
+  const parts = Object.keys(counts).sort().map((label) => {
+    const qty = counts[label];
+    return qty > 1 ? `${qty}x ${label}` : label;
+  });
+  return parts.length > 0 ? parts.join(', ') : null;
+}
+
+// Station-based occupancy categories (mirrors backend compute_furnishing_occupancy)
+const _BED_TYPES = new Set([
+  'patient_bed', 'patient_bed_double', 'icu_bed', 'recovery_bed',
+  'crib', 'examination_table', 'surgical_table',
+]);
+const _INDEPENDENT_SEATING = new Set([
+  'visitor_chair', 'waiting_bench', 'stool', 'wheelchair_bay',
+]);
+const _DESK_TYPE = 'desk';
+const _DESK_CHAIR_TYPE = 'desk_chair';
+
+/**
+ * Break furnishings into station-based categories for display.
+ * @param {Array} furnishings - enriched furnishing objects [{item_type, label, quantity, ...}]
+ * @returns {{ beds, workstations, seating, other }} with label+qty arrays
+ */
+function classifyStations(furnishings) {
+  const beds = [];
+  const seating = [];
+  const other = [];
+  let deskQty = 0;
+  let deskChairQty = 0;
+
+  for (const f of furnishings) {
+    const t = f.item_type;
+    const label = f.label || t.replace(/_/g, ' ');
+    const qty = f.quantity || 0;
+    if (_BED_TYPES.has(t)) {
+      beds.push({ label, qty });
+    } else if (t === _DESK_TYPE) {
+      deskQty += qty;
+    } else if (t === _DESK_CHAIR_TYPE) {
+      deskChairQty += qty;
+    } else if (_INDEPENDENT_SEATING.has(t)) {
+      seating.push({ label, qty });
+    } else {
+      other.push({ label, qty });
+    }
+  }
+
+  const paired = Math.min(deskQty, deskChairQty);
+  const surplusDesks = Math.max(0, deskQty - deskChairQty);
+  const surplusChairs = Math.max(0, deskChairQty - deskQty);
+
+  const workstations = [];
+  if (paired > 0) workstations.push({ label: 'Paired workstation (desk + chair)', qty: paired });
+  if (surplusDesks > 0) workstations.push({ label: 'Desk (no chair)', qty: surplusDesks, note: '0 occ' });
+  if (surplusChairs > 0) seating.push({ label: 'Desk chair (surplus)', qty: surplusChairs });
+
+  return { beds, workstations, seating, other };
+}
+
+/**
+ * Build a before/after comparison with station-based breakdown.
+ * @param {{ area_m2, used_area_m2, free_area_m2, normal_occupancy, max_occupancy, absolute_occupancy, furnLines }} baseline
+ * @param {{ area_m2, used_area_m2, free_area_m2, normal_occupancy, max_occupancy, absolute_occupancy }} afterMetrics
+ * @param {Array} afterFurnishings - enriched furnishing objects
+ * @returns {string} formatted markdown comparison
+ */
+export function buildBeforeAfterComparison(baseline, afterMetrics, afterFurnishings) {
+  if (!baseline || !afterMetrics) return null;
+
+  const parts = [];
+  parts.push('**Before \u2192 After:**');
+
+  // Metrics diff
+  const diffLine = (label, before, after, unit) => {
+    const b = before != null ? Number(before) : null;
+    const a = after != null ? Number(after) : null;
+    if (b == null && a == null) return null;
+    const bStr = b != null ? (Number.isInteger(b) ? b : b.toFixed(1)) : '--';
+    const aStr = a != null ? (Number.isInteger(a) ? a : a.toFixed(1)) : '--';
+    const delta = (b != null && a != null) ? a - b : null;
+    const deltaStr = delta != null && delta !== 0
+      ? ` (${delta > 0 ? '+' : ''}${Number.isInteger(delta) ? delta : delta.toFixed(1)})`
+      : '';
+    return `${label}: ${bStr} \u2192 ${aStr}${unit}${deltaStr}`;
+  };
+
+  const usedLine = diffLine('Used area', baseline.used_area_m2, afterMetrics.used_area_m2, ' m\u00B2');
+  const freeLine = diffLine('Free area', baseline.free_area_m2, afterMetrics.free_area_m2, ' m\u00B2');
+  const normLine = diffLine('Normal occ.', baseline.normal_occupancy, afterMetrics.normal_occupancy, '');
+  const maxLine = diffLine('Max occ.', baseline.max_occupancy, afterMetrics.max_occupancy, '');
+  const absLine = diffLine('Absolute occ.', baseline.absolute_occupancy, afterMetrics.absolute_occupancy, '');
+
+  if (usedLine) parts.push(usedLine);
+  if (freeLine) parts.push(freeLine);
+  if (normLine) parts.push(normLine);
+  if (maxLine) parts.push(maxLine);
+  if (absLine) parts.push(absLine);
+
+  // Station breakdown of after-state
+  if (afterFurnishings && afterFurnishings.length > 0) {
+    const { beds, workstations, seating, other } = classifyStations(afterFurnishings);
+
+    parts.push('');
+    parts.push('**Station breakdown:**');
+
+    if (beds.length > 0) {
+      parts.push(`_Beds_ \u2014 ${beds.map((b) => `${b.qty}\u00D7 ${b.label}`).join(', ')}`);
+    }
+    if (workstations.length > 0) {
+      parts.push(`_Workstations_ \u2014 ${workstations.map((w) => `${w.qty}\u00D7 ${w.label}${w.note ? ` (${w.note})` : ''}`).join(', ')}`);
+    }
+    if (seating.length > 0) {
+      parts.push(`_Seating_ \u2014 ${seating.map((s) => `${s.qty}\u00D7 ${s.label}`).join(', ')}`);
+    }
+    if (other.length > 0) {
+      parts.push(`_Other_ \u2014 ${other.map((o) => `${o.qty}\u00D7 ${o.label}`).join(', ')} (0 occ, area only)`);
+    }
+  }
+
+  // Clear baseline after use
+  useStore.setState({ _furnishingBaseline: null });
+
+  return parts.join('\n');
+}
+
+function buildFurnishingModifyResponse(action) {
+  const store = useStore.getState();
+  const result = store._lastFurnishingResult;
+  const spaceName = store.selectedSpace?.space_name || store.selectedSpaceId || 'this space';
+
+  if (!result) return `Furnishing change applied to **${spaceName}**.`;
+  if (result.error) return `Could not modify furnishings: _${result.error}_`;
+
+  const parts = [];
+  const act = action.action; // "add" | "remove" | "remove_all"
+
+  if (act === 'remove_all') {
+    parts.push(`All furnishings removed from **${spaceName}**.`);
+  } else if (act === 'add') {
+    const qty = action.quantity || 1;
+    const label = action.item_type?.replace(/_/g, ' ') || 'item';
+    parts.push(`Added **${qty}\u00D7 ${label}** to **${spaceName}**.`);
+  } else if (act === 'remove') {
+    const label = action.item_type?.replace(/_/g, ' ') || 'item';
+    parts.push(`Removed **${label}** from **${spaceName}**.`);
+  } else {
+    parts.push(`Furnishings updated for **${spaceName}**.`);
+  }
+
+  const m = result.metrics;
+  if (m) {
+    parts.push('');
+    parts.push(`Area: ${m.area_m2?.toFixed(1) ?? '--'} m\u00B2 \u00B7 Used: ${m.used_area_m2?.toFixed(1) ?? '--'} m\u00B2 \u00B7 Free: ${m.free_area_m2?.toFixed(1) ?? '--'} m\u00B2`);
+    parts.push(`Occupancy: ${m.normal_occupancy ?? 0} normal / ${m.max_occupancy ?? 0} max / ${m.absolute_occupancy ?? 0} absolute`);
+  }
+
+  const furn = result.furnishings;
+  if (furn && furn.length > 0) {
+    parts.push('');
+    parts.push('**Current furnishings:**');
+    for (const f of furn) {
+      parts.push(`- ${f.quantity}\u00D7 ${f.label || f.item_type}${f.footprint_m2 > 0 ? ` (${(f.footprint_m2 * f.quantity).toFixed(1)} m\u00B2)` : ''}`);
+    }
+  } else if (act === 'remove_all') {
+    parts.push('\nThe room is now empty. Use the furnishing editor to add items.');
+  }
+
+  // Append before/after comparison if baseline exists
+  const baseline = store._furnishingBaseline;
+  if (baseline && m) {
+    const comparison = buildBeforeAfterComparison(baseline, m, furn);
+    if (comparison) {
+      parts.push('');
+      parts.push(comparison);
+    }
+  }
+
+  return parts.join('\n');
+}
+
+function buildSuggestFurnishingsResponse() {
+  const store = useStore.getState();
+  const spaceName = store.selectedSpace?.space_name || 'this space';
+  return `Opening the **Furnishing Editor** for **${spaceName}**. Use the **Add New** tab to browse the catalog and add items with live validation.`;
 }
 

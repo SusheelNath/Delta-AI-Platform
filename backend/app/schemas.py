@@ -239,6 +239,43 @@ class SpaceFurnishingResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class FurnishingPreviewItem(BaseModel):
+    item_type: str
+    quantity: int
+
+
+class FurnishingPreviewRequest(BaseModel):
+    ifc_guid: str
+    floor_id: str
+    furnishings: list[FurnishingPreviewItem]
+
+
+class FurnishingPreviewResponse(BaseModel):
+    area_m2: float
+    used_area_m2: float
+    free_area_m2: float
+    used_pct: float
+    normal_occupancy: int
+    max_occupancy: int
+    absolute_occupancy: int
+    over_capacity: bool
+    max_allowed_m2: float
+    message: str | None = None
+
+
+class BulkFurnishingItem(BaseModel):
+    action: str  # "add" | "update" | "remove"
+    item_type: str | None = None
+    quantity: int | None = None
+    furnishing_id: int | None = None  # for update/remove
+
+
+class BulkFurnishingRequest(BaseModel):
+    ifc_guid: str
+    floor_id: str
+    changes: list[BulkFurnishingItem]
+
+
 class SearchParams(BaseModel):
     q: str | None = None
     floor_id: str | None = None

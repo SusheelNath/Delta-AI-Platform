@@ -104,6 +104,9 @@ const useStore = create((set, get) => ({
   // Pre-computed intelligence (loaded at boot from backend cache)
   floorIntelligence: {},  // { [floorId]: { [guid]: intelligenceDict } }
 
+  // Preloaded furnishings keyed by ifc_guid (loaded at boot from backend)
+  spaceFurnishings: {},  // { [ifc_guid]: [furnishingObj, ...] }
+
   // Polygon mapping mode
   mappingMode: false,
   floorPolygons: loadPolygonsFromStorage(),  // persisted to localStorage
@@ -192,6 +195,24 @@ const useStore = create((set, get) => ({
     set({ selectedSpaceId: null, selectedSpace: null, drawerOpen: false, activeRoute: null });
   },
 
+  updateSelectedSpaceMetrics: (metrics, facilitiesText) => {
+    set((s) => {
+      if (!s.selectedSpace) return {};
+      return {
+        selectedSpace: {
+          ...s.selectedSpace,
+          ...(metrics.used_area_m2 != null && { used_area_m2: metrics.used_area_m2 }),
+          ...(metrics.free_area_m2 != null && { free_area_m2: metrics.free_area_m2 }),
+          ...(metrics.normal_occupancy != null && { normal_occupancy: metrics.normal_occupancy }),
+          ...(metrics.max_occupancy != null && { max_occupancy: metrics.max_occupancy }),
+          ...(metrics.absolute_occupancy != null && { absolute_occupancy: metrics.absolute_occupancy }),
+          ...(metrics.furnishing_source != null && { furnishing_source: metrics.furnishing_source }),
+          ...(facilitiesText !== undefined && { facilities_available: facilitiesText }),
+        },
+      };
+    });
+  },
+
   toggleDrawer: () => set((s) => ({ drawerOpen: !s.drawerOpen })),
   setDrawerOpen: (open) => set({ drawerOpen: open }),
 
@@ -249,6 +270,10 @@ const useStore = create((set, get) => ({
 
   setFloorIntelligence: (floorId, intelMap) => {
     set({ floorIntelligence: { ...get().floorIntelligence, [floorId]: intelMap } });
+  },
+
+  mergeSpaceFurnishings: (furnishingsByGuid) => {
+    set({ spaceFurnishings: { ...get().spaceFurnishings, ...furnishingsByGuid } });
   },
 
   /** Look up intelligence for a space by guid. Checks active floor first, then all. */

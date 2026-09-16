@@ -9,6 +9,8 @@
 import useStore from '../store/useStore';
 import { computeRouting } from './routing';
 import { selectSpaceFromPolygon } from './polygonOverrides';
+import { bulkModifyFurnishings, fetchSpaceFurnishings, invalidateCache } from '../api/client';
+import { buildFacilitiesText } from './actionTemplates';
 
 /**
  * Resolve a space_name to a polygon on the current active floor (or any floor).
@@ -533,6 +535,53 @@ export async function resolveAction(action) {
       store.setHighlightedGuids(directGuids);
       store.setRepurposeGuids(repurposeGuids);
       store.setFindRoomResults(resultsMap);
+      break;
+    }
+
+    case 'modify_furnishing': {
+      // Requires a selected space
+      const guid = store.selectedSpaceId;
+      const floor = store.activeFloorId;
+      if (!guid || !floor) break;
+
+      const changeAction = action.action; // "add" | "remove" | "remove_all"
+      const changes = [];
+
+      if (changeAction === 'remove_all') {
+        changes.push({ action: 'remove_all' });
+      } else if (changeAction === 'add' && action.item_type) {
+        changes.push({ action: 'add', item_type: action.item_type, quantity: action.quantity || 1 });
+      } else if (changeAction === 'remove' && action.item_type) {
+        changes.push({ action: 'remove', item_type: action.item_type });
+      }
+
+      if (changes.length === 0) break;
+
+      try {
+        const result = await bulkModifyFurnishings(guid, floor, changes);
+        // Store the result so the template builder can read it
+        store._lastFurnishingResult = result;
+        // Update selected space metrics + facilities text
+        if (result.metrics) {
+          const facilitiesText = buildFacilitiesText(result.furnishings);
+          store.updateSelectedSpaceMetrics(result.metrics, facilitiesText);
+        }
+        // Update preloaded furnishing cache
+        if (result.furnishings) {
+          store.mergeSpaceFurnishings({ [guid]: result.furnishings });
+        }
+      } catch (err) {
+        console.warn('[Action] Furnishing modification failed:', err);
+        store._lastFurnishingResult = { error: err.message };
+      }
+      break;
+    }
+
+    case 'suggest_furnishings': {
+      // Open the furnishing editor via drawer + furnishings dropdown
+      store.setDrawerOpen(true);
+      // Dispatch a custom event that SpaceToolkit can listen for
+      window.dispatchEvent(new CustomEvent('delta-open-furnishing-editor'));
       break;
     }
 

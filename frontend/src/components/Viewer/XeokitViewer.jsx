@@ -504,7 +504,6 @@ export default function XeokitViewer() {
           highlightedRef.current = null;
         }
         useStore.getState().setHoveredPolygonGuid(null);
-        useStore.getState().clearHighlights();
         clearSelection();
       });
 
@@ -1291,6 +1290,7 @@ export default function XeokitViewer() {
 
   // ── Render ALL saved floor polygons as pickable 3D meshes ──
   const savedMeshesRef = useRef(new Map()); // ifcGuid → mesh
+  const [meshGeneration, setMeshGeneration] = useState(0); // bumped on rebuild so highlight effect re-runs
   const floorPolygons = useStore((s) => s.activeFloorId ? (s.floorPolygons[s.activeFloorId] || EMPTY) : EMPTY);
   const hoveredPolygonGuid = useStore((s) => s.hoveredPolygonGuid);
   const floorSnapshots = useStore((s) => s.floorSnapshots);
@@ -1342,6 +1342,7 @@ export default function XeokitViewer() {
         try { mesh.destroy(); } catch {}
       }
       savedMeshesRef.current.clear();
+      meshStateRef.current.clear();
 
       for (const poly of polygons) {
         if (!poly.vertices || poly.vertices.length < 3) continue;
@@ -1358,6 +1359,8 @@ export default function XeokitViewer() {
         }
       }
       prevMeshStateRef.current = { floorId: activeFloorId, matrixKey: snapshotMatrixKey };
+      // Signal highlight effect to re-run with the fresh meshes
+      setMeshGeneration(g => g + 1);
     } else {
       // Delta update — only polygons changed, same floor/matrix
       const newGuids = new Set(polygons.map(p => p.ifc_guid));
@@ -2101,7 +2104,7 @@ export default function XeokitViewer() {
         }));
       } catch {}
     }
-  }, [hoveredPolygonGuid, selectedSpaceId, activeRoute, activeFloorId, expandedGroups, floorPolygons, heatmapMode, highlightedGuids, repurposeGuids]);
+  }, [hoveredPolygonGuid, selectedSpaceId, activeRoute, activeFloorId, expandedGroups, floorPolygons, heatmapMode, highlightedGuids, repurposeGuids, meshGeneration]);
 
   // ── Find Room legend ──
   const findRoomResults = useStore((s) => s.findRoomResults);

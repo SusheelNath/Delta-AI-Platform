@@ -89,9 +89,9 @@ FURNISHING_CATALOG = [
 
 EXCLUDED_PATTERNS = [
     "staircase", "stairway", "stair ", "stair-core", "vertical circulation",
-    "shaft", "vent shaft", "ventilation",
+    "shaft", "vent shaft", "ventilation", "vent",
     "no access", "no acccess", "no infrastructure",
-    "corridor", "circulation", "hallway",
+    "corridor", "circulation",
     "parking", "ramp",
     "airlock", "lobby", "transition",
     "basement",
@@ -101,6 +101,8 @@ EXCLUDED_PATTERNS = [
     "core / technical",
     "staircasse",  # typo in data
     "loading",
+    "ambulance",  # vehicle bay, not a room
+    "atrium",     # open public space, not furnishable rooms
 ]
 
 
@@ -165,8 +167,16 @@ FUNCTION_FURNISHING_RULES = [
       ("visitor_chair", 2), ("nurse_call", 1), ("gas_outlet", 1), ("cabinet", 1)],
      {"min_area": 10}),
 
-    # ═══════════════════ PATIENT CARE (generic — includes "patient" keyword) ═══════════════════
-    (["patient care", "patient"],
+    # ═══════════════════ WAITING ROOM (before Patient Care — "Patient Waiting Room" must match here) ═══════════════════
+    (["waiting room", "waiting", "main hall", "day room", "lounge",
+      "play room"],
+     [("waiting_bench", 2), ("visitor_chair", 3)],
+     {"min_area": 8,
+      "scale": {"waiting_bench": {"per_m2": 8, "min": 2, "max": 12},
+                "visitor_chair": {"per_m2": 6, "min": 2, "max": 20}}}),
+
+    # ═══════════════════ PATIENT CARE (generic) ═══════════════════
+    (["patient care", "patient room"],
      [("patient_bed", 1), ("bedside_table", 1), ("visitor_chair", 1),
       ("nurse_call", 1), ("cabinet", 1)],
      {"min_area": 10,
@@ -174,6 +184,13 @@ FUNCTION_FURNISHING_RULES = [
                 "bedside_table": {"per_m2": 25, "min": 1, "max": 2},
                 "visitor_chair": {"per_m2": 15, "min": 1, "max": 3},
                 "curtain_divider": {"per_m2": 30, "min": 0, "max": 1}}}),
+
+    # ═══════════════════ OFFICE / WORKROOM (before ICU — "Nurse's Office - ICU" must match here) ═══════════════════
+    (["office", "bureau", "workroom"],
+     [("desk", 1), ("desk_chair", 1), ("cabinet", 1), ("shelving", 1)],
+     {"min_area": 5,
+      "scale": {"desk": {"per_m2": 8, "min": 1, "max": 8},
+                "desk_chair": {"per_m2": 8, "min": 1, "max": 8}}}),
 
     # ═══════════════════ ICU ═══════════════════
     (["intensive-care", "intensive care", "icu"],
@@ -256,25 +273,10 @@ FUNCTION_FURNISHING_RULES = [
       "scale": {"desk": {"per_m2": 6, "min": 2, "max": 6},
                 "desk_chair": {"per_m2": 6, "min": 2, "max": 6}}}),
 
-    # ═══════════════════ OFFICE / WORKROOM ═══════════════════
-    (["office", "bureau", "workroom"],
-     [("desk", 1), ("desk_chair", 1), ("cabinet", 1), ("shelving", 1)],
-     {"min_area": 5,
-      "scale": {"desk": {"per_m2": 8, "min": 1, "max": 8},
-                "desk_chair": {"per_m2": 8, "min": 1, "max": 8}}}),
-
     # ═══════════════════ RECEPTION ═══════════════════
     (["reception"],
      [("desk", 1), ("desk_chair", 1), ("visitor_chair", 2), ("cabinet", 1)],
      {"min_area": 6}),
-
-    # ═══════════════════ WAITING ROOM ═══════════════════
-    (["waiting room", "waiting", "main hall", "day room", "lounge",
-      "play room"],
-     [("waiting_bench", 2), ("visitor_chair", 3)],
-     {"min_area": 8,
-      "scale": {"waiting_bench": {"per_m2": 8, "min": 2, "max": 12},
-                "visitor_chair": {"per_m2": 6, "min": 2, "max": 20}}}),
 
     # ═══════════════════ MEETING / CONFERENCE / DEBRIEF ═══════════════════
     (["meeting", "conference", "debrief", "gathering"],
@@ -295,11 +297,17 @@ FUNCTION_FURNISHING_RULES = [
       "scale": {"table": {"per_m2": 12, "min": 2, "max": 20},
                 "visitor_chair": {"per_m2": 3, "min": 8, "max": 80}}}),
 
-    # ═══════════════════ COMMERCIAL ═══════════════════
-    (["commercial", "supermarket", "convenience store", "pharmacy", "store"],
-     [("countertop", 1), ("shelving", 3), ("desk", 1), ("desk_chair", 1)],
+    # ═══════════════════ PHARMACY ═══════════════════
+    (["pharmacy"],
+     [("countertop", 1), ("shelving", 3), ("desk", 1), ("desk_chair", 1), ("cabinet", 1)],
      {"min_area": 8,
       "scale": {"shelving": {"per_m2": 8, "min": 2, "max": 20}}}),
+
+    # ═══════════════════ RETAIL / COMMERCIAL ═══════════════════
+    (["convenience store", "supermarket", "store", "commercial"],
+     [("countertop", 1), ("shelving", 3)],
+     {"min_area": 5,
+      "scale": {"shelving": {"per_m2": 6, "min": 2, "max": 25}}}),
 
     # ═══════════════════ LABORATORY ═══════════════════
     (["laboratory", "lab "],
@@ -561,17 +569,30 @@ def seed_space_furnishings(db: Session, polygons: list[dict]) -> dict:
             skipped_excluded += 1
             continue
 
-        # Find matching rule — try primary_function first, fall back to space_name
+        # Find matching rule — two-pass:
+        #   Pass 1: space_name (more specific, e.g. "Cafeteria" vs fn="Commercial")
+        #   Pass 2: primary_function (generic fallback)
         matched = False
-        for keywords, base_furnishings, options in FUNCTION_FURNISHING_RULES:
-            if _matches_any(fn, keywords) or (space_name and _matches_any(space_name, keywords)):
-                # Check minimum area
-                min_area = options.get("min_area", 0)
-                if area_m2 > 0 and area_m2 < min_area:
-                    skipped_too_small += 1
-                    matched = True
+        matched_rule = None
+        if space_name:
+            for keywords, base_furnishings, options in FUNCTION_FURNISHING_RULES:
+                if _matches_any(space_name, keywords):
+                    matched_rule = (keywords, base_furnishings, options)
                     break
+        if not matched_rule and fn:
+            for keywords, base_furnishings, options in FUNCTION_FURNISHING_RULES:
+                if _matches_any(fn, keywords):
+                    matched_rule = (keywords, base_furnishings, options)
+                    break
+        if matched_rule:
+            keywords, base_furnishings, options = matched_rule
 
+            # Check minimum area
+            min_area = options.get("min_area", 0)
+            if area_m2 > 0 and area_m2 < min_area:
+                skipped_too_small += 1
+                matched = True
+            else:
                 # Apply scaling if specified
                 scale_rules = options.get("scale", {})
                 if scale_rules and area_m2 > 0:
@@ -586,24 +607,23 @@ def seed_space_furnishings(db: Session, polygons: list[dict]) -> dict:
                     if total_fp > area_m2 * MAX_FURNISHING_PCT:
                         skipped_overflow += 1
                         matched = True
-                        break
 
-                # Add furnishings
-                for item_type, quantity in furnishing_list:
-                    if item_type not in valid_types:
-                        continue
-                    if quantity <= 0:
-                        continue
-                    db.add(SpaceFurnishing(
-                        ifc_guid=ifc_guid,
-                        floor_id=floor_id,
-                        item_type=item_type,
-                        quantity=quantity,
-                        created_at=now,
-                    ))
-                seeded += 1
-                matched = True
-                break
+                if not matched:
+                    # Add furnishings
+                    for item_type, quantity in furnishing_list:
+                        if item_type not in valid_types:
+                            continue
+                        if quantity <= 0:
+                            continue
+                        db.add(SpaceFurnishing(
+                            ifc_guid=ifc_guid,
+                            floor_id=floor_id,
+                            item_type=item_type,
+                            quantity=quantity,
+                            created_at=now,
+                        ))
+                    seeded += 1
+                    matched = True
 
         if not matched:
             no_match += 1
@@ -624,13 +644,43 @@ def seed_space_furnishings(db: Session, polygons: list[dict]) -> dict:
 # Occupancy computation from furnishings
 # ══════════════════════════════════════════════════════════════════════
 
+
+# ── Station-based occupancy classification ──
+# Beds are independent stations — each generates occupancy on its own.
+_BED_TYPES = {
+    "patient_bed", "patient_bed_double", "icu_bed", "recovery_bed",
+    "crib", "examination_table", "surgical_table",
+}
+# Desks need chairs to generate occupancy (paired workstations).
+_DESK_TYPE = "desk"
+_DESK_CHAIR_TYPE = "desk_chair"
+# Independent seating — generates occupancy without needing a desk/bed.
+_INDEPENDENT_SEATING = {
+    "visitor_chair", "waiting_bench", "stool", "wheelchair_bay",
+}
+# Everything else (table, countertop, equipment, storage, fixtures) = 0 occupancy.
+# They still consume floor area, which reduces absolute occupancy.
+
+
 def compute_furnishing_occupancy(
     furnishings: list[SpaceFurnishing],
     furnishing_types: dict[str, FurnishingType],
     area_m2: float,
     num_doors: int = DEFAULT_DOORS,
 ) -> dict:
-    """Compute normal, max, and absolute occupancy from furnishing inventory.
+    """Compute normal, max, and absolute occupancy from furnishing inventory
+    using station-based pairing logic.
+
+    Station rules:
+      1. Beds — independent stations, use catalog normal/max occ per item.
+      2. Desks + desk chairs — paired workstations.  Occupied stations =
+         min(desks, desk_chairs).  Each station = 1 normal, 1 max.
+         Surplus desk chairs (beyond desk count) spill into independent
+         seating (1 normal, 1 max each).
+      3. Independent seating (visitor chairs, benches, stools, wheelchair
+         bays) — each generates its catalog normal/max occ.
+      4. Everything else (tables, countertops, equipment, storage, fixtures)
+         — 0 occupancy, but footprint still reduces absolute capacity.
 
     Returns dict with:
         normal_occupancy, max_occupancy, absolute_occupancy,
@@ -640,13 +690,47 @@ def compute_furnishing_occupancy(
     normal_occ = 0
     max_occ = 0
 
+    desk_qty = 0
+    desk_chair_qty = 0
+
     for f in furnishings:
         ft = furnishing_types.get(f.item_type)
         if not ft:
             continue
+
+        # All items consume floor area regardless of occupancy contribution
         used_area += ft.footprint_m2 * f.quantity
-        normal_occ += ft.normal_occ * f.quantity
-        max_occ += ft.max_occ * f.quantity
+
+        if f.item_type in _BED_TYPES:
+            # Beds are independent stations — catalog values apply directly
+            normal_occ += ft.normal_occ * f.quantity
+            max_occ += ft.max_occ * f.quantity
+
+        elif f.item_type == _DESK_TYPE:
+            # Desks tallied for pairing — no occupancy on their own
+            desk_qty += f.quantity
+
+        elif f.item_type == _DESK_CHAIR_TYPE:
+            # Desk chairs tallied for pairing — resolved below
+            desk_chair_qty += f.quantity
+
+        elif f.item_type in _INDEPENDENT_SEATING:
+            # Independent seating — catalog values apply directly
+            normal_occ += ft.normal_occ * f.quantity
+            max_occ += ft.max_occ * f.quantity
+
+        # else: tables, countertops, equipment, storage, fixtures → 0 occ
+
+    # ── Desk-chair pairing ──
+    # Each paired workstation (1 desk + 1 desk chair) = 1 person
+    paired = min(desk_qty, desk_chair_qty)
+    normal_occ += paired
+    max_occ += paired
+
+    # Surplus desk chairs beyond desks become independent seating
+    surplus_chairs = max(0, desk_chair_qty - desk_qty)
+    normal_occ += surplus_chairs
+    max_occ += surplus_chairs
 
     free_area = max(0, area_m2 - used_area)
 

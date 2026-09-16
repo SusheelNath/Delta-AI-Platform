@@ -228,6 +228,59 @@ export async function fetchSpaceFurnishings(ifcGuid) {
 }
 
 /**
+ * Fetch all furnishings for a floor (used for preloading).
+ * GET /api/furnishings/floor/{floor_id}
+ */
+export async function fetchFloorFurnishings(floorId) {
+  return request(`${BASE}/furnishings/floor/${encodeURIComponent(floorId)}`);
+}
+
+/**
+ * Fetch the full furnishing type catalog.
+ * GET /api/furnishing-types
+ */
+export async function fetchFurnishingTypes() {
+  return request(`${BASE}/furnishing-types`);
+}
+
+/**
+ * Preview furnishing metrics without committing.
+ * POST /api/furnishings/preview
+ */
+export async function previewFurnishings(ifcGuid, floorId, furnishings) {
+  const res = await fetch(`${BASE}/furnishings/preview`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ifc_guid: ifcGuid, floor_id: floorId, furnishings }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`API ${res.status}: ${text}`);
+  }
+  return res.json();
+}
+
+/**
+ * Bulk add/update/remove furnishings atomically.
+ * POST /api/furnishings/bulk
+ */
+export async function bulkModifyFurnishings(ifcGuid, floorId, changes) {
+  const res = await fetch(`${BASE}/furnishings/bulk`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ifc_guid: ifcGuid, floor_id: floorId, changes }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`API ${res.status}: ${text}`);
+  }
+  const data = await res.json();
+  invalidateCache(`${BASE}/furnishings/`);
+  invalidateCache(`${BASE}/floors/`);
+  return data;
+}
+
+/**
  * Lightweight intent detection — returns actions as JSON, no LLM call.
  * Used to fire actions instantly before streaming LLM narration.
  */

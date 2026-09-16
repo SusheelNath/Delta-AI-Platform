@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import useStore from './store/useStore';
-import { fetchFloors, fetchFloorPolygons, fetchFloorIntelligence } from './api/client';
+import { fetchFloors, fetchFloorPolygons, fetchFloorIntelligence, fetchFloorFurnishings } from './api/client';
 import XeokitViewer from './components/Viewer/XeokitViewer';
 import FloorPlanPanel from './components/FloorPlan/FloorPlanPanel';
 import ChatPanel from './components/Chat/ChatPanel';
@@ -20,7 +20,7 @@ export default function App() {
   // Preload all data (floors + polygons for every floor)
   useEffect(() => {
     async function preload() {
-      const { setLoadProgress, setLoadStage, setFloors, setFloorPolygons, setFloorIntelligence, setDataReady } = useStore.getState();
+      const { setLoadProgress, setLoadStage, setFloors, setFloorPolygons, setFloorIntelligence, mergeSpaceFurnishings, setDataReady } = useStore.getState();
 
       // 1. Fetch floor list
       setLoadStage('Loading floor data...');
@@ -77,6 +77,26 @@ export default function App() {
           }
         }));
         setLoadProgress(10);
+      }
+
+      // 4. Preload furnishings for every floor (parallel)
+      if (floorList.length > 0) {
+        setLoadStage('Loading furnishings...');
+        await Promise.all(floorList.map(async (floor) => {
+          try {
+            const furnishings = await fetchFloorFurnishings(floor.id);
+            // Group by ifc_guid
+            const byGuid = {};
+            for (const f of furnishings) {
+              const guid = f.ifc_guid;
+              if (!byGuid[guid]) byGuid[guid] = [];
+              byGuid[guid].push(f);
+            }
+            mergeSpaceFurnishings(byGuid);
+          } catch {
+            // Non-critical — SpaceToolkit will fetch per-room as fallback
+          }
+        }));
       }
 
       setDataReady(true);

@@ -3,6 +3,8 @@ import useStore from '../../store/useStore';
 import { translateFR } from '../../utils/translateFR';
 import { computeRouting } from '../../utils/routing';
 import { fetchSpaceFurnishings } from '../../api/client';
+import { buildBeforeAfterComparison, buildFacilitiesText } from '../../utils/actionTemplates';
+import FurnishingEditor from './FurnishingEditor';
 import './SpaceToolkit.css';
 
 export default function SpaceToolkit() {
@@ -25,6 +27,7 @@ export default function SpaceToolkit() {
   const [metricsOpen, setMetricsOpen] = useState(false);
   const [furnishingsOpen, setFurnishingsOpen] = useState(false);
   const [furnishings, setFurnishings] = useState([]);
+  const [editorOpen, setEditorOpen] = useState(false);
 
   // Collapse dropdowns when selection changes
   useEffect(() => {
@@ -33,15 +36,23 @@ export default function SpaceToolkit() {
     setMetricsOpen(false);
     setFurnishingsOpen(false);
     setFurnishings([]);
+    setEditorOpen(false);
   }, [selectedSpace]);
 
-  // Eagerly fetch furnishings on selection (for count badge)
+  // Load furnishings from preloaded store, fallback to API fetch
+  const preloadedFurnishings = useStore((s) => s.spaceFurnishings);
   useEffect(() => {
     if (!selectedSpaceId) return;
+    const cached = preloadedFurnishings[selectedSpaceId];
+    if (cached) {
+      setFurnishings(cached);
+      return;
+    }
+    // Fallback: fetch if not preloaded
     fetchSpaceFurnishings(selectedSpaceId)
       .then(setFurnishings)
       .catch(() => setFurnishings([]));
-  }, [selectedSpaceId]);
+  }, [selectedSpaceId, preloadedFurnishings]);
 
   // Lerped smooth scroll
   useEffect(() => {
@@ -92,6 +103,16 @@ export default function SpaceToolkit() {
       setRoutingPanelOpen(false);
     }
   }, [routingPanelOpen]);
+
+  // AI-driven: open furnishing editor when actionResolver dispatches event
+  useEffect(() => {
+    const handler = () => {
+      setFurnishingsOpen(true);
+      setEditorOpen(true);
+    };
+    window.addEventListener('delta-open-furnishing-editor', handler);
+    return () => window.removeEventListener('delta-open-furnishing-editor', handler);
+  }, []);
 
   // Clear route when dropdown closes
   useEffect(() => {
@@ -223,22 +244,64 @@ export default function SpaceToolkit() {
           )}
         </button>
         <div className={`space-toolkit__dropdown-body ${furnishingsOpen ? '' : 'space-toolkit__dropdown-body--collapsed'}`}>
-          <div className="space-toolkit__section space-toolkit__section--nested">
-            {furnishings.length === 0 ? (
-              <div className="space-toolkit__empty-msg">No furnishings assigned</div>
-            ) : (
-              furnishings.map((f) => (
-                <div key={f.id} className="space-toolkit__furnishing-item">
-                  <span className="space-toolkit__furnishing-qty">{f.quantity}×</span>
-                  <span className="space-toolkit__furnishing-label">{f.label || f.item_type}</span>
-                  <span className="space-toolkit__furnishing-meta">
-                    {f.footprint_m2 > 0 ? `${(f.footprint_m2 * f.quantity).toFixed(1)} m\u00B2` : ''}
-                    {f.normal_occ > 0 ? ` · ${f.normal_occ * f.quantity} occ` : ''}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
+          {editorOpen ? (
+            <FurnishingEditor
+              ifcGuid={selectedSpaceId}
+              floorId={activeFloorId}
+              currentFurnishings={furnishings}
+              area_m2={s.area_m2}
+              onClose={() => setEditorOpen(false)}
+              onSaved={(newFurnishings, metrics) => {
+                setFurnishings(newFurnishings);
+                setEditorOpen(false);
+                // Update preloaded furnishing cache
+                if (selectedSpaceId) {
+                  useStore.getState().mergeSpaceFurnishings({ [selectedSpaceId]: newFurnishings });
+                }
+                // Push updated metrics + facilities text into selectedSpace
+                const facilitiesText = buildFacilitiesText(newFurnishings);
+                if (metrics) {
+                  useStore.getState().updateSelectedSpaceMetrics(metrics, facilitiesText);
+                }
+                // Inject before/after comparison into chat if baseline exists
+                const baseline = useStore.getState()._furnishingBaseline;
+                if (baseline && metrics) {
+                  const comparison = buildBeforeAfterComparison(baseline, metrics, newFurnishings);
+                  if (comparison) {
+                    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    useStore.getState().addMessage({
+                      role: 'delta',
+                      text: `Furnishings saved.\n\n${comparison}`,
+                      time: now,
+                    });
+                  }
+                }
+              }}
+            />
+          ) : (
+            <div className="space-toolkit__section space-toolkit__section--nested">
+              {furnishings.length === 0 ? (
+                <div className="space-toolkit__empty-msg">No furnishings assigned</div>
+              ) : (
+                furnishings.map((f) => (
+                  <div key={f.id} className="space-toolkit__furnishing-item">
+                    <span className="space-toolkit__furnishing-qty">{f.quantity}×</span>
+                    <span className="space-toolkit__furnishing-label">{f.label || f.item_type}</span>
+                    <span className="space-toolkit__furnishing-meta">
+                      {f.footprint_m2 > 0 ? `${(f.footprint_m2 * f.quantity).toFixed(1)} m\u00B2` : ''}
+                      {f.normal_occ > 0 ? ` · ${f.normal_occ * f.quantity} occ` : ''}
+                    </span>
+                  </div>
+                ))
+              )}
+              <button
+                className="space-toolkit__edit-furnishings-btn"
+                onClick={() => setEditorOpen(true)}
+              >
+                Edit Furnishings
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Routing dropdown */}

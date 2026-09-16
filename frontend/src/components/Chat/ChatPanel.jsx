@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import useStore from '../../store/useStore';
-import { streamChat, fetchIntents, transcribeAudio, speakText } from '../../api/client';
+import { streamChat, fetchIntents, transcribeAudio, speakText, fetchSpaceFurnishings } from '../../api/client';
 import {
   createVoiceManager,
   playAudio,
@@ -31,6 +31,8 @@ const ACTION_LABELS = {
   set_search: 'Searching',
   zoom_view: 'Adjusting view',
   fly_to_zone: 'Flying to zone',
+  modify_furnishing: 'Updating furnishings',
+  suggest_furnishings: 'Opening editor',
 };
 
 function formatActionLabel(type) {
@@ -335,6 +337,7 @@ export default function ChatPanel() {
       'select_space', 'select_room_in_group',
       'route_to_elevator', 'route_to_staircase', 'compare_floors',
       'search_largest_rooms', 'find_room',
+      'modify_furnishing', 'suggest_furnishings',
     ]);
 
     let actionsHandled = false;
@@ -739,7 +742,80 @@ export default function ChatPanel() {
       {/* Guide booklet */}
       {guideBookletOpen && (
         <div className="guide-booklet">
-          <GuideBooklet onChipClick={(text) => { setInput(text); setGuideBookletOpen(false); inputRef.current?.focus(); }} />
+          <GuideBooklet onChipClick={(text) => {
+            setGuideBookletOpen(false);
+
+            // ── Special: "Edit furnishings" opens the editor + injects baseline snapshot ──
+            if (text === 'Edit furnishings') {
+              const state = useStore.getState();
+              const space = state.selectedSpace;
+              if (!space || !state.selectedSpaceId) {
+                const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                addMessage({ role: 'delta', text: 'Please select a room first so I can open its furnishing editor.', time: now });
+                return;
+              }
+
+              // Open the drawer + furnishing editor
+              state.setDrawerOpen(true);
+              window.dispatchEvent(new CustomEvent('delta-open-furnishing-editor'));
+
+              // Build and inject baseline snapshot asynchronously
+              (async () => {
+                const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const spaceName = space.space_name || state.selectedSpaceId;
+                const fn = space.primary_function || '';
+                const area = space.area_m2 != null ? `${Number(space.area_m2).toFixed(1)} m²` : '--';
+
+                let furnLines = [];
+                try {
+                  const furn = await fetchSpaceFurnishings(state.selectedSpaceId);
+                  if (furn && furn.length > 0) {
+                    for (const f of furn) {
+                      const fp = f.footprint_m2 > 0 ? ` (${(f.footprint_m2 * f.quantity).toFixed(1)} m²)` : '';
+                      furnLines.push(`- ${f.quantity}\u00D7 ${f.label || f.item_type}${fp}`);
+                    }
+                  }
+                } catch (_) { /* furnishings fetch failed — continue without */ }
+
+                const parts = [
+                  `Opening the furnishing editor for **${spaceName}** (${fn}).`,
+                  '',
+                  '**Current baseline:**',
+                  `Area: ${area} · Used: ${space.used_area_m2 != null ? Number(space.used_area_m2).toFixed(1) + ' m²' : '--'} · Free: ${space.free_area_m2 != null ? Number(space.free_area_m2).toFixed(1) + ' m²' : '--'}`,
+                  `Occupancy: ${space.normal_occupancy ?? 0} normal / ${space.max_occupancy ?? 0} max / ${space.absolute_occupancy ?? 0} absolute`,
+                ];
+
+                if (furnLines.length > 0) {
+                  parts.push('', '**Furnishings:**', ...furnLines);
+                } else {
+                  parts.push('', '_No furnishings currently placed._');
+                }
+
+                parts.push('', 'Make changes in the editor or ask me to add/remove items. I\'ll show you a before/after comparison when you save.');
+
+                // Store baseline snapshot for before/after comparison (Task #9)
+                useStore.setState({ _furnishingBaseline: {
+                  spaceName,
+                  spaceId: state.selectedSpaceId,
+                  floorId: state.activeFloorId,
+                  area_m2: space.area_m2,
+                  used_area_m2: space.used_area_m2,
+                  free_area_m2: space.free_area_m2,
+                  normal_occupancy: space.normal_occupancy,
+                  max_occupancy: space.max_occupancy,
+                  absolute_occupancy: space.absolute_occupancy,
+                  furnLines,
+                }});
+
+                addMessage({ role: 'delta', text: parts.join('\n'), time: now });
+              })();
+              return;
+            }
+
+            // Default: set input text for normal chips
+            setInput(text);
+            inputRef.current?.focus();
+          }} />
         </div>
       )}
 
@@ -891,7 +967,7 @@ const GUIDE_TABS = [
   { label: 'Nav',       chips: ['Go to floor 1', 'Next floor', 'Previous floor', 'Show all floors'] },
   { label: 'Search',    chips: ['Largest rooms on this floor', 'Show elevators', 'Show staircases', 'Highlight all toilets', "What's adjacent to Nursing Station", 'How many clinical spaces'] },
   { label: 'Route',     chips: ['Nearest elevator', 'Nearest staircase', 'Clear route'] },
-  { label: 'Plan',      chips: ['Best assembly points', 'Find a room for...'] },
+  { label: 'Plan',      chips: ['Best assembly points', 'Find a room for...', 'Edit furnishings'] },
   { label: 'Scenario',  chips: [] },
   { label: 'Clear',     chips: ['Clear', 'Normal view', 'Clear highlights'] },
 ];
