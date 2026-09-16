@@ -229,7 +229,7 @@ def bulk_modify_furnishings(req: BulkFurnishingRequest, db: Session = Depends(ge
                 SpaceFurnishing.item_type == change.item_type,
             ).first()
             if existing:
-                existing.quantity = qty
+                existing.quantity += qty
                 updated += 1
             else:
                 db.add(SpaceFurnishing(
@@ -260,12 +260,29 @@ def bulk_modify_furnishings(req: BulkFurnishingRequest, db: Session = Depends(ge
                     db.delete(f)
                     removed += 1
             elif change.item_type:
-                # Remove all of this item type for this space
-                deleted_count = db.query(SpaceFurnishing).filter(
+                rows = db.query(SpaceFurnishing).filter(
                     SpaceFurnishing.ifc_guid == req.ifc_guid,
                     SpaceFurnishing.item_type == change.item_type,
-                ).delete()
-                removed += deleted_count
+                ).all()
+                if change.quantity is not None and change.quantity > 0:
+                    # Partial removal: reduce quantity across matching rows
+                    to_remove = change.quantity
+                    for f in rows:
+                        if to_remove <= 0:
+                            break
+                        if f.quantity <= to_remove:
+                            to_remove -= f.quantity
+                            db.delete(f)
+                            removed += 1
+                        else:
+                            f.quantity -= to_remove
+                            to_remove = 0
+                            updated += 1
+                else:
+                    # No quantity specified: remove all of this item type
+                    for f in rows:
+                        db.delete(f)
+                        removed += 1
 
         elif change.action == "remove_all":
             deleted_count = db.query(SpaceFurnishing).filter(

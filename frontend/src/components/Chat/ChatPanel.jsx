@@ -347,11 +347,27 @@ export default function ChatPanel() {
       const { actions, confirmations, content } = await fetchIntents(text, effectiveSpace, effectiveFloor, effectiveGroup, effectiveSpaceData);
       phase1Actions = actions;
       if (actions.length > 0) {
+        // Batch multiple modify_furnishing actions into a single API call
+        const furnishActions = actions.filter((a) => a.type === 'modify_furnishing');
+        let execActions = actions;
+        if (furnishActions.length > 1) {
+          const batchedChanges = [];
+          for (const fa of furnishActions) {
+            if (fa.action === 'remove_all') batchedChanges.push({ action: 'remove_all' });
+            else if (fa.action === 'add' && fa.item_type) batchedChanges.push({ action: 'add', item_type: fa.item_type, quantity: fa.quantity || 1 });
+            else if (fa.action === 'remove' && fa.item_type) batchedChanges.push({ action: 'remove', item_type: fa.item_type, quantity: fa.quantity || null });
+          }
+          const batchedAction = { type: 'modify_furnishing', action: 'add', _batchedChanges: batchedChanges };
+          // Replace all furnishing actions with the single batched one
+          execActions = actions.filter((a) => a.type !== 'modify_furnishing');
+          execActions.push(batchedAction);
+        }
+
         const isInstant = actions.every((a) => INSTANT_ACTIONS.has(a.type));
 
         if (isInstant) {
           // ── Fast path: execute immediately, no voice overhead ──
-          for (const action of actions) {
+          for (const action of execActions) {
             await resolveAction(action);
           }
           const cleanLabels = confirmations
@@ -410,7 +426,7 @@ export default function ChatPanel() {
         }
 
         // ── Data actions: execute actions now, voice comes after ──
-        for (const action of actions) {
+        for (const action of execActions) {
           await resolveAction(action);
         }
         const cleanLabels = confirmations

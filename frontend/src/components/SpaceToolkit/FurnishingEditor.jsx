@@ -170,7 +170,7 @@ export default function FurnishingEditor({
   };
 
   const toggleGroup = (cat) => {
-    setCollapsedGroups((prev) => ({ ...prev, [cat]: !prev[cat] }));
+    setCollapsedGroups((prev) => ({ ...prev, [cat]: !(prev[cat] ?? true) }));
   };
 
   const handleRemoveAll = () => {
@@ -329,7 +329,7 @@ export default function FurnishingEditor({
               <div className="fe__empty">No furnishing types available</div>
             ) : (
               Object.entries(catalogGrouped).map(([category, items]) => {
-                const isCollapsed = collapsedGroups[category] ?? false;
+                const isCollapsed = collapsedGroups[category] ?? true;
                 // Filter out items already in current furnishings
                 const filteredItems = items.filter(
                   (item) => !existingItemTypes.has(item.item_type)

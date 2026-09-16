@@ -547,12 +547,15 @@ export async function resolveAction(action) {
       const changeAction = action.action; // "add" | "remove" | "remove_all"
       const changes = [];
 
-      if (changeAction === 'remove_all') {
+      // Support batched changes from pre-merged actions
+      if (action._batchedChanges) {
+        changes.push(...action._batchedChanges);
+      } else if (changeAction === 'remove_all') {
         changes.push({ action: 'remove_all' });
       } else if (changeAction === 'add' && action.item_type) {
         changes.push({ action: 'add', item_type: action.item_type, quantity: action.quantity || 1 });
       } else if (changeAction === 'remove' && action.item_type) {
-        changes.push({ action: 'remove', item_type: action.item_type });
+        changes.push({ action: 'remove', item_type: action.item_type, quantity: action.quantity || null });
       }
 
       if (changes.length === 0) break;

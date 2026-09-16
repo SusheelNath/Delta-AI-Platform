@@ -57,7 +57,7 @@ export function getActionTemplate(actions) {
     case 'find_room':
       return buildFindRoomResponse();
     case 'modify_furnishing':
-      return buildFurnishingModifyResponse(primary);
+      return buildFurnishingModifyResponse(actions.filter((a) => a.type === 'modify_furnishing'));
     case 'suggest_furnishings':
       return buildSuggestFurnishingsResponse();
     default:
@@ -466,7 +466,8 @@ export function buildBeforeAfterComparison(baseline, afterMetrics, afterFurnishi
   return parts.join('\n');
 }
 
-function buildFurnishingModifyResponse(action) {
+function buildFurnishingModifyResponse(actions) {
+  const actionList = Array.isArray(actions) ? actions : [actions];
   const store = useStore.getState();
   const result = store._lastFurnishingResult;
   const spaceName = store.selectedSpace?.space_name || store.selectedSpaceId || 'this space';
@@ -475,19 +476,26 @@ function buildFurnishingModifyResponse(action) {
   if (result.error) return `Could not modify furnishings: _${result.error}_`;
 
   const parts = [];
-  const act = action.action; // "add" | "remove" | "remove_all"
 
-  if (act === 'remove_all') {
-    parts.push(`All furnishings removed from **${spaceName}**.`);
-  } else if (act === 'add') {
-    const qty = action.quantity || 1;
-    const label = action.item_type?.replace(/_/g, ' ') || 'item';
-    parts.push(`Added **${qty}\u00D7 ${label}** to **${spaceName}**.`);
-  } else if (act === 'remove') {
-    const label = action.item_type?.replace(/_/g, ' ') || 'item';
-    parts.push(`Removed **${label}** from **${spaceName}**.`);
-  } else {
-    parts.push(`Furnishings updated for **${spaceName}**.`);
+  for (const action of actionList) {
+    const act = action.action; // "add" | "remove" | "remove_all"
+    if (act === 'remove_all') {
+      parts.push(`All furnishings removed from **${spaceName}**.`);
+    } else if (act === 'add') {
+      const qty = action.quantity || 1;
+      const label = action.item_type?.replace(/_/g, ' ') || 'item';
+      parts.push(`Added **${qty}\u00D7 ${label}** to **${spaceName}**.`);
+    } else if (act === 'remove') {
+      const qty = action.quantity;
+      const label = action.item_type?.replace(/_/g, ' ') || 'item';
+      if (qty) {
+        parts.push(`Removed **${qty}\u00D7 ${label}** from **${spaceName}**.`);
+      } else {
+        parts.push(`Removed all **${label}** from **${spaceName}**.`);
+      }
+    } else {
+      parts.push(`Furnishings updated for **${spaceName}**.`);
+    }
   }
 
   const m = result.metrics;

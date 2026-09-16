@@ -246,6 +246,7 @@ FLOOR_VISIBILITY_VERBS = {
 # ── Furnishing action keywords ──
 
 FURNISHING_ALIASES = {
+    # ── Beds ──
     "patient bed": "patient_bed", "bed": "patient_bed", "beds": "patient_bed",
     "patient bed double": "patient_bed_double", "double bed": "patient_bed_double",
     "icu bed": "icu_bed",
@@ -253,40 +254,144 @@ FURNISHING_ALIASES = {
     "examination table": "examination_table", "exam table": "examination_table",
     "recovery bed": "recovery_bed",
     "crib": "crib", "cribs": "crib",
+    "stretcher": "stretcher", "gurney": "stretcher",
+    "incubator": "incubator",
+    "bassinet": "bassinet",
+    "dialysis chair": "dialysis_chair",
+    "triage station": "triage_station", "triage": "triage_station",
+    "birthing bed": "birthing_bed", "delivery bed": "birthing_bed",
+    "dental chair": "dental_chair",
+
+    # ── Seating ──
     "visitor chair": "visitor_chair", "chair": "visitor_chair", "chairs": "visitor_chair",
     "desk chair": "desk_chair", "office chair": "desk_chair",
     "waiting bench": "waiting_bench", "bench": "waiting_bench", "benches": "waiting_bench",
     "stool": "stool", "stools": "stool",
     "wheelchair bay": "wheelchair_bay", "wheelchair": "wheelchair_bay",
+    "recliner": "recliner",
+    "sofa": "sofa", "couch": "sofa",
+    "high chair": "high_chair", "highchair": "high_chair",
+
+    # ── Storage ──
     "wardrobe": "wardrobe", "wardrobes": "wardrobe",
     "closet": "closet",
     "cabinet": "cabinet", "cabinets": "cabinet",
     "shelving": "shelving", "shelves": "shelving", "shelf": "shelving",
-    "medication cart": "medication_cart",
+    "medication cart": "medication_cart", "med cart": "medication_cart",
     "supply cart": "supply_cart",
+    "locker": "locker", "lockers": "locker",
+    "filing cabinet": "filing_cabinet", "file cabinet": "filing_cabinet",
+    "linen cart": "linen_cart",
+    "laundry cart": "laundry_cart",
+    "waste bin": "waste_bin", "trash bin": "waste_bin", "trash can": "waste_bin", "rubbish bin": "waste_bin",
+    "biohazard bin": "biohazard_bin", "biohazard": "biohazard_bin",
+    "sharps container": "sharps_container", "sharps bin": "sharps_container",
+    "crash cart": "crash_cart", "resuscitation cart": "crash_cart", "code cart": "crash_cart",
+    "instrument trolley": "instrument_trolley", "instrument cart": "instrument_trolley",
+    "iv stand": "iv_stand", "drip stand": "iv_stand", "iv pole": "iv_stand",
+    "coat rack": "coat_rack",
+
+    # ── Clinical Equipment ──
     "ventilator": "ventilator", "ventilators": "ventilator",
     "monitor": "monitor", "patient monitor": "monitor", "monitors": "monitor",
     "infusion pump": "infusion_pump", "iv pump": "infusion_pump",
-    "anaesthesia unit": "anaesthesia_unit", "anesthesia unit": "anaesthesia_unit",
-    "defibrillator": "defibrillator",
+    "anaesthesia unit": "anaesthesia_unit", "anesthesia unit": "anaesthesia_unit", "anesthesia": "anaesthesia_unit",
+    "defibrillator": "defibrillator", "defib": "defibrillator",
     "imaging unit": "imaging_unit", "scanner": "imaging_unit",
     "autoclave": "autoclave",
+    "oxygen tank": "oxygen_tank", "o2 tank": "oxygen_tank",
+    "suction unit": "suction_unit", "suction": "suction_unit",
+    "ecg machine": "ecg_machine", "ecg": "ecg_machine", "ekg machine": "ecg_machine",
+    "ultrasound": "ultrasound", "ultrasound machine": "ultrasound",
+    "blood pressure monitor": "blood_pressure_unit", "bp monitor": "blood_pressure_unit", "sphygmomanometer": "blood_pressure_unit",
+    "pulse oximeter": "pulse_oximeter", "oximeter": "pulse_oximeter",
+    "dialysis machine": "dialysis_machine",
+    "xray unit": "xray_unit", "x-ray": "xray_unit", "x ray": "xray_unit",
+    "ct scanner": "ct_scanner", "ct": "ct_scanner",
+    "mri scanner": "mri_scanner", "mri": "mri_scanner",
+    "sterilizer": "sterilizer",
+    "centrifuge": "centrifuge",
+    "microscope": "microscope",
+    "surgical light": "surgical_light", "operating light": "surgical_light",
+    "baby warmer": "baby_warmer", "infant warmer": "baby_warmer",
+    "phototherapy unit": "phototherapy_unit", "phototherapy": "phototherapy_unit",
+
+    # ── Office / IT Equipment ──
+    "printer": "printer", "copier": "printer",
+    "computer": "computer", "workstation": "computer", "pc": "computer",
+    "server rack": "server_rack",
+    "projector": "projector",
+    "display screen": "display_screen", "tv": "display_screen", "television": "display_screen", "screen": "display_screen",
+    "telephone": "telephone", "phone": "telephone",
+    "intercom": "intercom",
+    "whiteboard": "whiteboard",
+
+    # ── Fixtures ──
     "sink": "sink", "sinks": "sink",
     "toilet": "toilet", "toilets": "toilet",
     "shower": "shower", "showers": "shower",
     "scrub station": "scrub_station",
     "gas outlet": "gas_outlet",
     "nurse call": "nurse_call",
+    "hand sanitizer": "hand_sanitizer", "sanitizer station": "hand_sanitizer", "sanitizer": "hand_sanitizer",
+    "fire extinguisher": "fire_extinguisher",
+    "eyewash station": "eyewash_station", "eyewash": "eyewash_station",
+    "water fountain": "water_fountain", "drinking fountain": "water_fountain",
+    "mirror": "mirror",
+    "soap dispenser": "soap_dispenser",
+    "paper towel dispenser": "paper_towel_dispenser", "towel dispenser": "paper_towel_dispenser",
+    "baby changing station": "baby_changing_station", "changing table": "baby_changing_station",
+    "grab bar": "grab_bar",
+
+    # ── Furniture ──
     "desk": "desk", "desks": "desk",
+    "reception desk": "reception_desk", "front desk": "reception_desk",
     "table": "table", "tables": "table",
+    "conference table": "conference_table", "meeting table": "conference_table",
+    "dining table": "dining_table",
     "countertop": "countertop", "counter": "countertop",
-    "bedside table": "bedside_table",
+    "bedside table": "bedside_table", "nightstand": "bedside_table",
     "curtain divider": "curtain_divider", "curtain": "curtain_divider",
+    "room divider": "room_divider", "privacy screen": "room_divider",
+    "bookshelf": "bookshelf",
+    "notice board": "notice_board", "bulletin board": "notice_board",
+    "sign board": "sign_board", "signage": "sign_board",
+    "podium": "podium", "lectern": "podium",
+
+    # ── Kitchen / Food Service ──
+    "refrigerator": "refrigerator", "fridge": "refrigerator",
+    "microwave": "microwave",
+    "oven": "oven",
+    "dishwasher": "dishwasher",
+    "coffee machine": "coffee_machine", "coffee maker": "coffee_machine",
+    "vending machine": "vending_machine",
+    "ice machine": "ice_machine",
+    "food trolley": "food_trolley", "food cart": "food_trolley",
+    "water cooler": "water_cooler",
+
+    # ── Elevator ──
+    "elevator panel": "elevator_panel",
+    "handrail": "handrail",
+
+    # ── Facilities / MEP ──
     "hvac unit": "hvac_unit", "hvac": "hvac_unit",
     "electrical panel": "electrical_panel",
     "pump": "pump",
-    "elevator panel": "elevator_panel",
-    "handrail": "handrail",
+    "generator": "generator",
+    "ups": "ups_unit", "ups unit": "ups_unit",
+    "fire alarm panel": "fire_alarm_panel", "fire alarm": "fire_alarm_panel",
+    "cctv camera": "cctv_camera", "cctv": "cctv_camera", "security camera": "cctv_camera",
+    "access control": "access_control", "access panel": "access_control",
+
+    # ── Safety / Emergency ──
+    "aed": "aed",
+    "first aid kit": "first_aid_kit", "first aid": "first_aid_kit",
+    "emergency light": "emergency_light",
+    "exit sign": "exit_sign",
+    "spill kit": "spill_kit",
+    "fire blanket": "fire_blanket",
+    "evacuation chair": "evacuation_chair",
+    "oxygen mask station": "oxygen_mask_station",
 }
 
 FURNISH_ADD_KEYWORDS = [
@@ -313,17 +418,29 @@ FURNISH_SUGGEST_KEYWORDS = [
     "what can go in", "what should i add",
 ]
 
+_FURNISH_STOP = r"and|also|remove|add|delete|take|place|install|put|then|from|to"
+# Item word: not a stop word AND not a bare digit (prevents "benches 2" matching "2" as item word)
+_ITEM_WORD = r"(?!(?:" + _FURNISH_STOP + r")\b)(?!\d+\b)\w+"
 _RE_FURNISH_ADD = re.compile(
-    r"\b(?:add|place|install|put(?:\s+in)?|equip\s+with|furnish\s+with)\s+"
-    r"(\d+)?\s*(?:x\s+|×\s+)?"
-    r"(.+?)(?:\s+to\s+(?:this|the)\s+(?:room|space))?\s*$",
+    r"(?:add|place|install|put(?:\s+in)?|equip\s+with|furnish\s+with)\s+"
+    r"(\d+)?\s*(?:x\s+|×\s+)?(?:more\s+)?"
+    r"(" + _ITEM_WORD + r"(?:\s+" + _ITEM_WORD + r"){0,2})",
     re.IGNORECASE,
 )
 
 _RE_FURNISH_REMOVE = re.compile(
-    r"\b(?:remove|delete|take\s+out|get\s+rid\s+of)\s+"
-    r"(?:all\s+)?(?:the\s+)?(\d+)?\s*(?:x\s+|×\s+)?"
-    r"(.+?)(?:\s+from\s+(?:this|the)\s+(?:room|space))?\s*$",
+    r"(?:remove|delete|take\s+out|get\s+rid\s+of)\s+"
+    r"(?:all\s+)?(?:the\s+)?(\d+)?\s*(?:x\s+|×\s+)?(?:more\s+)?"
+    r"(" + _ITEM_WORD + r"(?:\s+" + _ITEM_WORD + r"){0,2})",
+    re.IGNORECASE,
+)
+
+# Continuation pattern: bare "number + item" after comma/and/whitespace (no verb prefix)
+# Commas may be stripped to spaces by voice cleanup, so also match "\s+(\d+)\s+item"
+_RE_FURNISH_CONTINUATION = re.compile(
+    r"(?:,\s*|\band\s+|\s+)"
+    r"(\d+)\s*(?:x\s+|×\s+)?(?:more\s+)?"
+    r"(" + _ITEM_WORD + r"(?:\s+" + _ITEM_WORD + r"){0,2})",
     re.IGNORECASE,
 )
 
@@ -1132,24 +1249,29 @@ def parse_intents(message: str, polygons: list[dict] | None = None, expanded_gro
             used_types.add("furnish")
 
         else:
-            # Add pattern: "add 3 patient beds"
-            m_add = _RE_FURNISH_ADD.search(msg)
-            if m_add:
-                qty_str = m_add.group(1)
-                item_text = m_add.group(2).strip().rstrip("s").lower()
-                qty = int(qty_str) if qty_str else 1
-                # Resolve alias — prefer exact match, then alias-in-text, then text-in-alias
-                item_type = FURNISHING_ALIASES.get(item_text)
+            def _resolve_furnishing_alias(raw_text):
+                """Resolve raw item text to a known item_type via FURNISHING_ALIASES."""
+                text = re.sub(r"^(?:a|an|the|more)\s+", "", raw_text.strip(), flags=re.IGNORECASE)
+                text = text.rstrip("s").lower()
+                item_type = FURNISHING_ALIASES.get(text)
                 if not item_type:
                     for alias, itype in sorted(FURNISHING_ALIASES.items(), key=lambda x: -len(x[0])):
-                        if alias in item_text:
+                        if alias in text:
                             item_type = itype
                             break
                 if not item_type:
                     for alias, itype in sorted(FURNISHING_ALIASES.items(), key=lambda x: len(x[0])):
-                        if item_text in alias:
+                        if text in alias:
                             item_type = itype
                             break
+                return item_type
+
+            # Add patterns: find ALL add items in the message
+            last_add_end = -1
+            for m_add in _RE_FURNISH_ADD.finditer(msg):
+                qty_str = m_add.group(1)
+                qty = int(qty_str) if qty_str else 1
+                item_type = _resolve_furnishing_alias(m_add.group(2))
                 if item_type:
                     intents.append(ParsedIntent(
                         intent_type="furnish",
@@ -1158,33 +1280,59 @@ def parse_intents(message: str, polygons: list[dict] | None = None, expanded_gro
                         furnish_quantity=qty,
                     ))
                     used_types.add("furnish")
+                last_add_end = m_add.end()
 
-            # Remove pattern: "remove 2 visitor chairs"
-            if "furnish" not in used_types:
-                m_rem = _RE_FURNISH_REMOVE.search(msg)
-                if m_rem:
-                    qty_str = m_rem.group(1)
-                    item_text = m_rem.group(2).strip().rstrip("s").lower()
-                    qty = int(qty_str) if qty_str else None
-                    item_type = FURNISHING_ALIASES.get(item_text)
-                    if not item_type:
-                        for alias, itype in sorted(FURNISHING_ALIASES.items(), key=lambda x: -len(x[0])):
-                            if alias in item_text:
-                                item_type = itype
-                                break
-                    if not item_type:
-                        for alias, itype in sorted(FURNISHING_ALIASES.items(), key=lambda x: len(x[0])):
-                            if item_text in alias:
-                                item_type = itype
-                                break
-                    if item_type:
+            # Continuation: bare "3 benches, 2 stools" after a verb-prefixed match
+            # Truncate remainder at the next verb to avoid crossing into "remove 2 chairs"
+            _VERB_BOUNDARY = re.compile(r"\b(?:remove|delete|take\s+out|get\s+rid\s+of|add|place|install)\b", re.IGNORECASE)
+            if last_add_end >= 0:
+                remainder = msg[last_add_end:]
+                verb_m = _VERB_BOUNDARY.search(remainder)
+                if verb_m:
+                    remainder = remainder[:verb_m.start()]
+                for m_cont in _RE_FURNISH_CONTINUATION.finditer(remainder):
+                    cont_qty = int(m_cont.group(1))
+                    cont_item = _resolve_furnishing_alias(m_cont.group(2))
+                    if cont_item:
+                        intents.append(ParsedIntent(
+                            intent_type="furnish",
+                            furnish_action="add",
+                            furnish_item_type=cont_item,
+                            furnish_quantity=cont_qty,
+                        ))
+
+            # Remove patterns: find ALL remove items in the message
+            last_rem_end = -1
+            for m_rem in _RE_FURNISH_REMOVE.finditer(msg):
+                qty_str = m_rem.group(1)
+                qty = int(qty_str) if qty_str else None
+                item_type = _resolve_furnishing_alias(m_rem.group(2))
+                if item_type:
+                    intents.append(ParsedIntent(
+                        intent_type="furnish",
+                        furnish_action="remove",
+                        furnish_item_type=item_type,
+                        furnish_quantity=qty,
+                    ))
+                    used_types.add("furnish")
+                last_rem_end = m_rem.end()
+
+            # Continuation for remove: bare items after a remove verb
+            if last_rem_end >= 0:
+                remainder = msg[last_rem_end:]
+                verb_m = _VERB_BOUNDARY.search(remainder)
+                if verb_m:
+                    remainder = remainder[:verb_m.start()]
+                for m_cont in _RE_FURNISH_CONTINUATION.finditer(remainder):
+                    cont_qty = int(m_cont.group(1))
+                    cont_item = _resolve_furnishing_alias(m_cont.group(2))
+                    if cont_item:
                         intents.append(ParsedIntent(
                             intent_type="furnish",
                             furnish_action="remove",
-                            furnish_item_type=item_type,
-                            furnish_quantity=qty,
+                            furnish_item_type=cont_item,
+                            furnish_quantity=cont_qty,
                         ))
-                        used_types.add("furnish")
 
     # 22. Compare mode toggle (not pair — just on/off)
     for alias, action in sorted(COMPARE_MODE_KEYWORDS.items(), key=lambda x: -len(x[0])):
@@ -1588,10 +1736,11 @@ def intents_to_actions(
                     f"Adding **{qty or 1}× {label}**...",
                 ))
             elif act == "remove" and itype:
+                rem_desc = f"Removing **{qty}× {label}**..." if qty else f"Removing all **{label}**..."
                 actions.append((
                     {"type": "modify_furnishing", "action": "remove",
                      "item_type": itype, "quantity": qty},
-                    f"Removing **{label}**...",
+                    rem_desc,
                 ))
 
         # "query" type produces no actions — LLM handles narratively
