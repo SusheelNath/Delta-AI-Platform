@@ -575,6 +575,18 @@
 
 .chat-panel__message--delta {
   align-self: flex-start;
+  animation: delta-bubble-in 0.3s ease-out both;
+}
+
+@keyframes delta-bubble-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .chat-panel__message--user {

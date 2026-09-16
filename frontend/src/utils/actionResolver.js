@@ -338,7 +338,9 @@ export async function resolveAction(action) {
 
     case 'highlight_spaces': {
       // Find all polygons matching the filter text and highlight them
-      const filter = (action.filter || '').toLowerCase();
+      // Singularize: "elevators" → "elevator", "staircases" → "staircase"
+      const rawFilter = (action.filter || '').toLowerCase();
+      const filter = rawFilter.replace(/s$/, '');
       const allPolys = [];
       const fp = store.floorPolygons || {};
       for (const fid of Object.keys(fp)) {
@@ -403,6 +405,136 @@ export async function resolveAction(action) {
     case 'set_search':
       store.setSearchQuery(action.query || '');
       break;
+
+    case 'search_largest_rooms': {
+      const floorId = store.activeFloorId;
+      if (!floorId) break;
+      const _infra = new Set([
+        'no access', 'ventilation shaft', 'elevator', 'corridor',
+        'toilet', 'staircase', 'shaft', 'void', 'riser',
+        'circulation', 'lobby', 'entrance', 'vestibule',
+      ]);
+      const polys = (store.floorPolygons[floorId] || [])
+        .filter((p) => p.area_m2 != null && p.area_m2 > 0
+          && !_infra.has((p.primary_function || '').toLowerCase()))
+        .sort((a, b) => b.area_m2 - a.area_m2)
+        .slice(0, 3);
+      store.setHighlightedGuids(polys.map((p) => p.ifc_guid));
+      break;
+    }
+
+    case 'find_room': {
+      const capacity = action.capacity || 0;
+      const fnFilter = (action.function || '').toLowerCase();
+      const _infraFind = new Set([
+        'no access', 'ventilation shaft', 'elevator', 'corridor',
+        'toilet', 'staircase', 'shaft', 'void', 'riser',
+        'circulation', 'lobby', 'entrance', 'vestibule',
+      ]);
+
+      // ── Function suitability scores (weight 40%) ──
+      const FN_SCORES = {
+        conference: 10, meeting: 10, lecture: 10, seminar: 10, training: 10,
+        assembly: 10, auditorium: 10, 'multi-purpose': 9, 'multipurpose': 9,
+        waiting: 8, reception: 8, lobby: 7, cafeteria: 8, canteen: 8,
+        restaurant: 7, lounge: 7, atrium: 7,
+        office: 6, administrative: 6, classroom: 7, consultation: 6,
+        examination: 5, treatment: 5, 'patient care': 5, ward: 5,
+        nursing: 5, recovery: 5, rehabilitation: 5,
+        laboratory: 4, pharmacy: 4, radiology: 4, imaging: 4,
+        storage: 2, technical: 2, service: 2, utility: 2, mechanical: 2,
+        ambulance: 1, parking: 1, loading: 1,
+      };
+
+      // ── Zone suitability scores (weight 30%) ──
+      const ZONE_SCORES = {
+        Public: 10, Outpatient: 9, 'Outpatient Treatment': 9,
+        Administrative: 8, Amenity: 8, Departmental: 7,
+        'Inpatient Care': 6, 'Clinical Support': 6, Surgical: 5,
+        'Critical Care': 5, Emergency: 5, Maternity: 5,
+        Rehabilitation: 6, Diagnostics: 5, 'Staff Welfare': 6,
+        Operations: 4, Service: 3, 'Facility Services': 3,
+        Technical: 2, Circulation: 2,
+      };
+
+      // ── Floor accessibility scores (weight 10%) ──
+      const FLOOR_SCORES = {
+        H000: 10, H010: 8, H020: 8, H030: 7, H040: 6, H050: 6,
+        H001: 5, H002: 4, H003: 3,
+      };
+
+      const threshold = Math.floor(capacity * 0.7);
+      const fp = store.floorPolygons || {};
+      const allFloors = Object.keys(fp);
+      const candidates = [];
+
+      for (const fid of allFloors) {
+        for (const p of fp[fid] || []) {
+          const fn = (p.primary_function || '').toLowerCase();
+          if (_infraFind.has(fn)) continue;
+          if (fnFilter && !fn.includes(fnFilter)) continue;
+          const cap = p.max_occupancy || p.absolute_occupancy || (p.area_m2 ? Math.floor(p.area_m2 / 3) : 0);
+          if (cap < threshold) continue;
+
+          const isDirect = cap >= capacity;
+
+          // Score: function (40%) + zone (30%) + capacity fit (20%) + floor (10%)
+          let fnScore = 3; // default
+          for (const [kw, sc] of Object.entries(FN_SCORES)) {
+            if (fn.includes(kw)) { fnScore = sc; break; }
+          }
+          const zone = p.functional_zone || '';
+          const zoneScore = ZONE_SCORES[zone] || 3;
+          const floorScore = FLOOR_SCORES[fid] || 5;
+          const ratio = capacity > 0 ? cap / capacity : 1;
+          const fitScore = ratio >= 1
+            ? Math.max(1, 10 - (ratio - 1) * 4) // closer to 1.0 = better
+            : ratio * 10; // below threshold scales linearly
+          const totalScore = fnScore * 0.4 + zoneScore * 0.3 + fitScore * 0.2 + floorScore * 0.1;
+
+          // Build reasoning
+          const reasons = [];
+          if (fnScore >= 8) reasons.push(`high-suitability function (${p.primary_function})`);
+          else if (fnScore >= 5) reasons.push(`moderate-suitability function (${p.primary_function})`);
+          else reasons.push(`low-suitability function (${p.primary_function})`);
+          if (zoneScore >= 8) reasons.push(`accessible zone (${zone})`);
+          else if (zoneScore >= 5) reasons.push(`${zone} zone`);
+          if (floorScore >= 8) reasons.push('well-accessible floor');
+          if (!isDirect) reasons.push(`capacity ${cap} — could be repurposed to fit ${capacity}`);
+
+          candidates.push({
+            guid: p.ifc_guid,
+            type: isDirect ? 'direct' : 'repurpose',
+            score: totalScore,
+            capacity: cap,
+            area: p.area_m2 || 0,
+            name: p.space_name || p.ifc_guid,
+            fn: p.primary_function || '',
+            zone,
+            floorId: fid,
+            reason: reasons.join('; '),
+          });
+        }
+      }
+
+      // Sort by score descending, take top 10
+      candidates.sort((a, b) => b.score - a.score);
+      const top10 = candidates.slice(0, 10);
+
+      const directGuids = top10.filter((c) => c.type === 'direct').map((c) => c.guid);
+      const repurposeGuids = top10.filter((c) => c.type === 'repurpose').map((c) => c.guid);
+
+      // Build results map for tooltips/legend
+      const resultsMap = {};
+      for (const c of top10) {
+        resultsMap[c.guid] = c;
+      }
+
+      store.setHighlightedGuids(directGuids);
+      store.setRepurposeGuids(repurposeGuids);
+      store.setFindRoomResults(resultsMap);
+      break;
+    }
 
     default:
       console.warn('[Action] Unknown action type:', type);

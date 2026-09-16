@@ -537,6 +537,46 @@
   margin-top: 1px;
 }
 
+.saved-polygon__tooltip-evac {
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.saved-polygon__tooltip-fn {
+  font-size: var(--text-xs);
+  color: var(--c-text-secondary);
+}
+
+.saved-polygon__tooltip-meta {
+  font-size: var(--text-xs);
+  color: var(--c-text-secondary);
+}
+
+.saved-polygon__tooltip-band {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.saved-polygon__tooltip-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.saved-polygon__tooltip-reason {
+  font-size: 10px;
+  color: var(--c-text-secondary);
+  font-style: italic;
+}
+
 /* ── Route navigation line — breathing dot trail ── */
 .routing-line-overlay__glow {
   animation: route-dot-flow 1.2s linear infinite;
@@ -825,4 +865,88 @@
 .match-confirm-card__btn--cancel:hover {
   border-color: #6b7280;
   color: #374151;
+}
+
+/* ── Find Room legend (2D) ── */
+.floor-plan-image__find-room-legend {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid #e5e2de;
+  border-radius: 8px;
+  padding: 8px 12px;
+  min-width: 160px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  animation: findRoomLegendIn 0.2s ease-out;
+}
+
+@keyframes findRoomLegendIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.floor-plan-image__find-room-legend-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.floor-plan-image__find-room-legend-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #374151;
+  letter-spacing: 0.2px;
+}
+
+.floor-plan-image__find-room-legend-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 0;
+  transition: all 0.12s ease;
+}
+
+.floor-plan-image__find-room-legend-close:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.floor-plan-image__find-room-legend-bands {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.floor-plan-image__find-room-legend-band {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: #374151;
+  font-weight: 500;
+}
+
+.floor-plan-image__find-room-legend-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.floor-plan-image__find-room-legend-count {
+  font-size: 10px;
+  color: #9ca3af;
+  text-align: center;
 }

@@ -4,6 +4,7 @@ import { searchSpaces, fullSavePolygons } from '../../api/client';
 import { getColorForFunction, getCategoryIndex } from '../../utils/colorScheme';
 import { unprojectPolygon, earClipTriangulate, computePolygonMetrics } from '../../utils/unprojectPolygon';
 import { selectSpaceFromPolygon } from '../../utils/polygonOverrides';
+import { buildEvacTooltip } from '../../utils/evacTooltip';
 import DeltaSpinner from '../shared/DeltaSpinner';
 import './XeokitViewer.css';
 
@@ -41,6 +42,31 @@ function heatColorRGB(t) {
   return [r, g, b];
 }
 
+// Evacuation-specific: 4 discrete bands with strong, readable colors
+// t=0 → Excellent (green), t→0.33 → Good (yellow), t→0.66 → At Risk (orange), t→1 → Critical (red)
+const EVAC_BANDS = [
+  { max: 0.25, color: [0.18, 0.82, 0.42], label: 'Excellent' },  // #2ED16B
+  { max: 0.50, color: [0.95, 0.85, 0.15], label: 'Good' },       // #F2D926
+  { max: 0.75, color: [1.00, 0.55, 0.10], label: 'At Risk' },    // #FF8C1A
+  { max: 1.01, color: [0.92, 0.15, 0.15], label: 'Critical' },   // #EB2626
+];
+
+function evacColorRGB(t) {
+  for (const band of EVAC_BANDS) {
+    if (t <= band.max) return band.color;
+  }
+  return EVAC_BANDS[3].color;
+}
+
+// Infrastructure functions to dim in evacuation mode
+const EVAC_INFRA = new Set([
+  'no access', 'ventilation shaft', 'corridor', 'shaft', 'void', 'riser',
+  'circulation', 'lobby', 'entrance', 'vestibule',
+]);
+
+// Exit functions to mark as safe points
+const EXIT_FUNCTIONS = new Set(['elevator', 'staircase']);
+
 function throttle(fn, ms) {
   let last = 0, timer = null;
   return function (...args) {
@@ -56,6 +82,52 @@ function throttle(fn, ms) {
 }
 
 const EMPTY = [];
+
+// ── 4×4 matrix helpers for ray-plane intersection ──
+function mulMat4(a, b) {
+  const r = new Float64Array(16);
+  for (let i = 0; i < 4; i++) {
+    for (let j = 0; j < 4; j++) {
+      r[i * 4 + j] = a[i * 4] * b[j] + a[i * 4 + 1] * b[4 + j] + a[i * 4 + 2] * b[8 + j] + a[i * 4 + 3] * b[12 + j];
+    }
+  }
+  return r;
+}
+
+function invertMat4(m) {
+  const inv = new Float64Array(16);
+  inv[0]  =  m[5]*m[10]*m[15] - m[5]*m[11]*m[14] - m[9]*m[6]*m[15] + m[9]*m[7]*m[14] + m[13]*m[6]*m[11] - m[13]*m[7]*m[10];
+  inv[4]  = -m[4]*m[10]*m[15] + m[4]*m[11]*m[14] + m[8]*m[6]*m[15] - m[8]*m[7]*m[14] - m[12]*m[6]*m[11] + m[12]*m[7]*m[10];
+  inv[8]  =  m[4]*m[9]*m[15]  - m[4]*m[11]*m[13] - m[8]*m[5]*m[15] + m[8]*m[7]*m[13] + m[12]*m[5]*m[11] - m[12]*m[7]*m[9];
+  inv[12] = -m[4]*m[9]*m[14]  + m[4]*m[10]*m[13] + m[8]*m[5]*m[14] - m[8]*m[6]*m[13] - m[12]*m[5]*m[10] + m[12]*m[6]*m[9];
+  inv[1]  = -m[1]*m[10]*m[15] + m[1]*m[11]*m[14] + m[9]*m[2]*m[15] - m[9]*m[3]*m[14] - m[13]*m[2]*m[11] + m[13]*m[3]*m[10];
+  inv[5]  =  m[0]*m[10]*m[15] - m[0]*m[11]*m[14] - m[8]*m[2]*m[15] + m[8]*m[3]*m[14] + m[12]*m[2]*m[11] - m[12]*m[3]*m[10];
+  inv[9]  = -m[0]*m[9]*m[15]  + m[0]*m[11]*m[13] + m[8]*m[1]*m[15] - m[8]*m[3]*m[13] - m[12]*m[1]*m[11] + m[12]*m[3]*m[9];
+  inv[13] =  m[0]*m[9]*m[14]  - m[0]*m[10]*m[13] - m[8]*m[1]*m[14] + m[8]*m[2]*m[13] + m[12]*m[1]*m[10] - m[12]*m[2]*m[9];
+  inv[2]  =  m[1]*m[6]*m[15]  - m[1]*m[7]*m[14]  - m[5]*m[2]*m[15] + m[5]*m[3]*m[14] + m[13]*m[2]*m[7]  - m[13]*m[3]*m[6];
+  inv[6]  = -m[0]*m[6]*m[15]  + m[0]*m[7]*m[14]  + m[4]*m[2]*m[15] - m[4]*m[3]*m[14] - m[12]*m[2]*m[7]  + m[12]*m[3]*m[6];
+  inv[10] =  m[0]*m[5]*m[15]  - m[0]*m[7]*m[13]  - m[4]*m[1]*m[15] + m[4]*m[3]*m[13] + m[12]*m[1]*m[7]  - m[12]*m[3]*m[5];
+  inv[14] = -m[0]*m[5]*m[14]  + m[0]*m[6]*m[13]  + m[4]*m[1]*m[14] - m[4]*m[2]*m[13] - m[12]*m[1]*m[6]  + m[12]*m[2]*m[5];
+  inv[3]  = -m[1]*m[6]*m[11]  + m[1]*m[7]*m[10]  + m[5]*m[2]*m[11] - m[5]*m[3]*m[10] - m[9]*m[2]*m[7]   + m[9]*m[3]*m[6];
+  inv[7]  =  m[0]*m[6]*m[11]  - m[0]*m[7]*m[10]  - m[4]*m[2]*m[11] + m[4]*m[3]*m[10] + m[8]*m[2]*m[7]   - m[8]*m[3]*m[6];
+  inv[11] = -m[0]*m[5]*m[11]  + m[0]*m[7]*m[9]   + m[4]*m[1]*m[11] - m[4]*m[3]*m[9]  - m[8]*m[1]*m[7]   + m[8]*m[3]*m[5];
+  inv[15] =  m[0]*m[5]*m[10]  - m[0]*m[6]*m[9]   - m[4]*m[1]*m[10] + m[4]*m[2]*m[9]  + m[8]*m[1]*m[6]   - m[8]*m[2]*m[5];
+  const det = m[0]*inv[0] + m[1]*inv[4] + m[2]*inv[8] + m[3]*inv[12];
+  if (Math.abs(det) < 1e-12) return null;
+  const id = 1.0 / det;
+  for (let i = 0; i < 16; i++) inv[i] *= id;
+  return inv;
+}
+
+function transformVec4(m, v) {
+  const w = m[3]*v[0] + m[7]*v[1] + m[11]*v[2] + m[15]*v[3];
+  const iw = w !== 0 ? 1.0 / w : 1.0;
+  return [
+    (m[0]*v[0] + m[4]*v[1] + m[8]*v[2]  + m[12]*v[3]) * iw,
+    (m[1]*v[0] + m[5]*v[1] + m[9]*v[2]  + m[13]*v[3]) * iw,
+    (m[2]*v[0] + m[6]*v[1] + m[10]*v[2] + m[14]*v[3]) * iw,
+  ];
+}
 
 const GLASS_TYPES = {
   'IfcWindow':      { opacity: 0.55 },
@@ -432,6 +504,7 @@ export default function XeokitViewer() {
           highlightedRef.current = null;
         }
         useStore.getState().setHoveredPolygonGuid(null);
+        useStore.getState().clearHighlights();
         clearSelection();
       });
 
@@ -448,16 +521,38 @@ export default function XeokitViewer() {
             lastHoveredGuid = ifcGuid;
             useStore.getState().setHoveredPolygonGuid(ifcGuid);
           }
-          const floorId = useStore.getState().activeFloorId;
-          const polygons = floorId ? (useStore.getState().floorPolygons[floorId] || []) : [];
+          const st = useStore.getState();
+          const floorId = st.activeFloorId;
+          const polygons = floorId ? (st.floorPolygons[floorId] || []) : [];
           const poly = polygons.find((p) => p.ifc_guid === ifcGuid);
           if (poly) {
-            setPolygonTooltip({
+            const tip = {
               name: poly.space_name || poly.primary_function || ifcGuid,
               area: poly.area_m2 != null ? `${Number(poly.area_m2).toFixed(1)} m²` : null,
               x: e.canvasPos[0] + 14,
               y: e.canvasPos[1] - 10,
-            });
+            };
+
+            // Enrich tooltip in evacuation mode
+            if (st.heatmapMode === 'evacuation') {
+              buildEvacTooltip(tip, poly, polygons);
+            }
+
+            // Enrich tooltip with find_room reasoning
+            const frResults = st.findRoomResults;
+            if (frResults && frResults[ifcGuid]) {
+              const fr = frResults[ifcGuid];
+              tip.findRoom = true;
+              tip.findRoomType = fr.type;
+              tip.findRoomCapacity = fr.capacity;
+              tip.findRoomReason = fr.reason;
+              tip.findRoomScore = fr.score;
+              tip.fn = poly.primary_function || '';
+              tip.zone = poly.functional_zone || '';
+              tip.areaM2 = poly.area_m2 != null ? Number(poly.area_m2).toFixed(1) : null;
+            }
+
+            setPolygonTooltip(tip);
           }
         } else if (lastHoveredGuid !== null) {
           lastHoveredGuid = null;
@@ -1202,6 +1297,8 @@ export default function XeokitViewer() {
   const activeRoute = useStore((s) => s.activeRoute);
   const currentExpandedGroup = useStore((s) => s.currentExpandedGroup);
   const expandedGroups = useStore((s) => s.expandedGroups);
+  const highlightedGuids = useStore((s) => s.highlightedGuids);
+  const repurposeGuids = useStore((s) => s.repurposeGuids);
 
   // Derive a stable key from snapshot matrices so mesh effect only re-runs when matrices change,
   // not when the image URL updates (Tier 2 hi-res capture)
@@ -1254,6 +1351,7 @@ export default function XeokitViewer() {
           alpha: 0.01,
           diffuse: [0, 0, 0],
           emissive: [0, 0, 0],
+          worldVertices: poly.worldVertices || undefined,
         });
         if (mesh) {
           savedMeshesRef.current.set(poly.ifc_guid, mesh);
@@ -1287,6 +1385,7 @@ export default function XeokitViewer() {
           alpha: 0.01,
           diffuse: [0, 0, 0],
           emissive: [0, 0, 0],
+          worldVertices: poly.worldVertices || undefined,
         });
         if (mesh) {
           savedMeshesRef.current.set(poly.ifc_guid, mesh);
@@ -1302,9 +1401,192 @@ export default function XeokitViewer() {
     };
   }, [activeFloorId, floorPolygons, snapshotMatrixKey, loading]);
 
+  // ── 3D Geometry Editing: vertex handle spheres + drag-on-plane ──
+  const editing3D = useStore((s) => s.editing3D);
+  const edit3DHandlesRef = useRef([]); // sphere meshes
+  const edit3DMeshRef = useRef(null);  // live preview polygon mesh
+
+  // Setup/teardown: create handles, attach drag listeners (only when editing3D changes)
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    // Cleanup previous handles + preview
+    for (const h of edit3DHandlesRef.current) { try { h.destroy(); } catch {} }
+    edit3DHandlesRef.current = [];
+    if (edit3DMeshRef.current) { try { edit3DMeshRef.current.destroy(); } catch {} edit3DMeshRef.current = null; }
+
+    if (!editing3D || !viewer || !XMesh || !XReadableGeometry || !XPhongMaterial || !XbuildSphereGeometry) return;
+
+    // Compute initial world vertices if not available
+    let worldVerts = useStore.getState().editing3DVerts;
+    if (worldVerts.length === 0 && editing3D.ifc_guid) {
+      const st = useStore.getState();
+      const poly = (st.floorPolygons[editing3D.floor_id] || []).find(p => p.ifc_guid === editing3D.ifc_guid);
+      if (poly?.vertices && poly.vertices.length >= 3) {
+        const snapshot = st.floorSnapshots[editing3D.floor_id];
+        if (snapshot?.viewMatrix && snapshot?.projMatrix) {
+          const computed = unprojectPolygon(poly.vertices, snapshot.viewMatrix, snapshot.projMatrix, editing3D.planeY);
+          if (computed) {
+            worldVerts = computed;
+            useStore.setState({
+              editing3DVerts: computed.map(v => [...v]),
+              editing3D: { ...editing3D, originalWorldVerts: computed.map(v => [...v]) },
+            });
+          }
+        }
+      }
+      if (worldVerts.length === 0) return;
+    }
+
+    const planeY = editing3D.planeY;
+
+    // Create vertex handle spheres
+    const sphereGeom = new XReadableGeometry(viewer.scene, XbuildSphereGeometry({ radius: 0.12, heightSegments: 12, widthSegments: 12 }));
+    for (let i = 0; i < worldVerts.length; i++) {
+      const [x, y, z] = worldVerts[i];
+      try {
+        const sphere = new XMesh(viewer.scene, {
+          id: `edit3d-handle-${i}`,
+          geometry: sphereGeom,
+          material: new XPhongMaterial(viewer.scene, {
+            diffuse: i === 0 ? [1, 1, 1] : [0.91, 0.44, 0.20],
+            emissive: i === 0 ? [0.91, 0.44, 0.20] : [0.5, 0.2, 0.05],
+            alpha: 1.0,
+          }),
+          position: [x, y, z],
+          pickable: true,
+          clippable: false,
+          collidable: false,
+        });
+        edit3DHandlesRef.current.push(sphere);
+      } catch {}
+    }
+
+    // Create initial preview polygon mesh
+    function rebuildPreviewMesh(verts) {
+      if (edit3DMeshRef.current) { try { edit3DMeshRef.current.destroy(); } catch {} edit3DMeshRef.current = null; }
+      if (verts.length < 3) return;
+      const positions = [];
+      for (const [x, y, z] of verts) positions.push(x, y, z);
+      const flat2D = verts.map(v => [v[0], v[2]]);
+      const indices = earClipTriangulate(flat2D);
+      try {
+        edit3DMeshRef.current = new XMesh(viewer.scene, {
+          id: 'edit3d-preview',
+          geometry: new XReadableGeometry(viewer.scene, {
+            positions: new Float32Array(positions),
+            indices,
+            primitive: 'triangles',
+          }),
+          material: new XPhongMaterial(viewer.scene, {
+            diffuse: [0.91, 0.44, 0.20],
+            emissive: [0.3, 0.1, 0.02],
+            alpha: 0.25,
+            backfaces: true,
+          }),
+          pickable: false, clippable: false, collidable: false, edges: false,
+        });
+      } catch {}
+    }
+
+    rebuildPreviewMesh(worldVerts);
+
+    // Hide the original polygon mesh while editing
+    const origMesh = savedMeshesRef.current.get(editing3D.ifc_guid);
+    if (origMesh) { try { origMesh.material.alpha = 0; } catch {} }
+
+    // Subscribe to vertex changes for live updates (imperative, no re-render)
+    let prevVerts = worldVerts;
+    const unsub = useStore.subscribe((state) => {
+      const verts = state.editing3DVerts;
+      if (!verts || verts === prevVerts || verts.length === 0) return;
+      prevVerts = verts;
+      // Update handle positions
+      for (let i = 0; i < verts.length && i < edit3DHandlesRef.current.length; i++) {
+        try { edit3DHandlesRef.current[i].position = [verts[i][0], verts[i][1], verts[i][2]]; } catch {}
+      }
+      // Rebuild preview mesh
+      rebuildPreviewMesh(verts);
+    });
+
+    // ── Drag logic: ray-plane intersection ──
+    const canvas = viewer.scene.canvas.canvas;
+    let dragIndex = null;
+
+    function rayPlaneIntersect(canvasX, canvasY) {
+      const camera = viewer.scene.camera;
+      const rect = canvas.getBoundingClientRect();
+      const ndcX = ((canvasX - rect.left) / rect.width) * 2 - 1;
+      const ndcY = -(((canvasY - rect.top) / rect.height) * 2 - 1);
+      const pvMat = mulMat4(pMat(camera), vMat(camera));
+      const inv = invertMat4(pvMat);
+      if (!inv) return null;
+      const near = transformVec4(inv, [ndcX, ndcY, -1, 1]);
+      const far = transformVec4(inv, [ndcX, ndcY, 1, 1]);
+      const dx = far[0] - near[0], dy = far[1] - near[1], dz = far[2] - near[2];
+      if (Math.abs(dy) < 1e-6) return null;
+      const t = (planeY - near[1]) / dy;
+      return [near[0] + dx * t, planeY, near[2] + dz * t];
+    }
+    function vMat(cam) { return cam.viewMatrix; }
+    function pMat(cam) { return cam.projMatrix; }
+
+    function onMouseDown(e) {
+      const hit = viewer.scene.pick({ canvasPos: [e.offsetX, e.offsetY] });
+      if (hit?.entity?.id?.startsWith('edit3d-handle-')) {
+        const idx = parseInt(hit.entity.id.replace('edit3d-handle-', ''), 10);
+        if (!isNaN(idx)) {
+          e.stopPropagation();
+          dragIndex = idx;
+          viewer.cameraControl.pointerEnabled = false;
+          canvas.style.cursor = 'grabbing';
+        }
+      }
+    }
+
+    function onMouseMove(e) {
+      if (dragIndex === null) return;
+      const worldPos = rayPlaneIntersect(e.clientX, e.clientY);
+      if (!worldPos) return;
+      useStore.getState().update3DVertex(dragIndex, worldPos[0], worldPos[2]);
+    }
+
+    function onMouseUp() {
+      if (dragIndex !== null) {
+        dragIndex = null;
+        viewer.cameraControl.pointerEnabled = true;
+        canvas.style.cursor = '';
+      }
+    }
+
+    function onKeyDown(e) {
+      if (e.key === 'Enter') { e.preventDefault(); useStore.getState().confirm3DEdit(); }
+      if (e.key === 'Escape') { e.preventDefault(); useStore.getState().cancel3DEdit(); }
+    }
+
+    canvas.addEventListener('mousedown', onMouseDown, true);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      unsub();
+      canvas.removeEventListener('mousedown', onMouseDown, true);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('keydown', onKeyDown);
+      for (const h of edit3DHandlesRef.current) { try { h.destroy(); } catch {} }
+      edit3DHandlesRef.current = [];
+      if (edit3DMeshRef.current) { try { edit3DMeshRef.current.destroy(); } catch {} edit3DMeshRef.current = null; }
+      if (origMesh) { try { origMesh.material.alpha = 0.01; } catch {} }
+      if (viewer.cameraControl) viewer.cameraControl.pointerEnabled = true;
+    };
+  }, [editing3D]);
+
   // Route & selection highlights: dark-focus BIM + blue corridors + nav line
   const bimDarkenedRef = useRef(false);
   const routeNavMeshesRef = useRef([]); // ground stripe + waypoint dots
+  const exitMarkersRef = useRef([]);     // diamond markers above exit points
+  const exitPulseRef = useRef(null);     // animation frame for exit pulse
   const meshStateRef = useRef(new Map()); // guid → 'start'|'target'|'path'|'hover'|'default'
   const breatheRafRef = useRef(null);
   const breatheMeshRef = useRef(null);
@@ -1337,15 +1619,18 @@ export default function XeokitViewer() {
   useEffect(() => {
     const viewer = viewerRef.current;
     const hasRoute = !!activeRoute?.path;
+    const hasHighlights = (highlightedGuids && highlightedGuids.length > 0) || (repurposeGuids && repurposeGuids.length > 0);
+    const isEvacMode = heatmapMode === 'evacuation';
+    const needDarken = hasRoute || hasHighlights || isEvacMode;
 
     // ── BIM dark-focus: darken/restore all scene objects ──
     if (viewer) {
-      if (hasRoute && !bimDarkenedRef.current) {
+      if (needDarken && !bimDarkenedRef.current) {
         for (const obj of Object.values(viewer.scene.objects)) {
           try { obj.colorize = [0.12, 0.12, 0.15]; obj.opacity = 0.6; } catch {}
         }
         bimDarkenedRef.current = true;
-      } else if (!hasRoute && bimDarkenedRef.current) {
+      } else if (!needDarken && bimDarkenedRef.current) {
         const metaObjects = viewer.metaScene?.metaObjects;
         for (const [id, obj] of Object.entries(viewer.scene.objects)) {
           try {
@@ -1385,6 +1670,12 @@ export default function XeokitViewer() {
       }
     }
 
+    // ── Build highlight sets ──
+    const hlSet = highlightedGuids && highlightedGuids.length > 0
+      ? new Set(highlightedGuids) : null;
+    const rpSet = repurposeGuids && repurposeGuids.length > 0
+      ? new Set(repurposeGuids) : null;
+
     // ── Heatmap value lookup (occupancy modes) ──
     const isHeatmap = heatmapMode && heatmapMode !== 'function';
     let heatValues = null; // guid → normalized t (0–1)
@@ -1414,6 +1705,18 @@ export default function XeokitViewer() {
       }
     }
 
+    // ── Evacuation mode: build function lookup + exit set ──
+    const isEvac = heatmapMode === 'evacuation';
+    const guidFnMap = new Map(); // guid → primary_function (lowercase)
+    const exitGuids = new Set();
+    if (isEvac) {
+      for (const p of floorPolygons) {
+        const fn = (p.primary_function || '').toLowerCase();
+        guidFnMap.set(p.ifc_guid, fn);
+        if (EXIT_FUNCTIONS.has(fn)) exitGuids.add(p.ifc_guid);
+      }
+    }
+
     // When heatmapMode changes, invalidate cached mesh states to force re-render
     if (isHeatmap || meshStateRef.current._prevHeatmap !== heatmapMode) {
       meshStateRef.current.clear();
@@ -1428,11 +1731,18 @@ export default function XeokitViewer() {
       const isHoverOrSelect = hoveredPolygonGuid === guid || selectedSpaceId === guid;
       const isGroupMember = groupGuids.has(guid);
 
+      const isHighlighted = hlSet && hlSet.has(guid);
+      const isRepurpose = rpSet && rpSet.has(guid);
+      const isDimmedByHighlight = (hlSet || rpSet) && !isHighlighted && !isRepurpose;
+
       const newState = isRouteStart ? 'start'
         : isRouteTarget ? 'target'
         : isRoutePath ? 'path'
         : isHoverOrSelect ? 'hover'
+        : isHighlighted ? 'highlight'
+        : isRepurpose ? 'repurpose'
         : isGroupMember ? 'group'
+        : isDimmedByHighlight ? 'highlight-dim'
         : 'default';
 
       if (meshStateRef.current.get(guid) === newState) continue;
@@ -1455,16 +1765,38 @@ export default function XeokitViewer() {
           lerpMeshAlpha(guid, mesh, 0.65);
           mesh.material.diffuse = [1.0, 0.55, 0.2];
           mesh.material.emissive = [0.7, 0.3, 0.05];
+        } else if (newState === 'highlight') {
+          lerpMeshAlpha(guid, mesh, 0.65);
+          mesh.material.diffuse = [0.91, 0.44, 0.20]; // #E77133
+          mesh.material.emissive = [0.50, 0.20, 0.05];
+        } else if (newState === 'repurpose') {
+          lerpMeshAlpha(guid, mesh, 0.60);
+          mesh.material.diffuse = [0.23, 0.51, 0.96]; // #3B82F6
+          mesh.material.emissive = [0.10, 0.25, 0.55];
         } else if (newState === 'group') {
           lerpMeshAlpha(guid, mesh, 0.50);
           mesh.material.diffuse = [1.0, 0.55, 0.2];
           mesh.material.emissive = [0.2, 0.075, 0.0];
+        } else if (newState === 'highlight-dim') {
+          lerpMeshAlpha(guid, mesh, 0.06);
+          mesh.material.diffuse = [0.12, 0.12, 0.15];
+          mesh.material.emissive = [0, 0, 0];
+        } else if (isEvac && exitGuids.has(guid)) {
+          // Exit marker — cyan fill, distinct from heatmap palette
+          lerpMeshAlpha(guid, mesh, 0.80);
+          mesh.material.diffuse = [0.00, 0.83, 1.00]; // #00D4FF
+          mesh.material.emissive = [0.00, 0.40, 0.55];
+        } else if (isEvac && EVAC_INFRA.has(guidFnMap.get(guid) || '')) {
+          // Dim infrastructure in evacuation mode
+          lerpMeshAlpha(guid, mesh, 0.04);
+          mesh.material.diffuse = [0.10, 0.10, 0.12];
+          mesh.material.emissive = [0, 0, 0];
         } else if (isHeatmap && heatValues?.has(guid)) {
-          // Occupancy heatmap overlay
-          const hc = heatColorRGB(heatValues.get(guid));
-          lerpMeshAlpha(guid, mesh, 0.55);
+          // Heatmap overlay — evacuation uses discrete bands, others use gradient
+          const hc = isEvac ? evacColorRGB(heatValues.get(guid)) : heatColorRGB(heatValues.get(guid));
+          lerpMeshAlpha(guid, mesh, isEvac ? 0.72 : 0.55);
           mesh.material.diffuse = hc;
-          mesh.material.emissive = [hc[0] * 0.35, hc[1] * 0.35, hc[2] * 0.35];
+          mesh.material.emissive = [hc[0] * 0.40, hc[1] * 0.40, hc[2] * 0.40];
         } else {
           lerpMeshAlpha(guid, mesh, 0.01);
           mesh.material.diffuse = [0, 0, 0];
@@ -1493,6 +1825,96 @@ export default function XeokitViewer() {
           breatheRafRef.current = requestAnimationFrame(tick);
         };
         breatheRafRef.current = requestAnimationFrame(tick);
+      }
+    }
+
+    // ── Exit diamond markers (evacuation mode) ──
+    for (const m of exitMarkersRef.current) { try { m.destroy(); } catch {} }
+    exitMarkersRef.current = [];
+    if (exitPulseRef.current) { cancelAnimationFrame(exitPulseRef.current); exitPulseRef.current = null; }
+
+    if (isEvac && exitGuids.size > 0 && viewer && XMesh && XReadableGeometry && XPhongMaterial) {
+      const geometry = useStore.getState().floorSpaceGeometry;
+      const spaces = geometry[activeFloorId] || [];
+      const maxYTop = spaces.length > 0 ? Math.max(...spaces.map(s => s.yTop || s.y || 0)) : 0;
+      const markerY = maxYTop + 0.6;
+
+      // Build diamond geometry: two pyramids joined at base (octahedron-like)
+      const S = 0.15; // half-width
+      const H = 0.35; // half-height
+      // 6 vertices: top, bottom, 4 equatorial
+      const dPos = [
+        0, H, 0,    // 0: top
+        0, -H, 0,   // 1: bottom
+        S, 0, 0,    // 2: +X
+        0, 0, S,    // 3: +Z
+        -S, 0, 0,   // 4: -X
+        0, 0, -S,   // 5: -Z
+      ];
+      const dIdx = [
+        0,2,3, 0,3,4, 0,4,5, 0,5,2,  // top 4 faces
+        1,3,2, 1,4,3, 1,5,4, 1,2,5,  // bottom 4 faces
+      ];
+
+      // Find centroids of exit meshes
+      const exitMeshes = [];
+      for (const guid of exitGuids) {
+        const mesh = savedMeshesRef.current.get(guid);
+        if (!mesh) continue;
+        const pos = mesh.geometry._state?.positionsCompressed || mesh.geometry._state?.positions;
+        if (!pos || pos.length < 3) continue;
+        let cx = 0, cy = 0, cz = 0, n = 0;
+        for (let i = 0; i < pos.length; i += 3) {
+          cx += pos[i]; cy += pos[i+1]; cz += pos[i+2]; n++;
+        }
+        if (n === 0) continue;
+        cx /= n; cy /= n; cz /= n;
+
+        // Create diamond at centroid, elevated above floor
+        const offsetPos = new Float32Array(dPos.length);
+        for (let i = 0; i < dPos.length; i += 3) {
+          offsetPos[i] = dPos[i] + cx;
+          offsetPos[i+1] = dPos[i+1] + markerY;
+          offsetPos[i+2] = dPos[i+2] + cz;
+        }
+        try {
+          const marker = new XMesh(viewer.scene, {
+            geometry: new XReadableGeometry(viewer.scene, {
+              positions: offsetPos, indices: dIdx, primitive: 'triangles',
+            }),
+            material: new XPhongMaterial(viewer.scene, {
+              diffuse: [0.00, 0.83, 1.00],
+              emissive: [0.00, 0.50, 0.70],
+              alpha: 0.92,
+              backfaces: true,
+            }),
+            pickable: false, clippable: false, collidable: false, edges: false,
+          });
+          exitMarkersRef.current.push(marker);
+          exitMeshes.push(mesh);
+        } catch {}
+      }
+
+      // Pulse animation: exit meshes + diamonds cycle alpha
+      if (exitMeshes.length > 0 || exitMarkersRef.current.length > 0) {
+        const startTime = performance.now();
+        const pulseTick = (now) => {
+          const t = (Math.sin((now - startTime) / 800 * Math.PI) + 1) / 2; // 0→1→0 over 1.6s
+          for (const mesh of exitMeshes) {
+            try {
+              mesh.material.alpha = 0.60 + t * 0.35;
+              mesh.material.emissive = [0.00, 0.30 + t * 0.25, 0.40 + t * 0.30];
+            } catch {}
+          }
+          for (const marker of exitMarkersRef.current) {
+            try {
+              marker.material.alpha = 0.70 + t * 0.28;
+              marker.material.emissive = [0.00, 0.40 + t * 0.30, 0.55 + t * 0.35];
+            } catch {}
+          }
+          exitPulseRef.current = requestAnimationFrame(pulseTick);
+        };
+        exitPulseRef.current = requestAnimationFrame(pulseTick);
       }
     }
 
@@ -1679,7 +2101,11 @@ export default function XeokitViewer() {
         }));
       } catch {}
     }
-  }, [hoveredPolygonGuid, selectedSpaceId, activeRoute, activeFloorId, expandedGroups, floorPolygons, heatmapMode]);
+  }, [hoveredPolygonGuid, selectedSpaceId, activeRoute, activeFloorId, expandedGroups, floorPolygons, heatmapMode, highlightedGuids, repurposeGuids]);
+
+  // ── Find Room legend ──
+  const findRoomResults = useStore((s) => s.findRoomResults);
+  const clearHighlights = useStore((s) => s.clearHighlights);
 
   // ── Heatmap legend stats ──
   const setHeatmapMode = useStore((s) => s.setHeatmapMode);
@@ -1688,7 +2114,7 @@ export default function XeokitViewer() {
     const labels = {
       occupancy: 'Occupancy Capacity',
       occupancy_density: 'Occupancy Density (ppl/m²)',
-      evacuation: 'Evacuation Capacity',
+      evacuation: 'Evacuation Access',
       area: 'Area (m²)',
       area_per_bed: 'Area per Bed (m²)',
       utilization: 'Utilization',
@@ -1752,13 +2178,55 @@ export default function XeokitViewer() {
       {polygonTooltip && (
         <div className="xeokit-viewer__polygon-tooltip" style={{ left: polygonTooltip.x, top: polygonTooltip.y }}>
           <div className="xeokit-viewer__polygon-tooltip-name">{polygonTooltip.name}</div>
-          {polygonTooltip.area && <div className="xeokit-viewer__polygon-tooltip-area">{polygonTooltip.area}</div>}
+          {polygonTooltip.findRoom ? (
+            <div className="xeokit-viewer__polygon-tooltip-evac">
+              {polygonTooltip.fn && polygonTooltip.fn !== polygonTooltip.name && (
+                <div className="xeokit-viewer__polygon-tooltip-fn">{polygonTooltip.fn}</div>
+              )}
+              {(polygonTooltip.zone || polygonTooltip.areaM2) && (
+                <div className="xeokit-viewer__polygon-tooltip-meta">
+                  {polygonTooltip.zone}{polygonTooltip.zone && polygonTooltip.areaM2 ? ' · ' : ''}{polygonTooltip.areaM2 && `${polygonTooltip.areaM2} m²`}
+                </div>
+              )}
+              <div className="xeokit-viewer__polygon-tooltip-meta">
+                Capacity: {polygonTooltip.findRoomCapacity}
+              </div>
+              <div className="xeokit-viewer__polygon-tooltip-band">
+                <span className="xeokit-viewer__polygon-tooltip-dot" style={{ background: polygonTooltip.findRoomType === 'direct' ? '#E77133' : '#3B82F6' }} />
+                <span>{polygonTooltip.findRoomType === 'direct' ? 'Matches capacity' : 'Repurpose candidate'}</span>
+              </div>
+              <div className="xeokit-viewer__polygon-tooltip-reason">{polygonTooltip.findRoomReason}</div>
+            </div>
+          ) : polygonTooltip.evacMode ? (
+            <div className="xeokit-viewer__polygon-tooltip-evac">
+              {polygonTooltip.fn && polygonTooltip.fn !== polygonTooltip.name && (
+                <div className="xeokit-viewer__polygon-tooltip-fn">{polygonTooltip.fn}</div>
+              )}
+              {(polygonTooltip.zone || polygonTooltip.areaM2) && (
+                <div className="xeokit-viewer__polygon-tooltip-meta">
+                  {polygonTooltip.zone}{polygonTooltip.zone && polygonTooltip.areaM2 ? ' · ' : ''}{polygonTooltip.areaM2 && `${polygonTooltip.areaM2} m²`}
+                </div>
+              )}
+              {polygonTooltip.evacOccupancy > 0 && (
+                <div className="xeokit-viewer__polygon-tooltip-meta">
+                  {polygonTooltip.evacOccupancy} people{polygonTooltip.evacDensity ? ` · ${polygonTooltip.evacDensity} ppl/m²` : ''}
+                </div>
+              )}
+              <div className="xeokit-viewer__polygon-tooltip-band">
+                <span className="xeokit-viewer__polygon-tooltip-dot" style={{ background: polygonTooltip.evacColor }} />
+                <span>{polygonTooltip.evacLabel}</span>
+              </div>
+              <div className="xeokit-viewer__polygon-tooltip-reason">{polygonTooltip.evacReason}</div>
+            </div>
+          ) : (
+            polygonTooltip.area && <div className="xeokit-viewer__polygon-tooltip-area">{polygonTooltip.area}</div>
+          )}
         </div>
       )}
 
       {/* Heatmap legend */}
       {heatmapLegend && (
-        <div className="xeokit-viewer__heatmap-legend">
+        <div className={`xeokit-viewer__heatmap-legend ${heatmapMode === 'evacuation' ? 'xeokit-viewer__heatmap-legend--evac' : ''}`}>
           <div className="xeokit-viewer__heatmap-legend-header">
             <span className="xeokit-viewer__heatmap-legend-title">{heatmapLegend.label}</span>
             <button
@@ -1771,12 +2239,55 @@ export default function XeokitViewer() {
               </svg>
             </button>
           </div>
-          <div className="xeokit-viewer__heatmap-legend-bar">
-            <span className="xeokit-viewer__heatmap-legend-label">{heatmapLegend.minLabel}</span>
-            <div className="xeokit-viewer__heatmap-legend-gradient" />
-            <span className="xeokit-viewer__heatmap-legend-label">{heatmapLegend.maxLabel}</span>
+          {heatmapMode === 'evacuation' ? (
+            <>
+              <div className="xeokit-viewer__evac-bands">
+                <div className="xeokit-viewer__evac-band"><span className="xeokit-viewer__evac-dot" style={{ background: '#2ED16B' }} />Excellent</div>
+                <div className="xeokit-viewer__evac-band"><span className="xeokit-viewer__evac-dot" style={{ background: '#F2D926' }} />Good</div>
+                <div className="xeokit-viewer__evac-band"><span className="xeokit-viewer__evac-dot" style={{ background: '#FF8C1A' }} />At Risk</div>
+                <div className="xeokit-viewer__evac-band"><span className="xeokit-viewer__evac-dot" style={{ background: '#EB2626' }} />Critical</div>
+              </div>
+              <div className="xeokit-viewer__evac-exit"><span className="xeokit-viewer__evac-dot" style={{ background: '#00D4FF', border: '1.5px solid #00a0cc' }} />Exit Point</div>
+              <div className="xeokit-viewer__heatmap-legend-count">{heatmapLegend.count} spaces</div>
+            </>
+          ) : (
+            <>
+              <div className="xeokit-viewer__heatmap-legend-bar">
+                <span className="xeokit-viewer__heatmap-legend-label">{heatmapLegend.minLabel}</span>
+                <div className="xeokit-viewer__heatmap-legend-gradient" />
+                <span className="xeokit-viewer__heatmap-legend-label">{heatmapLegend.maxLabel}</span>
+              </div>
+              <div className="xeokit-viewer__heatmap-legend-count">{heatmapLegend.count} spaces</div>
+            </>
+          )}
+        </div>
+      )}
+      {/* Find Room legend */}
+      {findRoomResults && Object.keys(findRoomResults).length > 0 && (
+        <div className="xeokit-viewer__heatmap-legend xeokit-viewer__heatmap-legend--find-room">
+          <div className="xeokit-viewer__heatmap-legend-header">
+            <span className="xeokit-viewer__heatmap-legend-title">Room Finder</span>
+            <button
+              className="xeokit-viewer__heatmap-legend-close"
+              onClick={() => { clearHighlights(); }}
+              title="Clear results"
+            >
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><line x1="2" y1="2" x2="8" y2="8"/><line x1="8" y1="2" x2="2" y2="8"/></svg>
+            </button>
           </div>
-          <div className="xeokit-viewer__heatmap-legend-count">{heatmapLegend.count} spaces</div>
+          <div className="xeokit-viewer__evac-bands">
+            <div className="xeokit-viewer__evac-band">
+              <span className="xeokit-viewer__evac-dot" style={{ background: '#E77133' }} />
+              Matches capacity
+            </div>
+            <div className="xeokit-viewer__evac-band">
+              <span className="xeokit-viewer__evac-dot" style={{ background: '#3B82F6' }} />
+              Repurpose candidate
+            </div>
+          </div>
+          <div className="xeokit-viewer__heatmap-legend-count">
+            {Object.keys(findRoomResults).length} rooms
+          </div>
         </div>
       )}
     </div>

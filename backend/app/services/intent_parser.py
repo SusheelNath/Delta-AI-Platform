@@ -115,13 +115,14 @@ ROUTE_KEYWORDS = {
 EVACUATION_KEYWORDS = [
     "evacuate", "evacuating", "evacuation", "emergency",
     "collect people", "collection point", "collection points",
-    "gather people", "assembly point", "assembly area",
+    "gather people", "assembly point", "assembly points", "assembly area",
     "best rooms to collect", "where to collect",
-    "shelter", "safe area",
+    "best assembly", "shelter", "safe area",
 ]
 
 CAPACITY_PLAN_KEYWORDS = [
     "conference room for", "meeting room for", "room for",
+    "find a room", "find room", "find a space", "find space",
     "accommodate", "seat", "fit",
     "thinking to make", "convert to", "use as",
 ]
@@ -430,6 +431,12 @@ _RE_SELECT_SPACE = re.compile(
 
 _RE_HIGHLIGHT = re.compile(
     r"\b(?:highlight|mark|emphasize|light\s+up|point\s+out|color|colour)\s+(?:all\s+)?(.+)",
+    re.IGNORECASE,
+)
+
+# "Show X" patterns that map to highlight_spaces (only specific spatial nouns)
+_RE_SHOW_HIGHLIGHT = re.compile(
+    r"\bshow\s+(?:all\s+)?(?:the\s+)?(elevators?|staircases?|toilets?|corridors?|shafts?|lobbies|vestibules?)",
     re.IGNORECASE,
 )
 
@@ -914,8 +921,17 @@ def parse_intents(message: str, polygons: list[dict] | None = None, expanded_gro
             ))
             used_types.add("select_room_relative")
 
-    # 11. Expand directory group (skip when route already handles the target)
-    if expand_group_fn and "expand_group" not in used_types and "select_room" not in used_types and "route" not in used_types:
+    # 10c. Smart search — largest rooms (early priority so LLM doesn't handle it)
+    _largest_patterns_early = [
+        "largest rooms", "biggest rooms", "largest spaces", "biggest spaces",
+        "largest room", "biggest room",
+    ]
+    if any(p in msg_lower for p in _largest_patterns_early) and "smart_search" not in used_types:
+        intents.append(ParsedIntent(intent_type="smart_search", search_query="largest"))
+        used_types.add("smart_search")
+
+    # 11. Expand directory group (skip when route/smart_search/capacity_plan already handles the target)
+    if expand_group_fn and "expand_group" not in used_types and "select_room" not in used_types and "route" not in used_types and "smart_search" not in used_types and "capacity_plan" not in used_types:
         intents.append(ParsedIntent(intent_type="expand_group", function_name=expand_group_fn))
         used_types.add("expand_group")
 
@@ -1048,6 +1064,8 @@ def parse_intents(message: str, polygons: list[dict] | None = None, expanded_gro
 
     # 26. Highlight by query
     m = _RE_HIGHLIGHT.search(msg)
+    if not m:
+        m = _RE_SHOW_HIGHLIGHT.search(msg)
     if m and "highlight" not in used_types:
         filt = re.sub(r'\b(rooms?|spaces?)\b', '', m.group(1)).strip()
         if filt:
@@ -1168,13 +1186,14 @@ def intents_to_actions(
         elif t == "evacuate":
             actions.append((
                 {"type": "set_heatmap", "mode": "evacuation"},
-                "Activating **evacuation capacity** view -- brighter rooms can hold more people.",
+                "Activating **evacuation access** view — green rooms have high capacity near exits. Red rooms need evacuation attention.",
             ))
 
         elif t == "capacity_plan":
+            fn_label = f" **{intent.target_function}**" if intent.target_function else ""
             actions.append((
-                {"type": "set_heatmap", "mode": "occupancy"},
-                f"Showing **occupancy capacity** -- analysing rooms for {intent.target_capacity} people...",
+                {"type": "find_room", "capacity": intent.target_capacity, "function": intent.target_function},
+                f"Finding{fn_label} rooms that can hold **{intent.target_capacity}** people...",
             ))
 
         elif t == "heatmap":
@@ -1370,6 +1389,14 @@ def intents_to_actions(
                 {"type": "set_search", "query": intent.search_query},
                 f"Searching for **{intent.search_query}**...",
             ))
+
+        elif t == "smart_search":
+            q = intent.search_query or ""
+            if q == "largest":
+                actions.append((
+                    {"type": "search_largest_rooms"},
+                    "Finding the largest rooms on this floor...",
+                ))
 
         # "query" type produces no actions — LLM handles narratively
 

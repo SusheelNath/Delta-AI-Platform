@@ -114,6 +114,8 @@ const useStore = create((set, get) => ({
 
   // Polygon editing (double-click to relabel)
   editingPolygon: null,  // { ifc_guid, floor_id } or null
+  editingGeometry: null,  // { ifc_guid, floor_id, mode: 'vertex' | 'redraw', originalVertices: [...] } or null
+  editingVertices: [],     // working copy of vertices during vertex-drag editing
 
   // Routing navigation
   activeRoute: null,  // { type: 'elevator'|'staircase', path: [...], targetGuid, centroids: [[x,y],...], distanceM }
@@ -136,6 +138,8 @@ const useStore = create((set, get) => ({
 
   // Highlights (persistent glow on rooms until cleared)
   highlightedGuids: [],   // ifc_guid list to highlight on the floor plan
+  repurposeGuids: [],     // ifc_guid list for repurpose candidates (blue)
+  findRoomResults: null,  // Map<guid, { type, score, reason, capacity, ... }> for find_room
 
   // AI Learnings
   learningsPanelOpen: false,
@@ -319,12 +323,137 @@ const useStore = create((set, get) => ({
 
   setEditingPolygon: (poly) => set({ editingPolygon: poly }),
 
+  // ── Geometry editing actions ──
+  startGeometryEdit: (ifc_guid, floor_id, mode) => {
+    const poly = (get().floorPolygons[floor_id] || []).find(p => p.ifc_guid === ifc_guid);
+    if (!poly) return;
+    set({
+      editingGeometry: { ifc_guid, floor_id, mode, originalVertices: [...poly.vertices.map(v => [...v])] },
+      editingVertices: mode === 'vertex' ? poly.vertices.map(v => [...v]) : [],
+      pendingPolygonVertices: [],
+    });
+  },
+
+  updateEditingVertex: (index, newPos) => set((s) => {
+    const verts = [...s.editingVertices];
+    verts[index] = newPos;
+    return { editingVertices: verts };
+  }),
+
+  addEditingVertex: (afterIndex, pos) => set((s) => {
+    const verts = [...s.editingVertices];
+    verts.splice(afterIndex + 1, 0, pos);
+    return { editingVertices: verts };
+  }),
+
+  removeEditingVertex: (index) => set((s) => {
+    if (s.editingVertices.length <= 3) return {}; // minimum 3 vertices
+    const verts = [...s.editingVertices];
+    verts.splice(index, 1);
+    return { editingVertices: verts };
+  }),
+
+  confirmGeometryEdit: () => {
+    const state = get();
+    const eg = state.editingGeometry;
+    if (!eg) return;
+
+    const newVertices = eg.mode === 'vertex'
+      ? state.editingVertices
+      : state.pendingPolygonVertices;
+
+    if (newVertices.length < 3) return;
+
+    // Update polygon vertices in store
+    const prev = state.floorPolygons;
+    const floor = (prev[eg.floor_id] || []).map(p =>
+      p.ifc_guid === eg.ifc_guid ? { ...p, vertices: newVertices, edited: true } : p
+    );
+    const updated = { ...prev, [eg.floor_id]: floor };
+
+    // Persist to localStorage
+    savePolygonsToStorage(updated);
+
+    set({
+      floorPolygons: updated,
+      editingGeometry: null,
+      editingVertices: [],
+      pendingPolygonVertices: [],
+    });
+  },
+
+  cancelGeometryEdit: () => set({
+    editingGeometry: null,
+    editingVertices: [],
+    pendingPolygonVertices: [],
+  }),
+
+  // ── 3D geometry editing actions ──
+  editing3D: null, // { ifc_guid, floor_id, planeY, originalWorldVerts: [...] } or null
+  editing3DVerts: [], // working copy of world vertices [[x,y,z], ...]
+
+  startGeometryEdit3D: (ifc_guid, floor_id) => {
+    const state = get();
+    const poly = (state.floorPolygons[floor_id] || []).find(p => p.ifc_guid === ifc_guid);
+    if (!poly || !poly.vertices || poly.vertices.length < 3) return;
+
+    // Get the current world vertices — either stored or compute from unprojection
+    const snapshot = state.floorSnapshots[floor_id];
+    const geometry = state.floorSpaceGeometry || {};
+    const spaces = geometry[floor_id] || [];
+    const maxYTop = spaces.length > 0 ? Math.max(...spaces.map(s => s.yTop || s.y || 0)) : 0;
+    const planeY = maxYTop + 0.05;
+
+    let worldVerts = poly.worldVertices;
+    if (!worldVerts && snapshot?.viewMatrix && snapshot?.projMatrix) {
+      // Dynamic import not available here — store the 2D verts + plane info,
+      // let XeokitViewer compute the initial world verts
+      worldVerts = null;
+    }
+
+    set({
+      editing3D: { ifc_guid, floor_id, planeY, originalWorldVerts: worldVerts ? worldVerts.map(v => [...v]) : null },
+      editing3DVerts: worldVerts ? worldVerts.map(v => [...v]) : [],
+    });
+  },
+
+  update3DVertex: (index, newX, newZ) => set((s) => {
+    const verts = s.editing3DVerts.map(v => [...v]);
+    if (verts[index]) {
+      verts[index][0] = newX;
+      // verts[index][1] stays locked (Y = floor plane)
+      verts[index][2] = newZ;
+    }
+    return { editing3DVerts: verts };
+  }),
+
+  confirm3DEdit: () => {
+    const state = get();
+    const e3d = state.editing3D;
+    if (!e3d || state.editing3DVerts.length < 3) return;
+
+    const prev = state.floorPolygons;
+    const floor = (prev[e3d.floor_id] || []).map(p =>
+      p.ifc_guid === e3d.ifc_guid
+        ? { ...p, worldVertices: state.editing3DVerts.map(v => [...v]), edited: true }
+        : p
+    );
+    const updated = { ...prev, [e3d.floor_id]: floor };
+    savePolygonsToStorage(updated);
+
+    set({ floorPolygons: updated, editing3D: null, editing3DVerts: [] });
+  },
+
+  cancel3DEdit: () => set({ editing3D: null, editing3DVerts: [] }),
+
   setActiveRoute: (route) => set({ activeRoute: route }),
   clearActiveRoute: () => set({ activeRoute: null }),
 
   // Highlight actions
   setHighlightedGuids: (guids) => set({ highlightedGuids: guids }),
-  clearHighlights: () => set({ highlightedGuids: [] }),
+  setRepurposeGuids: (guids) => set({ repurposeGuids: guids }),
+  setFindRoomResults: (results) => set({ findRoomResults: results }),
+  clearHighlights: () => set({ highlightedGuids: [], repurposeGuids: [], findRoomResults: null }),
 
   // Universal clear — resets UI state to default (preserves chat history)
   clearAll: () => set({
@@ -334,6 +463,8 @@ const useStore = create((set, get) => ({
     selectedSpace: null,
     activeRoute: null,
     highlightedGuids: [],
+    repurposeGuids: [],
+    findRoomResults: null,
     expandedGroups: [],
     searchQuery: '',
     drawerOpen: false,

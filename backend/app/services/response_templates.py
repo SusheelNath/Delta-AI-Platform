@@ -426,6 +426,8 @@ _GROUNDED_ACTION_TYPES = {
     "no_selection_hint", "set_floor_relative", "show_all_floors",
     "open_toolkit_section", "toggle_profile", "close_card",
     "set_search",
+    "search_largest_rooms",
+    "highlight_spaces", "highlight_adjacent", "count_highlight",
 }
 
 

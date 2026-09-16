@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo } from 'react';
 import useStore from '../../store/useStore';
 import { computePolygonMetrics } from '../../utils/unprojectPolygon';
+import { buildEvacTooltip } from '../../utils/evacTooltip';
 
 /** Get polygon-derived area (stored) and perimeter (computed) for Space Toolkit. */
 function getPolygonOverrides(polygon, floorId) {
@@ -31,6 +32,9 @@ export default function SavedPolygonsOverlay({ floorId, onTooltipChange }) {
   const selectedSpaceId = useStore((s) => s.selectedSpaceId);
   const hoveredPolygonGuid = useStore((s) => s.hoveredPolygonGuid);
   const activeRoute = useStore((s) => s.activeRoute);
+  const highlightedGuids = useStore((s) => s.highlightedGuids);
+  const repurposeGuids = useStore((s) => s.repurposeGuids);
+  const editingGeometry = useStore((s) => s.editingGeometry);
   const setHoveredPolygonGuid = useStore((s) => s.setHoveredPolygonGuid);
   const selectSpace = useStore((s) => s.selectSpace);
   const mappingMode = useStore((s) => s.mappingMode);
@@ -77,8 +81,27 @@ export default function SavedPolygonsOverlay({ floorId, onTooltipChange }) {
     const container = e.currentTarget.closest('.floor-plan-image');
     if (!container) return;
     const rect = container.getBoundingClientRect();
-    onTooltipChange?.({ name, area, x: e.clientX - rect.left + 14, y: e.clientY - rect.top - 10 });
-  }, [setHoveredPolygonGuid, onTooltipChange]);
+    const tip = { name, area, x: e.clientX - rect.left + 14, y: e.clientY - rect.top - 10 };
+    // Enrich in evacuation mode
+    const st = useStore.getState();
+    if (st.heatmapMode === 'evacuation') {
+      const floorPolys = st.floorPolygons[floorId] || [];
+      buildEvacTooltip(tip, polygon, floorPolys);
+    }
+    // Enrich with find_room reasoning
+    const frResults = st.findRoomResults;
+    if (frResults && frResults[polygon.ifc_guid]) {
+      const fr = frResults[polygon.ifc_guid];
+      tip.findRoom = true;
+      tip.findRoomType = fr.type;
+      tip.findRoomCapacity = fr.capacity;
+      tip.findRoomReason = fr.reason;
+      tip.fn = polygon.primary_function || '';
+      tip.zone = polygon.functional_zone || '';
+      tip.areaM2 = polygon.area_m2 != null ? Number(polygon.area_m2).toFixed(1) : null;
+    }
+    onTooltipChange?.(tip);
+  }, [setHoveredPolygonGuid, onTooltipChange, floorId]);
 
   const handleMouseMove = useCallback((e) => {
     const container = e.currentTarget.closest('.floor-plan-image');
@@ -93,6 +116,16 @@ export default function SavedPolygonsOverlay({ floorId, onTooltipChange }) {
   }, [setHoveredPolygonGuid, onTooltipChange]);
 
   if (polygons.length === 0) return null;
+
+  const highlightSet = useMemo(() => {
+    if (!highlightedGuids || highlightedGuids.length === 0) return null;
+    return new Set(highlightedGuids);
+  }, [highlightedGuids]);
+
+  const repurposeSet = useMemo(() => {
+    if (!repurposeGuids || repurposeGuids.length === 0) return null;
+    return new Set(repurposeGuids);
+  }, [repurposeGuids]);
 
   const routeStartGuid = activeRoute?.path?.[0]?.ifc_guid || null;
   const hasRoute = !!routePathMap;
@@ -124,9 +157,20 @@ export default function SavedPolygonsOverlay({ floorId, onTooltipChange }) {
         const routeT = routePathMap?.get(poly.ifc_guid);
         const isRouteMid = routeT !== undefined && !isRouteStart && !isRouteTarget;
 
+        const isBeingEdited = editingGeometry?.ifc_guid === poly.ifc_guid;
         let fill, stroke, sw, className = 'saved-polygon';
 
-        if (isRouteStart) {
+        if (isBeingEdited && editingGeometry.mode === 'vertex') {
+          // Hide — VertexEditOverlay draws this polygon
+          fill = 'transparent';
+          stroke = 'transparent';
+          sw = '0';
+        } else if (isBeingEdited && editingGeometry.mode === 'redraw') {
+          // Dim the old polygon while redrawing
+          fill = 'rgba(231, 113, 51, 0.08)';
+          stroke = 'rgba(231, 113, 51, 0.3)';
+          sw = '0.3';
+        } else if (isRouteStart) {
           // Source — warm amber with pulsing border
           fill = 'rgba(255, 159, 67, 0.45)';
           stroke = '#ff9f43';
@@ -152,6 +196,21 @@ export default function SavedPolygonsOverlay({ floorId, onTooltipChange }) {
           fill = 'rgba(0, 0, 0, 0.03)';
           stroke = 'transparent';
           sw = '0.25';
+        } else if (highlightSet && highlightSet.has(poly.ifc_guid)) {
+          // Highlighted room — orange glow (direct capacity match)
+          fill = 'rgba(231, 113, 51, 0.40)';
+          stroke = '#E77133';
+          sw = '0.5';
+        } else if (repurposeSet && repurposeSet.has(poly.ifc_guid)) {
+          // Repurpose candidate — blue glow
+          fill = 'rgba(59, 130, 246, 0.35)';
+          stroke = '#3B82F6';
+          sw = '0.5';
+        } else if (highlightSet || repurposeSet) {
+          // Non-highlighted room when highlights active — dim
+          fill = 'rgba(0, 0, 0, 0.05)';
+          stroke = 'rgba(0, 0, 0, 0.08)';
+          sw = '0.15';
         } else if (isSelected) {
           fill = 'rgba(255, 140, 50, 0.35)';
           stroke = '#FFB366';

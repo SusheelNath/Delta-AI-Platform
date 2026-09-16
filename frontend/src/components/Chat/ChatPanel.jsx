@@ -8,6 +8,7 @@ import {
   stripSubmitPhrase,
 } from '../../utils/voiceManager';
 import { resolveAction } from '../../utils/actionResolver';
+import { getActionTemplate, wrapConfirmation } from '../../utils/actionTemplates';
 import './ChatPanel.css';
 
 const ACTION_LABELS = {
@@ -333,6 +334,7 @@ export default function ChatPanel() {
       'load_session',
       'select_space', 'select_room_in_group',
       'route_to_elevator', 'route_to_staircase', 'compare_floors',
+      'search_largest_rooms', 'find_room',
     ]);
 
     let actionsHandled = false;
@@ -353,12 +355,45 @@ export default function ChatPanel() {
             .map((c) => c.replace(/\*\*/g, '').replace(/\.{3,}$/, '').trim());
           setCompletedActions(cleanLabels);
 
-          // Show confirmation in chat
-          const confirmText = content || cleanLabels.join(' ');
-          const deltaMsg = { role: 'delta', text: confirmText, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+          // Build response text: rich template → wrapped confirmation → raw fallback
+          const template = getActionTemplate(actions);
+          const rawConfirm = content || cleanLabels.join(' ');
+          const confirmText = template || wrapConfirmation(rawConfirm, actions);
+          const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+          // Simulated streaming for all instant responses
+          const deltaMsg = { role: 'delta', text: '', time: now, streaming: true };
           addMessage(deltaMsg);
           setPendingPhase('idle');
           setCompletedActions([]);
+
+          const words = confirmText.split(/(\s+)/); // preserve whitespace
+          let accumulated = '';
+          for (let w = 0; w < words.length; w++) {
+            accumulated += words[w];
+            // Update every 3 tokens (~15ms per batch)
+            if (w % 3 === 2 || w === words.length - 1) {
+              const snapshot = accumulated;
+              useStore.setState((state) => {
+                const msgs = [...state.messages];
+                const last = msgs[msgs.length - 1];
+                if (last && last.role === 'delta' && last.streaming) {
+                  msgs[msgs.length - 1] = { ...last, text: snapshot };
+                }
+                return { messages: msgs };
+              });
+              await new Promise((r) => setTimeout(r, 15));
+            }
+          }
+          // Mark streaming complete
+          useStore.setState((state) => {
+            const msgs = [...state.messages];
+            const last = msgs[msgs.length - 1];
+            if (last && last.role === 'delta' && last.streaming) {
+              msgs[msgs.length - 1] = { ...last, streaming: false };
+            }
+            return { messages: msgs };
+          });
           useStore.getState().saveCurrentSession();
 
           // Restore voice listening mode (instant path never sets isGenerating,
@@ -423,15 +458,45 @@ export default function ChatPanel() {
           })();
         }
         const now2 = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        // Set timestamp and mark as streaming
         const msgs = useStore.getState().messages;
         const last = msgs[msgs.length - 1];
         if (last && last.role === 'delta' && last.text === '') {
           const updated = [...msgs];
-          updated[updated.length - 1] = { ...last, text: phase1Content, time: now2 };
+          updated[updated.length - 1] = { ...last, time: now2, streaming: true };
           useStore.setState({ messages: updated });
         }
         setPendingPhase('idle');
         setCompletedActions([]);
+
+        // Simulated streaming: reveal word-by-word
+        const words = phase1Content.split(/(\s+)/);
+        let accumulated = '';
+        for (let w = 0; w < words.length; w++) {
+          accumulated += words[w];
+          if (w % 3 === 2 || w === words.length - 1) {
+            const snapshot = accumulated;
+            useStore.setState((state) => {
+              const m = [...state.messages];
+              const l = m[m.length - 1];
+              if (l && l.role === 'delta' && l.streaming) {
+                m[m.length - 1] = { ...l, text: snapshot };
+              }
+              return { messages: m };
+            });
+            await new Promise((r) => setTimeout(r, 15));
+          }
+        }
+        // Mark streaming complete
+        useStore.setState((state) => {
+          const m = [...state.messages];
+          const l = m[m.length - 1];
+          if (l && l.role === 'delta' && l.streaming) {
+            m[m.length - 1] = { ...l, streaming: false };
+          }
+          return { messages: m };
+        });
+
         setGenerating(false);
         abortRef.current = null;
         // Save session + periodic learnings (same as Phase 2 finally block)
@@ -823,17 +888,11 @@ export default function ChatPanel() {
 }
 
 const GUIDE_TABS = [
-  { label: 'Nav',       chips: ['Go to floor 1', 'Next floor', 'Show all floors'] },
-  { label: 'Search',    chips: ['Find consultation rooms', 'Large rooms on floor 2', 'Private patient rooms'] },
-  { label: 'Select',    chips: ['Select Nursing Station', 'Zoom to Operating Room'] },
-  { label: 'Heat',      chips: ['Color by function', 'Show occupancy', 'Show evacuation capacity'] },
+  { label: 'Nav',       chips: ['Go to floor 1', 'Next floor', 'Previous floor', 'Show all floors'] },
+  { label: 'Search',    chips: ['Largest rooms on this floor', 'Show elevators', 'Show staircases', 'Highlight all toilets', "What's adjacent to Nursing Station", 'How many clinical spaces'] },
   { label: 'Route',     chips: ['Nearest elevator', 'Nearest staircase', 'Clear route'] },
-  { label: 'Filter',    chips: ['Show only medical spaces', 'Hide circulation', 'Show all types'] },
-  { label: 'Highlight', chips: ['Highlight all surgical rooms', "What's adjacent to Nursing Station", 'How many clinical spaces'] },
-  { label: 'Evac',      chips: ['Best rooms to collect people', 'Conference room for 50 people'] },
-  { label: 'Infra',     chips: ['Show infrastructure', 'Hide MEP'] },
-  { label: 'Panels',    chips: ['Show directory', 'Show statistics'] },
-  { label: 'Compare',   chips: ['Compare floor 1 and floor 2', 'Enter compare mode'] },
+  { label: 'Plan',      chips: ['Best assembly points', 'Find a room for...'] },
+  { label: 'Scenario',  chips: [] },
   { label: 'Clear',     chips: ['Clear', 'Normal view', 'Clear highlights'] },
 ];
 

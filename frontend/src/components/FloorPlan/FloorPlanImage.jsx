@@ -2,6 +2,8 @@ import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import useStore from '../../store/useStore';
 import { getCategoryIndex } from '../../utils/colorScheme';
 import SavedPolygonsOverlay from './SavedPolygonsOverlay';
+import VertexEditOverlay from './VertexEditOverlay';
+import PolygonDrawingOverlay from './PolygonDrawingOverlay';
 import DeltaSpinner from '../shared/DeltaSpinner';
 
 const ZOOM_FACTOR = 0.85;
@@ -16,10 +18,14 @@ export default function FloorPlanImage({ floorIdOverride }) {
   const searchQuery = useStore((s) => s.searchQuery);
   const selectedSpaceId = useStore((s) => s.selectedSpaceId);
   const activeRoute = useStore((s) => s.activeRoute);
+  const editingGeometry = useStore((s) => s.editingGeometry);
+  const findRoomResults = useStore((s) => s.findRoomResults);
+  const clearHighlights = useStore((s) => s.clearHighlights);
 
   const [transform, setTransform] = useState({ scale: 1, tx: 0, ty: 0 });
   const [imgDims, setImgDims] = useState(null); // { w, h } once decoded
   const [polygonTooltip, setPolygonTooltip] = useState(null); // { name, area, x, y }
+  const [redrawMousePos, setRedrawMousePos] = useState(null);
   const containerRef = useRef(null);
   const transformElRef = useRef(null);
   const isPanning = useRef(false);
@@ -185,18 +191,70 @@ export default function FloorPlanImage({ floorIdOverride }) {
         return next;
       });
     }
+
+    // Track mouse position for redraw preview line
+    const eg = useStore.getState().editingGeometry;
+    if (eg && eg.mode === 'redraw' && transformElRef.current) {
+      const rect = transformElRef.current.getBoundingClientRect();
+      setRedrawMousePos([
+        ((e.clientX - rect.left) / rect.width) * 100,
+        ((e.clientY - rect.top) / rect.height) * 100,
+      ]);
+    }
   }, []);
 
   const handleMouseUp = useCallback(() => {
     isPanning.current = false;
   }, []);
 
+  const handleClick = useCallback((e) => {
+    if (didPan.current) return;
+
+    // In redraw mode, clicks add vertices
+    const eg = useStore.getState().editingGeometry;
+    if (eg && eg.mode === 'redraw') {
+      const transformEl = transformElRef.current;
+      if (!transformEl) return;
+      const rect = transformEl.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      useStore.getState().addPendingVertex([x, y]);
+      return;
+    }
+
+    // Default: clear highlights on click in empty space
+    useStore.getState().clearHighlights();
+  }, []);
+
   const handleMouseLeave = useCallback(() => {
     isPanning.current = false;
     setPolygonTooltip(null);
+    setRedrawMousePos(null);
   }, []);
 
+  // Right-click: undo last vertex in redraw mode
+  const handleContextMenu = useCallback((e) => {
+    const eg = useStore.getState().editingGeometry;
+    if (eg && eg.mode === 'redraw') {
+      e.preventDefault();
+      useStore.getState().undoPendingVertex();
+    }
+  }, []);
+
+  // Keyboard: Enter to confirm, Escape to cancel geometry edit
+  useEffect(() => {
+    if (!editingGeometry) return;
+    const onKey = (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); useStore.getState().confirmGeometryEdit(); }
+      if (e.key === 'Escape') { e.preventDefault(); useStore.getState().cancelGeometryEdit(); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [editingGeometry]);
+
   const handleDoubleClick = useCallback(() => {
+    // Don't reset zoom during geometry editing
+    if (useStore.getState().editingGeometry) return;
     const container = containerRef.current;
     if (!container || !imgDims) {
       zoomTarget.current = { scale: 1, tx: 0, ty: 0 };
@@ -291,12 +349,14 @@ export default function FloorPlanImage({ floorIdOverride }) {
   return (
     <div
       ref={containerRef}
-      className="floor-plan-image"
+      className={`floor-plan-image ${editingGeometry ? 'floor-plan-image--editing' : ''}`}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseLeave}
+      onClick={handleClick}
       onDoubleClick={handleDoubleClick}
+      onContextMenu={handleContextMenu}
     >
       <div
         ref={transformElRef}
@@ -317,6 +377,12 @@ export default function FloorPlanImage({ floorIdOverride }) {
 
         {/* Saved polygon outlines */}
         <SavedPolygonsOverlay floorId={activeFloorId} onTooltipChange={setPolygonTooltip} />
+
+        {/* Vertex editing overlay */}
+        {editingGeometry?.mode === 'vertex' && <VertexEditOverlay />}
+
+        {/* Redraw drawing overlay */}
+        {editingGeometry?.mode === 'redraw' && <PolygonDrawingOverlay mousePos={redrawMousePos} />}
 
         {/* Route navigation — breathing dot trail */}
         {activeRoute?.pathLine && activeRoute.pathLine.length >= 2 && (() => {
@@ -387,7 +453,49 @@ export default function FloorPlanImage({ floorIdOverride }) {
       {polygonTooltip && (
         <div className="saved-polygon__tooltip" style={{ left: polygonTooltip.x, top: polygonTooltip.y }}>
           <div className="saved-polygon__tooltip-name">{polygonTooltip.name}</div>
-          {polygonTooltip.area && <div className="saved-polygon__tooltip-area">{polygonTooltip.area}</div>}
+          {polygonTooltip.findRoom ? (
+            <div className="saved-polygon__tooltip-evac">
+              {polygonTooltip.fn && polygonTooltip.fn !== polygonTooltip.name && (
+                <div className="saved-polygon__tooltip-fn">{polygonTooltip.fn}</div>
+              )}
+              {(polygonTooltip.zone || polygonTooltip.areaM2) && (
+                <div className="saved-polygon__tooltip-meta">
+                  {polygonTooltip.zone}{polygonTooltip.zone && polygonTooltip.areaM2 ? ' · ' : ''}{polygonTooltip.areaM2 && `${polygonTooltip.areaM2} m²`}
+                </div>
+              )}
+              <div className="saved-polygon__tooltip-meta">
+                Capacity: {polygonTooltip.findRoomCapacity}
+              </div>
+              <div className="saved-polygon__tooltip-band">
+                <span className="saved-polygon__tooltip-dot" style={{ background: polygonTooltip.findRoomType === 'direct' ? '#E77133' : '#3B82F6' }} />
+                <span>{polygonTooltip.findRoomType === 'direct' ? 'Matches capacity' : 'Repurpose candidate'}</span>
+              </div>
+              <div className="saved-polygon__tooltip-reason">{polygonTooltip.findRoomReason}</div>
+            </div>
+          ) : polygonTooltip.evacMode ? (
+            <div className="saved-polygon__tooltip-evac">
+              {polygonTooltip.fn && polygonTooltip.fn !== polygonTooltip.name && (
+                <div className="saved-polygon__tooltip-fn">{polygonTooltip.fn}</div>
+              )}
+              {(polygonTooltip.zone || polygonTooltip.areaM2) && (
+                <div className="saved-polygon__tooltip-meta">
+                  {polygonTooltip.zone}{polygonTooltip.zone && polygonTooltip.areaM2 ? ' · ' : ''}{polygonTooltip.areaM2 && `${polygonTooltip.areaM2} m²`}
+                </div>
+              )}
+              {polygonTooltip.evacOccupancy > 0 && (
+                <div className="saved-polygon__tooltip-meta">
+                  {polygonTooltip.evacOccupancy} people{polygonTooltip.evacDensity ? ` · ${polygonTooltip.evacDensity} ppl/m²` : ''}
+                </div>
+              )}
+              <div className="saved-polygon__tooltip-band">
+                <span className="saved-polygon__tooltip-dot" style={{ background: polygonTooltip.evacColor }} />
+                <span>{polygonTooltip.evacLabel}</span>
+              </div>
+              <div className="saved-polygon__tooltip-reason">{polygonTooltip.evacReason}</div>
+            </div>
+          ) : (
+            polygonTooltip.area && <div className="saved-polygon__tooltip-area">{polygonTooltip.area}</div>
+          )}
         </div>
       )}
 
@@ -410,6 +518,35 @@ export default function FloorPlanImage({ floorIdOverride }) {
       {isSearching && (
         <div className="floor-plan-image__search-badge">
           {searchMatches.size} {searchMatches.size === 1 ? 'match' : 'matches'}
+        </div>
+      )}
+
+      {/* Find Room legend */}
+      {findRoomResults && Object.keys(findRoomResults).length > 0 && (
+        <div className="floor-plan-image__find-room-legend">
+          <div className="floor-plan-image__find-room-legend-header">
+            <span className="floor-plan-image__find-room-legend-title">Room Finder</span>
+            <button
+              className="floor-plan-image__find-room-legend-close"
+              onClick={() => clearHighlights()}
+              title="Clear results"
+            >
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><line x1="2" y1="2" x2="8" y2="8"/><line x1="8" y1="2" x2="2" y2="8"/></svg>
+            </button>
+          </div>
+          <div className="floor-plan-image__find-room-legend-bands">
+            <div className="floor-plan-image__find-room-legend-band">
+              <span className="floor-plan-image__find-room-legend-dot" style={{ background: '#E77133' }} />
+              Matches capacity
+            </div>
+            <div className="floor-plan-image__find-room-legend-band">
+              <span className="floor-plan-image__find-room-legend-dot" style={{ background: '#3B82F6' }} />
+              Repurpose candidate
+            </div>
+          </div>
+          <div className="floor-plan-image__find-room-legend-count">
+            {Object.keys(findRoomResults).length} rooms
+          </div>
         </div>
       )}
 
