@@ -18,7 +18,7 @@ from app.services.polygon_intelligence import (
 )
 from app.services.classifier import classify_function
 from app.services.geometry import compute_floor_spatial
-from app.services.intelligence_cache import get_floor_intelligence
+from app.services.intelligence_cache import get_floor_intelligence, get_repurpose_options, get_floor_repurpose_options
 
 router = APIRouter(tags=["spaces"])
 
@@ -145,6 +145,21 @@ def update_space_by_guid(ifc_guid: str, body: dict, db: Session = Depends(get_db
         detail="Polygon metadata is permanently locked. "
                "space_name, primary_function, vertices, area, and perimeter cannot be modified.",
     )
+
+
+@router.get("/floors/{floor_id}/repurpose-options")
+def floor_repurpose_options(floor_id: str):
+    """Return all pre-computed repurpose options for a floor. Bulk preload."""
+    return get_floor_repurpose_options(floor_id)
+
+
+@router.get("/spaces/{space_id}/repurpose-options")
+def repurpose_options(space_id: str):
+    """Return pre-computed repurpose options for a space. O(1) cache lookup."""
+    options = get_repurpose_options(space_id)
+    if options is None:
+        return []
+    return options
 
 
 @router.get("/spaces/{space_id}")

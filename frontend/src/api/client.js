@@ -351,6 +351,23 @@ export async function fullSavePolygons(polygons) {
   return data;
 }
 
+/**
+ * Fetch pre-computed repurpose options for a space.
+ * GET /api/spaces/{ifcGuid}/repurpose-options
+ */
+export async function fetchRepurposeOptions(ifcGuid) {
+  return request(`${BASE}/spaces/${encodeURIComponent(ifcGuid)}/repurpose-options`);
+}
+
+/**
+ * Fetch all pre-computed repurpose options for a floor (bulk preload).
+ * GET /api/floors/{floorId}/repurpose-options
+ * Returns { [guid]: [optionObj, ...] }
+ */
+export async function fetchFloorRepurposeOptions(floorId) {
+  return request(`${BASE}/floors/${encodeURIComponent(floorId)}/repurpose-options`);
+}
+
 // ── Voice (STT / TTS) ───────────────────────────────────────────
 
 /**

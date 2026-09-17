@@ -535,3 +535,229 @@ function buildSuggestFurnishingsResponse() {
   return `Opening the **Furnishing Editor** for **${spaceName}**. Use the **Add New** tab to browse the catalog and add items with live validation.`;
 }
 
+/**
+ * Build a rich chat message from a repurpose option.
+ * Used when the user clicks "Inject to Chat" in the RepurposePanel.
+ */
+export function buildRepurposeResponse(option, spaceName, floorId, activeTab = 'overview') {
+  const fname = FLOOR_NAMES[floorId] || floorId || '';
+  const parts = [];
+  const sign = (v) => v >= 0 ? '+' : '';
+  const eur = (v) => `\u20AC${(v || 0).toLocaleString()}`;
+
+  parts.push(`### Repurpose Analysis \u2014 ${spaceName || 'Selected Space'} (${fname})`);
+  parts.push(`**Recommended:** Convert to **${option.target_label}** \u2014 Overall Score: **${option.overall_score}%**\n`);
+
+  if (activeTab === 'overview') {
+    // ── Deep-dive Overview ──
+    const scoreLabels = {
+      area_fit: 'Size Match', distribution_gap: 'Service Demand', adjacency: 'Location Synergy',
+      zone_fit: 'Zone Fit', infrastructure: 'Infrastructure', regulatory: 'Regulatory',
+      furnishing_reuse: 'Asset Retention', cost_efficiency: 'Cost Efficiency',
+      revenue_impact: 'Revenue Impact', service_continuity: 'Service Continuity',
+    };
+
+    if (option.justification?.length > 0) {
+      parts.push('**Why this conversion works:**');
+      for (const j of option.justification) parts.push(`- ${j}`);
+      parts.push('');
+    }
+
+    if (option.scores) {
+      parts.push('**Detailed Score Breakdown (each dimension 0\u2013100):**\n');
+      parts.push('| Dimension | Score | Assessment | Rationale |');
+      parts.push('|---|:---:|---|---|');
+      for (const [key, val] of Object.entries(option.scores)) {
+        const label = scoreLabels[key] || key;
+        const icon = val >= 75 ? '\u2705' : val >= 50 ? '\u26A0\uFE0F' : '\u274C';
+        const grade = val >= 80 ? 'Excellent' : val >= 65 ? 'Good' : val >= 50 ? 'Moderate' : val >= 30 ? 'Weak' : 'Poor';
+        const reason = option.score_reasons?.[key] || '';
+        parts.push(`| ${icon} ${label} | **${val}** | ${grade} | ${reason} |`);
+      }
+      parts.push('');
+    }
+
+  } else if (activeTab === 'costs') {
+    // ── Deep-dive Costs ──
+    const c = option.cost_breakdown;
+    if (!c) return parts.join('\n');
+
+    parts.push('**Full Project Cost Breakdown:**\n');
+
+    // Renovation
+    if (c.renovation) {
+      parts.push('**1. Renovation Works** \u2014 ' + eur(c.renovation.subtotal));
+      if (c.renovation.paint_flooring) parts.push(`   - Paint & flooring: ${eur(c.renovation.paint_flooring)}`);
+      if (c.renovation.ceiling_walls) parts.push(`   - Ceiling & walls: ${eur(c.renovation.ceiling_walls)}`);
+      if (c.renovation.mep_services) parts.push(`   - MEP services: ${eur(c.renovation.mep_services)}`);
+      parts.push('');
+    }
+
+    // Furnishings
+    if (c.furnishing) {
+      parts.push('**2. Furnishings** \u2014 ' + eur(c.furnishing.subtotal));
+      if (c.furnishing.removal) parts.push(`   - Removal & disposal: ${eur(c.furnishing.removal)}`);
+      if (c.furnishing.new_purchase) parts.push(`   - New purchase: ${eur(c.furnishing.new_purchase)}`);
+      if (c.furnishing.installation) parts.push(`   - Installation & fitting: ${eur(c.furnishing.installation)}`);
+      parts.push('');
+    }
+
+    // Infrastructure
+    if (c.infrastructure) {
+      parts.push('**3. Infrastructure** \u2014 ' + eur(c.infrastructure.subtotal));
+      for (const [k, v] of Object.entries(c.infrastructure)) {
+        if (k === 'subtotal' || !v) continue;
+        const label = { medical_gas: 'Medical gas install', nurse_call: 'Nurse call install',
+          hvac_upgrade: 'HVAC upgrade (surgical)', plumbing: 'Plumbing / new sink',
+          data_cabling: 'Data cabling point' }[k] || k;
+        parts.push(`   - ${label}: ${eur(v)}`);
+      }
+      parts.push('');
+    }
+
+    // Compliance
+    if (c.compliance) {
+      parts.push('**4. Compliance & Permits** \u2014 ' + eur(c.compliance.subtotal));
+      for (const [k, v] of Object.entries(c.compliance)) {
+        if (k === 'subtotal' || !v) continue;
+        const label = { fire_safety_review: 'Fire safety review', accessibility_audit: 'Accessibility audit',
+          infection_control: 'Infection control review', permitting_fees: 'Permitting & approvals',
+          environmental_review: 'Environmental assessment' }[k] || k;
+        parts.push(`   - ${label}: ${eur(v)}`);
+      }
+      parts.push('');
+    }
+
+    parts.push(`**Capital Expenditure (CAPEX):** ${eur(c.total_capex)}\n`);
+
+    // Additional project costs
+    parts.push('**Additional Project Costs:**');
+    parts.push(`- Design & professional fees (6%): ${eur(c.design_fees)}`);
+    parts.push(`- Contingency reserve (12%): ${eur(c.contingency)}`);
+    if (c.downtime_cost > 0) parts.push(`- Revenue loss during works: ${eur(c.downtime_cost)}`);
+    parts.push('');
+
+    parts.push(`### Total Project Cost: ${eur(c.total_project_cost || c.total_capex)}`);
+    if (c.cost_per_m2) parts.push(`_${eur(c.cost_per_m2)} per m\u00B2_`);
+
+  } else if (activeTab === 'roi') {
+    // ── Deep-dive ROI ──
+    const roi = option.roi;
+    const impact = option.operational_impact;
+    const c = option.cost_breakdown;
+    if (!roi) return parts.join('\n');
+
+    parts.push('**Financial Impact Analysis:**\n');
+
+    // Key metrics
+    parts.push('| Metric | Value |');
+    parts.push('|---|---|');
+    parts.push(`| Net annual impact | **${sign(roi.net_annual_delta)}${eur(roi.net_annual_delta)}/yr** |`);
+    parts.push(`| Total investment | ${eur(c?.total_project_cost || c?.total_capex)} |`);
+    parts.push(`| Payback period | ${roi.payback_months ? `${roi.payback_months} months` : 'Non-revenue investment'} |`);
+    if (roi.roi_5yr_pct != null) parts.push(`| 5-year ROI | ${sign(roi.roi_5yr_pct)}${roi.roi_5yr_pct}% |`);
+    parts.push('');
+
+    // Revenue comparison
+    parts.push('**Revenue & Operating Cost Comparison:**\n');
+    parts.push('| | Current | After Conversion | Change |');
+    parts.push('|---|---|---|---|');
+    parts.push(`| Annual revenue | ${eur(roi.annual_revenue_current)} | ${eur(roi.annual_revenue_target)} | ${sign(roi.annual_revenue_delta)}${eur(roi.annual_revenue_delta)} |`);
+    parts.push(`| Annual OPEX | ${eur(roi.annual_opex_current)} | ${eur(roi.annual_opex_target)} | ${sign(roi.annual_opex_delta)}${eur(roi.annual_opex_delta)} |`);
+    parts.push(`| **Net annual** | | | **${sign(roi.net_annual_delta)}${eur(roi.net_annual_delta)}** |`);
+    parts.push('');
+
+    if (roi.downtime_cost > 0) {
+      parts.push(`_Revenue lost during ${c?.total_project_cost ? 'works' : 'renovation'}: ${eur(roi.downtime_cost)}_\n`);
+    }
+
+    if (roi.roi_narrative) {
+      parts.push(`> ${roi.roi_narrative}\n`);
+    }
+
+    // Operational impact
+    if (impact) {
+      parts.push('**Operational Impact:**\n');
+      if (impact.care_capacity) {
+        parts.push(`- **Care capacity:** ${impact.care_capacity.assessment} (${impact.care_capacity.current_beds} \u2192 ${impact.care_capacity.projected_beds} beds)`);
+      }
+      if (impact.staffing) {
+        parts.push(`- **Staffing:** ${sign(impact.staffing.delta_fte)}${impact.staffing.delta_fte} FTE (${impact.staffing.current_fte} \u2192 ${impact.staffing.projected_fte})${impact.staffing.annual_cost_delta !== 0 ? ` \u2014 annual cost: ${sign(impact.staffing.annual_cost_delta)}${eur(impact.staffing.annual_cost_delta)}` : ''}`);
+      }
+      if (impact.occupancy) {
+        parts.push(`- **Occupancy:** ${impact.occupancy.current} \u2192 ${impact.occupancy.projected} persons (${sign(impact.occupancy.delta)}${impact.occupancy.delta}), density ${impact.occupancy.current_density} \u2192 ${impact.occupancy.projected_density} persons/m\u00B2`);
+      }
+      if (impact.service_continuity) {
+        parts.push(`- **Service continuity risk:** ${impact.service_continuity.risk_level} \u2014 ${impact.service_continuity.assessment}`);
+      }
+    }
+
+  } else if (activeTab === 'timeline') {
+    // ── Deep-dive Timeline ──
+    const tl = option.timeline;
+    if (!tl) return parts.join('\n');
+
+    parts.push(`**Project Timeline:** ${tl.total}\n`);
+
+    for (const phase of (tl.phases || [])) {
+      parts.push(`**${phase.name}** (${phase.weeks})`);
+      if (phase.description) parts.push(`_${phase.description}_`);
+      if (phase.tasks?.length > 0) {
+        for (const task of phase.tasks) parts.push(`- ${task}`);
+      }
+      if (phase.responsible) parts.push(`Responsible: ${phase.responsible}`);
+      parts.push('');
+    }
+
+    parts.push(`_Room will be unavailable for **${tl.weeks_min} to ${tl.weeks_max} weeks** during conversion. Coordinate with floor operations to minimise disruption._`);
+
+    // Add cost context
+    const c = option.cost_breakdown;
+    if (c?.downtime_cost > 0) {
+      parts.push(`\n_Estimated revenue loss during downtime: ${eur(c.downtime_cost)}_`);
+    }
+
+  } else if (activeTab === 'furnishings') {
+    // ── Deep-dive Furnishings ──
+    const delta = option.furnishing_delta;
+    if (!delta) return parts.join('\n');
+
+    parts.push('**Furnishing Transition Plan:**\n');
+
+    if (delta.keep?.length > 0) {
+      parts.push('_Assets retained (no cost, carried over from current layout):_');
+      for (const f of delta.keep) parts.push(`- ${f.quantity}\u00D7 ${f.label}`);
+      parts.push('');
+    }
+
+    if (delta.remove?.length > 0) {
+      parts.push('_Assets to remove / relocate:_');
+      for (const f of delta.remove) parts.push(`- ${f.quantity}\u00D7 ${f.label}`);
+      parts.push('');
+    }
+
+    if (delta.add?.length > 0) {
+      parts.push('_New assets to procure:_');
+      let addTotal = 0;
+      for (const f of delta.add) {
+        const cost = f.unit_cost * f.quantity;
+        addTotal += cost;
+        parts.push(`- ${f.quantity}\u00D7 ${f.label}${cost > 0 ? `, ${eur(cost)}` : ''}`);
+      }
+      if (addTotal > 0) {
+        parts.push(`\n**Total furnishing procurement: ${eur(addTotal)}**`);
+      }
+      parts.push('');
+    }
+
+    const keepCount = delta.keep?.length || 0;
+    const removeCount = delta.remove?.length || 0;
+    const addCount = delta.add?.length || 0;
+    const totalItems = keepCount + removeCount + addCount;
+    const reuseRate = totalItems > 0 ? Math.round((keepCount / totalItems) * 100) : 0;
+    parts.push(`_Asset reuse rate: **${reuseRate}%** (${keepCount} kept, ${removeCount} removed, ${addCount} new)_`);
+  }
+
+  return parts.join('\n');
+}
+

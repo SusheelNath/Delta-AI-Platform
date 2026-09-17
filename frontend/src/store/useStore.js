@@ -107,6 +107,9 @@ const useStore = create((set, get) => ({
   // Preloaded furnishings keyed by ifc_guid (loaded at boot from backend)
   spaceFurnishings: {},  // { [ifc_guid]: [furnishingObj, ...] }
 
+  // Preloaded repurpose options keyed by ifc_guid (loaded at boot from backend)
+  repurposeOptions: {},  // { [ifc_guid]: [optionObj, ...] }
+
   // Polygon mapping mode
   mappingMode: false,
   floorPolygons: loadPolygonsFromStorage(),  // persisted to localStorage
@@ -274,6 +277,10 @@ const useStore = create((set, get) => ({
 
   mergeSpaceFurnishings: (furnishingsByGuid) => {
     set({ spaceFurnishings: { ...get().spaceFurnishings, ...furnishingsByGuid } });
+  },
+
+  mergeRepurposeOptions: (optionsByGuid) => {
+    set({ repurposeOptions: { ...get().repurposeOptions, ...optionsByGuid } });
   },
 
   /** Look up intelligence for a space by guid. Checks active floor first, then all. */

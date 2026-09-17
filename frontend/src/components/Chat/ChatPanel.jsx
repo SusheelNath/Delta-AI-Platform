@@ -828,6 +828,41 @@ export default function ChatPanel() {
               return;
             }
 
+            // ── Special: "Repurpose this room" opens the repurpose panel ──
+            if (text === 'Repurpose this room') {
+              const state = useStore.getState();
+              const space = state.selectedSpace;
+              if (!space || !state.selectedSpaceId) {
+                const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                addMessage({ role: 'delta', text: 'Please select a room first so I can analyse repurpose options.', time: now });
+                return;
+              }
+              const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              const spaceName = space.space_name || state.selectedSpaceId;
+              const fn = space.primary_function || '';
+
+              // Block non-repurposable infrastructure
+              const NON_REPURPOSABLE_CHAT = new Set([
+                'corridor', 'corridor access', 'elevator', 'staircase', 'staircasse',
+                'ramp', 'no access', 'no acccess', 'no infrastructure',
+                'ventilation shaft', 'vent', 'technical', 'main hall',
+                'ambulance', 'atrium', 'basement', 'waste',
+              ]);
+              if (NON_REPURPOSABLE_CHAT.has(fn.toLowerCase())) {
+                addMessage({
+                  role: 'delta',
+                  text: `**${spaceName}** is classified as **${fn}** — this is structural or circulation infrastructure and **cannot be repurposed**.\n\nCorridors, elevators, staircases, technical rooms, and similar spaces are essential to building operations, safety egress, and vertical/horizontal connectivity. Repurposing them would compromise building safety and regulatory compliance.\n\nSelect a functional room (e.g. storage, office, waiting room) to explore repurpose options.`,
+                  time: now,
+                });
+                return;
+              }
+
+              state.setDrawerOpen(true);
+              window.dispatchEvent(new CustomEvent('delta-open-repurpose-panel'));
+              addMessage({ role: 'delta', text: `Opening repurpose analysis for **${spaceName}**. Check the Space Toolkit panel for ranked options.`, time: now });
+              return;
+            }
+
             // Default: set input text for normal chips
             setInput(text);
             inputRef.current?.focus();
@@ -984,7 +1019,7 @@ const GUIDE_TABS = [
   { label: 'Search',    chips: ['Largest rooms on this floor', 'Show elevators', 'Show staircases', 'Highlight all toilets', "What's adjacent to Nursing Station", 'How many clinical spaces'] },
   { label: 'Route',     chips: ['Nearest elevator', 'Nearest staircase', 'Clear route'] },
   { label: 'Plan',      chips: ['Best assembly points', 'Find a room for...', 'Edit furnishings'] },
-  { label: 'Scenario',  chips: [] },
+  { label: 'Scenario',  chips: ['Repurpose this room'] },
   { label: 'Clear',     chips: ['Clear', 'Normal view', 'Clear highlights'] },
 ];
 

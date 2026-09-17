@@ -3,8 +3,9 @@ import useStore from '../../store/useStore';
 import { translateFR } from '../../utils/translateFR';
 import { computeRouting } from '../../utils/routing';
 import { fetchSpaceFurnishings } from '../../api/client';
-import { buildBeforeAfterComparison, buildFacilitiesText } from '../../utils/actionTemplates';
+import { buildBeforeAfterComparison, buildFacilitiesText, buildRepurposeResponse } from '../../utils/actionTemplates';
 import FurnishingEditor from './FurnishingEditor';
+import RepurposePanel from './RepurposePanel';
 import './SpaceToolkit.css';
 
 export default function SpaceToolkit() {
@@ -28,6 +29,7 @@ export default function SpaceToolkit() {
   const [furnishingsOpen, setFurnishingsOpen] = useState(false);
   const [furnishings, setFurnishings] = useState([]);
   const [editorOpen, setEditorOpen] = useState(false);
+  const [repurposeOpen, setRepurposeOpen] = useState(false);
 
   // Collapse dropdowns when selection changes
   useEffect(() => {
@@ -37,6 +39,7 @@ export default function SpaceToolkit() {
     setFurnishingsOpen(false);
     setFurnishings([]);
     setEditorOpen(false);
+    setRepurposeOpen(false);
   }, [selectedSpace]);
 
   // Load furnishings from preloaded store, fallback to API fetch
@@ -112,6 +115,13 @@ export default function SpaceToolkit() {
     };
     window.addEventListener('delta-open-furnishing-editor', handler);
     return () => window.removeEventListener('delta-open-furnishing-editor', handler);
+  }, []);
+
+  // AI-driven: open repurpose panel when chat chip or action dispatches event
+  useEffect(() => {
+    const handler = () => setRepurposeOpen(true);
+    window.addEventListener('delta-open-repurpose-panel', handler);
+    return () => window.removeEventListener('delta-open-repurpose-panel', handler);
   }, []);
 
   // Clear route when dropdown closes
@@ -383,6 +393,32 @@ export default function SpaceToolkit() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Repurpose dropdown */}
+        <button
+          className={`space-toolkit__dropdown-toggle ${repurposeOpen ? 'space-toolkit__dropdown-toggle--active' : ''}`}
+          onClick={() => setRepurposeOpen((v) => !v)}
+        >
+          <span className={`space-toolkit__dropdown-arrow ${repurposeOpen ? 'space-toolkit__dropdown-arrow--open' : ''}`}>&#9656;</span>
+          Repurpose Analysis
+        </button>
+        <div className={`space-toolkit__dropdown-body ${repurposeOpen ? '' : 'space-toolkit__dropdown-body--collapsed'}`}>
+          {repurposeOpen && (
+            <RepurposePanel
+              ifcGuid={selectedSpaceId}
+              spaceName={s.space_name}
+              primaryFunction={s.primary_function}
+              floorId={activeFloorId}
+              area_m2={s.area_m2}
+              onClose={() => setRepurposeOpen(false)}
+              onInjectChat={(option, activeTab) => {
+                const text = buildRepurposeResponse(option, s.space_name, activeFloorId, activeTab);
+                const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                useStore.getState().addMessage({ role: 'delta', text, time: now });
+              }}
+            />
+          )}
         </div>
 
         {/* Components Library — hidden (kept for future use) */}

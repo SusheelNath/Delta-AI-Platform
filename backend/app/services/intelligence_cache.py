@@ -21,6 +21,11 @@ from app.services.polygon_intelligence import (
 )
 from app.services.classifier import classify_function
 from app.services.geometry import compute_floor_spatial, compute_space_spatial
+from app.services.repurpose import (
+    compute_repurpose_options,
+    _compute_hospital_benchmarks,
+    NON_REPURPOSABLE_FUNCTIONS,
+)
 
 log = logging.getLogger(__name__)
 
@@ -40,6 +45,7 @@ _floor_spatials: dict[str, dict] = {}
 _intelligence: dict[str, dict] = {}
 _search_blobs: dict[str, str] = {}
 _floor_summaries: str = ""
+_repurpose_cache: dict[str, list[dict]] = {}
 _ready: bool = False
 
 
@@ -52,7 +58,7 @@ def build_cache(db: Session) -> None:
     global _polygons, _polygon_map, _floor_groups
     global _furnishing_type_map, _metrics_map, _furnishings_map
     global _floor_spatials, _intelligence, _search_blobs
-    global _floor_summaries, _ready
+    global _floor_summaries, _repurpose_cache, _ready
 
     _ready = False
     log.info("Building intelligence cache...")
@@ -99,10 +105,15 @@ def build_cache(db: Session) -> None:
     # ── Step 5: Floor summaries ──
     _floor_summaries = _build_floor_summaries_from_cache()
 
+    # ── Step 6: Repurpose analysis cache ──
+    _repurpose_cache = _build_repurpose_cache()
+
     _ready = True
     log.info(
-        "Intelligence cache ready: %d spaces, %d floors, %d furnishing types",
+        "Intelligence cache ready: %d spaces, %d floors, %d furnishing types, "
+        "%d repurpose analyses",
         len(_intelligence), len(_floor_groups), len(_furnishing_type_map),
+        len(_repurpose_cache),
     )
 
 
@@ -253,6 +264,98 @@ def _get_patient_capacity_cached(ifc_guid: str) -> int:
         if ft and ft.category == "bed" and ft.normal_occ > 0:
             beds += f.quantity * ft.normal_occ
     return beds
+
+
+# ══════════════════════════════════════════════════════════════════════
+# Repurpose analysis cache builder
+# ══════════════════════════════════════════════════════════════════════
+
+def _build_repurpose_cache() -> dict[str, list[dict]]:
+    """Pre-compute repurpose options for all eligible spaces."""
+    # Build hospital benchmarks from actual data
+    _compute_hospital_benchmarks(_floor_groups, _intelligence)
+
+    # Build furnishing type label map
+    ft_label_map = {
+        it: ft.label for it, ft in _furnishing_type_map.items()
+    }
+
+    # Pre-compute floor function counts
+    floor_fn_counts_cache: dict[str, dict[str, int]] = {}
+    floor_totals_cache: dict[str, int] = {}
+    for fid, polys in _floor_groups.items():
+        counts: dict[str, int] = defaultdict(int)
+        total = 0
+        for p in polys:
+            fn = p.get("primary_function") or ""
+            if fn and fn not in NON_REPURPOSABLE_FUNCTIONS:
+                counts[fn] += 1
+                total += 1
+        floor_fn_counts_cache[fid] = dict(counts)
+        floor_totals_cache[fid] = total
+
+    # Compute hospital-wide function counts (sum across all floors)
+    hospital_fn_counts: dict[str, int] = defaultdict(int)
+    for fid_counts in floor_fn_counts_cache.values():
+        for fn, count in fid_counts.items():
+            hospital_fn_counts[fn] += count
+    hospital_fn_counts = dict(hospital_fn_counts)
+
+    cache = {}
+    computed = 0
+
+    for guid, intel in _intelligence.items():
+        fn = intel.get("primary_function") or ""
+        if fn in NON_REPURPOSABLE_FUNCTIONS:
+            continue
+        area = intel.get("area_m2") or 0
+        if area < 3:
+            continue
+
+        fid = intel.get("floor_id", "")
+
+        # Get current furnishings as dicts
+        raw_furnishings = _furnishings_map.get(guid, [])
+        current_furnishings = []
+        for f in raw_furnishings:
+            ft = _furnishing_type_map.get(f.item_type)
+            current_furnishings.append({
+                "item_type": f.item_type,
+                "quantity": f.quantity,
+                "label": ft.label if ft else f.item_type,
+            })
+
+        # Get adjacent spaces
+        floor_spatial = _floor_spatials.get(fid)
+        adj_guids = []
+        if floor_spatial:
+            adj_guids = floor_spatial.get("adjacency", {}).get(guid, [])
+        adjacent_spaces = []
+        for ag in adj_guids[:6]:
+            adj_intel = _intelligence.get(ag)
+            if adj_intel:
+                adjacent_spaces.append({
+                    "ifc_guid": ag,
+                    "space_name": adj_intel.get("space_name", ""),
+                    "primary_function": adj_intel.get("primary_function", ""),
+                })
+
+        options = compute_repurpose_options(
+            space=intel,
+            current_furnishings=current_furnishings,
+            floor_fn_counts=floor_fn_counts_cache.get(fid, {}),
+            floor_total=floor_totals_cache.get(fid, 0),
+            adjacent_spaces=adjacent_spaces,
+            ft_label_map=ft_label_map,
+            hospital_fn_counts=hospital_fn_counts,
+        )
+
+        if options:
+            cache[guid] = options
+            computed += 1
+
+    log.info("Repurpose cache: %d spaces with options", computed)
+    return cache
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -461,6 +564,25 @@ def get_rooms_by_function(floor_id: str, function_name: str) -> list[dict]:
         return _sort(list(pf_groups[best_pf]))
 
     return []
+
+
+def get_repurpose_options(ifc_guid: str) -> list[dict] | None:
+    """Look up pre-computed repurpose options for a space. O(1)."""
+    return _repurpose_cache.get(ifc_guid)
+
+
+def get_floor_repurpose_options(floor_id: str) -> dict[str, list[dict]]:
+    """Return all pre-computed repurpose options for spaces on a floor.
+
+    Returns {ifc_guid: [options]} for every space on the floor that has
+    repurpose options. Used by the frontend to preload at boot.
+    """
+    guids = {p.get("ifc_guid") for p in _floor_groups.get(floor_id, [])}
+    return {
+        guid: opts
+        for guid in guids
+        if guid and (opts := _repurpose_cache.get(guid))
+    }
 
 
 def is_ready() -> bool:
