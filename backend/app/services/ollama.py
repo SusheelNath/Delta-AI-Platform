@@ -1,7 +1,7 @@
 """
 Ollama integration service for Delta Intelligence Platform.
 Handles prompt construction and streaming chat with the local LLM.
-Actions are handled deterministically in chat.py — the LLM only produces text narration.
+Actions are handled deterministically in chat.py - the LLM only produces text narration.
 """
 
 import httpx
@@ -14,7 +14,7 @@ MODEL = "qwen3:14b"
 
 SYSTEM_PROMPT = """You are Delta AI, the intelligent assistant for the CHIREC Delta Hospital in Brussels, Belgium.
 
-You have access to a comprehensive spatial model with over 2,900 mapped and labelled spaces across 9 floors (Basement 3 to Floor 5). Each space is a polygon with a name, function, area, perimeter, and computed intelligence including: occupancy, accessibility, privacy, nearest lifts/stairs, adjacent spaces, bookability, and more. All data is derived from polygon geometry and function classification — no external metadata sources.
+You have access to a comprehensive spatial model with over 2,900 mapped and labelled spaces across 9 floors (Basement 3 to Floor 5). Each space is a polygon with a name, function, area, perimeter, and computed intelligence including: occupancy, accessibility, privacy, nearest lifts/stairs, adjacent spaces, bookability, and more. All data is derived from polygon geometry and function classification - no external metadata sources.
 
 Your role:
 - Answer questions about the hospital's spaces, layout, and facilities
@@ -23,10 +23,10 @@ Your role:
 - Assist with space planning and utilisation queries
 - Compare floors, departments, and spatial distributions
 
-PLATFORM ACTIONS — YOU CONTROL THE UI:
+PLATFORM ACTIONS - YOU CONTROL THE UI:
 - You have FULL control over the 3D viewer, floor navigation, heatmaps, room selection, directory panels, filters, and all UI elements
-- When the user asks to navigate, show a heatmap, open a panel, select a room, highlight spaces, etc. — the platform executes these actions AUTOMATICALLY alongside your response
-- NEVER say "I don't have access to UI elements", "I can't control the viewer", or "I can't open dropdowns" — you CAN and DO control them
+- When the user asks to navigate, show a heatmap, open a panel, select a room, highlight spaces, etc. - the platform executes these actions AUTOMATICALLY alongside your response
+- NEVER say "I don't have access to UI elements", "I can't control the viewer", or "I can't open dropdowns" - you CAN and DO control them
 - If a navigation or UI action was requested, respond as though it has already been executed (e.g., "Here's Floor 2" not "I'll try to navigate")
 
 Floor reference:
@@ -40,30 +40,30 @@ Floor reference:
 - H040 = Floor +4 (Level +4)
 - H050 = Floor +5 (Level +5)
 
-DATA ACCURACY — CRITICAL RULES:
-- Use space names EXACTLY as provided in the data — never rename, paraphrase, or shorten them
-- Use area values EXACTLY as provided — never round or estimate
-- Use function names EXACTLY as provided — never substitute or rephrase
-- Use occupancy values EXACTLY as provided — if not provided, say "Not available", never guess
-- Use adjacent spaces EXACTLY as listed — never invent or assume adjacency
-- Use furnishings EXACTLY as listed — never add items not in the data
-- If a field is missing or zero, say "Not available" — NEVER fabricate values
+DATA ACCURACY - CRITICAL RULES:
+- Use space names EXACTLY as provided in the data - never rename, paraphrase, or shorten them
+- Use area values EXACTLY as provided - never round or estimate
+- Use function names EXACTLY as provided - never substitute or rephrase
+- Use occupancy values EXACTLY as provided - if not provided, say "Not available", never guess
+- Use adjacent spaces EXACTLY as listed - never invent or assume adjacency
+- Use furnishings EXACTLY as listed - never add items not in the data
+- If a field is missing or zero, say "Not available" - NEVER fabricate values
 
-SELECTED SPACE — IMPORTANT:
+SELECTED SPACE - IMPORTANT:
 - When a space is currently selected (shown in [Currently selected space in the 3D viewer]), ALWAYS use its EXACT data when asked about "this room", "the selected room", "tell me about this space", etc.
-- NEVER invent or guess details for the selected space — only report fields that appear in the provided context
-- If the user asks about the selected room and no space is selected, say "No space is currently selected — click a room in the viewer or ask me to select one"
+- NEVER invent or guess details for the selected space - only report fields that appear in the provided context
+- If the user asks about the selected room and no space is selected, say "No space is currently selected - click a room in the viewer or ask me to select one"
 
-RESPONSE FORMAT — YOU MUST FOLLOW THIS EXACTLY:
+RESPONSE FORMAT - YOU MUST FOLLOW THIS EXACTLY:
 1. Start every response with a markdown ### heading, followed by a blank line
-2. Put a blank line between every section — NEVER run text directly after a heading
-3. ALWAYS use "- " prefix for list items — never bare text lines
-4. Put each data field on its own line — NEVER chain them with | separators
+2. Put a blank line between every section - NEVER run text directly after a heading
+3. ALWAYS use "- " prefix for list items - never bare text lines
+4. Put each data field on its own line - NEVER chain them with | separators
 5. Use **bold** for space names and section labels
-6. Use floor names like "Ground Floor" or "Floor +2" — NEVER show internal codes like "H000" or "H020"
+6. Use floor names like "Ground Floor" or "Floor +2" - NEVER show internal codes like "H000" or "H020"
 7. End with a short follow-up question
 8. For floor overviews: one-sentence summary (count + total area), then a markdown list of function groups sorted by count descending, each prefixed with "- "
-9. Keep responses concise — max 3-4 key groups for overviews, expand only when asked"""
+9. Keep responses concise - max 3-4 key groups for overviews, expand only when asked"""
 
 
 def _format_space_context(space: dict) -> str:
@@ -162,9 +162,9 @@ def _format_search_context(
 
         score = s.get('suitability_score')
         if score is not None:
-            lines.append(f"\n**{name}** — {floor}, {func} (Score: {score})")
+            lines.append(f"\n**{name}** - {floor}, {func} (Score: {score})")
         else:
-            lines.append(f"\n**{name}** — {floor}, {func}")
+            lines.append(f"\n**{name}** - {floor}, {func}")
 
         area = s.get('area_m2')
         if area:
@@ -217,7 +217,7 @@ def _format_learnings_context(learnings: list[dict]) -> str:
     """Format user learnings into a compact context block."""
     if not learnings:
         return ""
-    lines = ["\n[User preference profile — based on previous interactions]"]
+    lines = ["\n[User preference profile - based on previous interactions]"]
     for lr in learnings:
         lines.append(f"- {lr.get('content', '')}")
     return "\n".join(lines)
@@ -227,7 +227,7 @@ def _format_evacuation_context(ranked_spaces: list[dict]) -> str:
     """Format top evacuation collection points for LLM narration."""
     if not ranked_spaces:
         return ""
-    lines = [f"\n[EVACUATION ANALYSIS — Top {len(ranked_spaces)} collection points on this floor, ranked by absolute capacity]"]
+    lines = [f"\n[EVACUATION ANALYSIS - Top {len(ranked_spaces)} collection points on this floor, ranked by absolute capacity]"]
     for i, s in enumerate(ranked_spaces, 1):
         name = s.get("space_name", "Unknown")
         floor = s.get("floor_name", s.get("floor_id", "?"))
@@ -235,7 +235,7 @@ def _format_evacuation_context(ranked_spaces: list[dict]) -> str:
         max_occ = s.get("max_occupancy", 0)
         area = s.get("area_m2", 0)
         free = s.get("free_area_m2", 0)
-        lines.append(f"\n{i}. **{name}** — {floor}")
+        lines.append(f"\n{i}. **{name}** - {floor}")
         lines.append(f"   Absolute capacity: {abs_occ} people")
         lines.append(f"   Max occupancy: {max_occ}")
         lines.append(f"   Area: {round(area, 1)} m² (free: {round(free, 1) if free else 0} m²)")
@@ -256,16 +256,16 @@ def _format_capacity_plan_context(plan_results: list[dict], target_capacity: int
     if not plan_results:
         return ""
     func_label = target_function or "general use"
-    lines = [f"\n[CAPACITY PLANNING — Rooms viable for {target_capacity} people ({func_label})]"]
+    lines = [f"\n[CAPACITY PLANNING - Rooms viable for {target_capacity} people ({func_label})]"]
     for i, r in enumerate(plan_results, 1):
-        lines.append(f"\n{i}. **{r['space_name']}** — {r['floor_name']} (viability: {r['viability_score']}/100)")
+        lines.append(f"\n{i}. **{r['space_name']}** - {r['floor_name']} (viability: {r['viability_score']}/100)")
         lines.append(f"   Area: {r['area_m2']} m² (free: {r['free_area_m2']} m²)")
         lines.append(f"   Current capacity: max {r['max_occupancy']}, absolute {r['absolute_occupancy']}")
         if r.get("furnishing_gap"):
             gap_items = [f"{g['item']} ({g['existing']}/{g['needed']})" for g in r["furnishing_gap"]]
             lines.append(f"   Furnishing gap: {', '.join(gap_items)}")
         else:
-            lines.append("   Furnishing gap: None — room is already equipped")
+            lines.append("   Furnishing gap: None - room is already equipped")
     lines.append(f"\nNarrate the best options for hosting {target_capacity} people. Mention area, current capacity, and what furnishings are needed.")
     return "\n".join(lines)
 
@@ -288,7 +288,7 @@ def build_messages(
     system = SYSTEM_PROMPT
     if active_floor_id:
         floor_name = FLOOR_NAMES.get(active_floor_id, active_floor_id)
-        system += f"\n\n[CURRENT FLOOR: {floor_name} ({active_floor_id})] — The user is currently viewing this floor. All responses about 'this floor', 'current floor', or unqualified floor references MUST refer to {floor_name}."
+        system += f"\n\n[CURRENT FLOOR: {floor_name} ({active_floor_id})] - The user is currently viewing this floor. All responses about 'this floor', 'current floor', or unqualified floor references MUST refer to {floor_name}."
     if action_context:
         system += "\n\n" + action_context
     if floor_summaries:
@@ -311,21 +311,21 @@ def build_messages(
     messages.append({"role": "assistant", "content": """### Conference Rooms
 Found 3 conference rooms across 2 floors.
 
-**Conference Room A** — Ground Floor
+**Conference Room A** - Ground Floor
 Area: 45 m²
 Occupancy: 12 (max 20)
 Access: Staff · Privacy: Medium
 Bookable: Yes
 Furnishings: Projector, Whiteboard, Video Conferencing
 
-**Conference Room B** — Floor 1
+**Conference Room B** - Floor 1
 Area: 32 m²
 Occupancy: 8 (max 12)
 Access: Staff · Privacy: Medium
 Bookable: Yes
 Furnishings: Display Screen, Whiteboard
 
-**Small Meeting Room** — Floor 1
+**Small Meeting Room** - Floor 1
 Area: 18 m²
 Occupancy: 4 (max 6)
 Access: Open · Privacy: Low
@@ -368,7 +368,7 @@ async def stream_chat(
     """Stream tokens from Ollama's chat API.
 
     Yields plain text tokens for display. Actions are handled
-    deterministically in chat.py — the LLM only produces text narration.
+    deterministically in chat.py - the LLM only produces text narration.
     """
     messages = build_messages(
         conversation, selected_space, search_results,
@@ -422,7 +422,7 @@ async def stream_chat(
                         if in_think:
                             think_buf += token
                             if "</think>" in think_buf:
-                                # End of thinking — extract any content after </think>
+                                # End of thinking - extract any content after </think>
                                 after = think_buf.split("</think>", 1)[1]
                                 in_think = False
                                 think_buf = ""

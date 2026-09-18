@@ -72,7 +72,7 @@
 
 
 /* ══════════════════════════════════════
-   State: IDLE — gentle breathing pulse
+   State: IDLE - gentle breathing pulse
    ══════════════════════════════════════ */
 .delta-orb--idle .delta-orb__sphere {
   animation: orb-breathe 3s ease-in-out infinite;
@@ -95,7 +95,7 @@
 
 
 /* ══════════════════════════════════════
-   State: LISTENING — ripple pulse
+   State: LISTENING - ripple pulse
    ══════════════════════════════════════ */
 .delta-orb--listening .delta-orb__sphere {
   animation: orb-listen 1.5s ease-in-out infinite;
@@ -137,7 +137,7 @@
 
 
 /* ══════════════════════════════════════
-   State: PROCESSING — orbital spin
+   State: PROCESSING - orbital spin
    ══════════════════════════════════════ */
 .delta-orb--processing .delta-orb__sphere {
   animation: orb-process 2s linear infinite;
@@ -176,7 +176,7 @@
 
 
 /* ══════════════════════════════════════
-   State: SPEAKING — radiant glow
+   State: SPEAKING - radiant glow
    ══════════════════════════════════════ */
 .delta-orb--speaking .delta-orb__sphere {
   animation: orb-speak 0.8s ease-in-out infinite alternate;

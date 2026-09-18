@@ -88,7 +88,7 @@ function unprojectToPlane(pctX, pctY, invVP, planeY) {
   return [p0[0] + t * dir[0], planeY, p0[2] + t * dir[2]];
 }
 
-// Cache last inverted VP matrix — same matrices are passed for all polygons on a floor
+// Cache last inverted VP matrix - same matrices are passed for all polygons on a floor
 let _lastVPKey = null;
 let _lastInvVP = null;
 
@@ -101,7 +101,7 @@ let _lastInvVP = null;
  * @returns {Array<[number, number, number]>|null} - [[x, y, z], ...] world coords
  */
 export function unprojectPolygon(vertices, viewMatrix, projMatrix, planeY) {
-  // Cache inverted VP — same view/proj are passed for all polygons on a floor
+  // Cache inverted VP - same view/proj are passed for all polygons on a floor
   const vpKey = viewMatrix[0].toFixed(6) + viewMatrix[12].toFixed(6) + projMatrix[0].toFixed(6) + projMatrix[5].toFixed(6);
   let invVP;
   if (_lastVPKey === vpKey) {

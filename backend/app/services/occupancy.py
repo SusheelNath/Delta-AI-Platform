@@ -50,7 +50,7 @@ ZERO_OVERRIDE_KEYWORDS = [
 # Each rule: (keyword_list, occupancy_class, normal_per_m2, max_per_m2)
 # Matched in order; first match wins.
 DENSITY_RULES = [
-    # Patient bed rooms — fixed per room, not per m²
+    # Patient bed rooms - fixed per room, not per m²
     (["single patient room", "single-bed"],
      "patient_bed", None, None),  # handled specially: 1 patient + 2 staff normal, +1 max
     (["double patient room", "two-bed"],
@@ -112,7 +112,7 @@ DENSITY_RULES = [
     (["restaurant", "cafeteria", "commercial"],
      "commercial", 1/3, 1/1.8),
 
-    # Storage / support (no "locker" — locker rooms are changing, not storage)
+    # Storage / support (no "locker" - locker rooms are changing, not storage)
     (["storage", "store room", "janitor", "pantry", "archive",
       "cold / refrigerated", "dirty utility"],
      "storage", 1/20, 1/15),

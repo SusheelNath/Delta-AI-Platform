@@ -35,7 +35,7 @@ def render_floor_overview(floor_id: str) -> str | None:
     lines.append(f"{fname} has **{total_rooms} spaces** covering **{total_area:,.0f} m²**.\n")
 
     for g in groups:
-        line = f"- **{g['function']}** — {g['count']} rooms, {g['total_area']:,.0f} m²"
+        line = f"- **{g['function']}** - {g['count']} rooms, {g['total_area']:,.0f} m²"
         if g["max_occupancy"]:
             line += f", total max occupancy {g['max_occupancy']}"
         lines.append(line)
@@ -58,7 +58,7 @@ def render_group_summary(floor_id: str, function_name: str) -> str | None:
     total_area = sum(r.get("area_m2") or 0 for r in rooms)
     total_occ = sum(r.get("max_occupancy") or 0 for r in rooms)
 
-    lines = [f"### {resolved_fn} — {fname}\n"]
+    lines = [f"### {resolved_fn} - {fname}\n"]
     summary = f"**{len(rooms)} rooms** · {total_area:,.0f} m² total"
     if total_occ:
         summary += f" · max occupancy {total_occ}"
@@ -68,7 +68,7 @@ def render_group_summary(floor_id: str, function_name: str) -> str | None:
         entry = f"{idx}. **{r.get('space_name', '?')}**"
         area = r.get("area_m2")
         if area:
-            entry += f" — {round(area, 1)} m²"
+            entry += f" - {round(area, 1)} m²"
         max_occ = r.get("max_occupancy")
         if max_occ:
             entry += f", max {max_occ}"
@@ -99,7 +99,7 @@ def render_room_detail(
     so CommonMark renderers display each field on its own line.
 
     When frontend_space is provided, it takes priority over the backend
-    cache — ensuring the chat text matches what the user sees.
+    cache - ensuring the chat text matches what the user sees.
     """
     intel = frontend_space or get_cached_intelligence(ifc_guid)
     if not intel:
@@ -351,7 +351,7 @@ def render_heatmap_summary(floor_id: str, mode: str) -> str | None:
     occupiable = [r for r in floor_rooms if (r.get("max_occupancy") or 0) > 0]
     total_area = sum(r.get("area_m2") or 0 for r in occupiable)
 
-    lines = [f"### {label} — {fname}\n"]
+    lines = [f"### {label} - {fname}\n"]
 
     # Narrative (B2)
     if mode == "occupancy":
@@ -386,9 +386,9 @@ def render_heatmap_summary(floor_id: str, mode: str) -> str | None:
         group_stats.sort(key=lambda x: -x[2])  # highest capacity first
         lines.append("")
         for fn, count, occ, pct in group_stats[:6]:
-            lines.append(f"- **{fn}** — {count} rooms, {occ} max occ ({pct}%)")
+            lines.append(f"- **{fn}** - {count} rooms, {occ} max occ ({pct}%)")
 
-    # Hotspots — top 5 individual rooms (B3)
+    # Hotspots - top 5 individual rooms (B3)
     if mode in ("occupancy", "occupancy_density"):
         key = "max_occupancy"
     else:
@@ -406,7 +406,7 @@ def render_heatmap_summary(floor_id: str, mode: str) -> str | None:
             val = r.get(key, 0)
             area = r.get("area_m2")
             extra = f", {round(area, 1)} m²" if area else ""
-            lines.append(f"{i}. **{name}** — {val} max occ{extra}")
+            lines.append(f"{i}. **{name}** - {val} max occ{extra}")
 
     return "\n".join(lines)
 

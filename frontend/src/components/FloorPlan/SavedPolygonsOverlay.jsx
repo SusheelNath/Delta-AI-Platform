@@ -130,7 +130,7 @@ export default function SavedPolygonsOverlay({ floorId, onTooltipChange }) {
   const routeStartGuid = activeRoute?.path?.[0]?.ifc_guid || null;
   const hasRoute = !!routePathMap;
 
-  // Cache points strings — only recomputed when polygon vertices change
+  // Cache points strings - only recomputed when polygon vertices change
   const pointsCache = useMemo(() => {
     const cache = new Map();
     for (const poly of polygons) {
@@ -161,7 +161,7 @@ export default function SavedPolygonsOverlay({ floorId, onTooltipChange }) {
         let fill, stroke, sw, className = 'saved-polygon';
 
         if (isBeingEdited && editingGeometry.mode === 'vertex') {
-          // Hide — VertexEditOverlay draws this polygon
+          // Hide - VertexEditOverlay draws this polygon
           fill = 'transparent';
           stroke = 'transparent';
           sw = '0';
@@ -171,12 +171,12 @@ export default function SavedPolygonsOverlay({ floorId, onTooltipChange }) {
           stroke = 'rgba(231, 113, 51, 0.3)';
           sw = '0.3';
         } else if (isRouteStart) {
-          // Source — warm amber with pulsing border
+          // Source - warm amber with pulsing border
           fill = 'rgba(255, 159, 67, 0.45)';
           stroke = '#ff9f43';
           sw = '2.5';
         } else if (isRouteTarget) {
-          // Destination — vivid emerald
+          // Destination - vivid emerald
           fill = 'rgba(52, 211, 153, 0.55)';
           stroke = '#34d399';
           sw = '3';
@@ -197,17 +197,17 @@ export default function SavedPolygonsOverlay({ floorId, onTooltipChange }) {
           stroke = 'transparent';
           sw = '0.25';
         } else if (highlightSet && highlightSet.has(poly.ifc_guid)) {
-          // Highlighted room — orange glow (direct capacity match)
+          // Highlighted room - orange glow (direct capacity match)
           fill = 'rgba(231, 113, 51, 0.40)';
           stroke = '#E77133';
           sw = '0.5';
         } else if (repurposeSet && repurposeSet.has(poly.ifc_guid)) {
-          // Repurpose candidate — blue glow
+          // Repurpose candidate - blue glow
           fill = 'rgba(59, 130, 246, 0.35)';
           stroke = '#3B82F6';
           sw = '0.5';
         } else if (highlightSet || repurposeSet) {
-          // Non-highlighted room when highlights active — dim
+          // Non-highlighted room when highlights active - dim
           fill = 'rgba(0, 0, 0, 0.05)';
           stroke = 'rgba(0, 0, 0, 0.08)';
           sw = '0.15';

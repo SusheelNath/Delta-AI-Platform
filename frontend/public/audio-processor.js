@@ -13,7 +13,7 @@ class AudioCaptureProcessor extends AudioWorkletProcessor {
     // Ratio = sampleRate / 16000.  For 48000 → 3.
     this._ratio = sampleRate / 16000;
     // Accumulate downsampled samples until we have a good chunk to send
-    // 256 samples at 16 kHz = 16 ms — matches Silero VAD v5 frame size
+    // 256 samples at 16 kHz = 16 ms - matches Silero VAD v5 frame size
     this._targetChunk = 256;
     this._downsampled = new Float32Array(0);
   }

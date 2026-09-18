@@ -1,9 +1,9 @@
 """
-Voice service — STT (Groq Whisper API → local distil-large-v3 fallback) and Edge TTS.
+Voice service - STT (Groq Whisper API → local distil-large-v3 fallback) and Edge TTS.
 
 STT pipeline:
-  1. Groq Whisper API  — primary, ~1s for 1 min audio (cloud, free tier)
-  2. distil-large-v3   — fallback, local GPU via faster-whisper
+  1. Groq Whisper API  - primary, ~1s for 1 min audio (cloud, free tier)
+  2. distil-large-v3   - fallback, local GPU via faster-whisper
 
 TTS: edge-tts (Microsoft Edge neural voices)
 """
@@ -141,7 +141,7 @@ def _transcribe_sync(audio_bytes: bytes, language: str = "en") -> str:
 
 
 async def transcribe(audio_bytes: bytes, language: str = "en") -> str:
-    """Async wrapper — offloads STT to thread pool."""
+    """Async wrapper - offloads STT to thread pool."""
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(
         None, partial(_transcribe_sync, audio_bytes, language),

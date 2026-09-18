@@ -281,7 +281,7 @@ export async function bulkModifyFurnishings(ifcGuid, floorId, changes) {
 }
 
 /**
- * Lightweight intent detection — returns actions as JSON, no LLM call.
+ * Lightweight intent detection - returns actions as JSON, no LLM call.
  * Used to fire actions instantly before streaming LLM narration.
  */
 export async function fetchIntents(message, selectedSpaceId, activeFloorId, expandedGroup, selectedSpace = null) {

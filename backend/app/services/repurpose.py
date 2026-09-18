@@ -1,7 +1,7 @@
 """
 Deterministic room repurpose analysis engine for CHIREC Delta Hospital.
 
-All output is pre-computed from rules, profiles, and spatial data — no LLM
+All output is pre-computed from rules, profiles, and spatial data - no LLM
 involved.  Every sentence of justification is a template filled with real
 numbers.  The cache is built at startup alongside the intelligence cache so
 API responses are O(1) dict lookups.
@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 
 
 # ══════════════════════════════════════════════════════════════════════
-# Function profiles — Facilities & Operations Management data
+# Function profiles - Facilities & Operations Management data
 # ══════════════════════════════════════════════════════════════════════
 # Each function gets a financial/operational fingerprint:
 #   category:            clinical / public / revenue / support / infrastructure
@@ -358,7 +358,7 @@ AVG_FTE_SALARY = 55000  # €/year
 
 
 # ══════════════════════════════════════════════════════════════════════
-# Hospital benchmarks — avg % of spaces per function per floor
+# Hospital benchmarks - avg % of spaces per function per floor
 # ══════════════════════════════════════════════════════════════════════
 # Derived from the hospital's own overall distribution.
 # These are computed at cache build time from actual data.
@@ -439,7 +439,7 @@ def _estimate_patient_capacity(target_fn: str, target_furnishings: list) -> int:
 
 
 # ══════════════════════════════════════════════════════════════════════
-# Scoring engine — 6 dimensions
+# Scoring engine - 6 dimensions
 # ══════════════════════════════════════════════════════════════════════
 
 def _score_area_fit(area_m2: float, profile: dict) -> tuple[int, str]:
@@ -596,7 +596,7 @@ def _score_zone_fit(
     elif dominant_pct >= 40:
         score = max(0, min(100, base))
     else:
-        # Mixed zone — pull towards 50
+        # Mixed zone - pull towards 50
         score = max(0, min(100, int(base * 0.7 + 50 * 0.3)))
 
     same_pct = cat_counts.get(target_cat, 0) / total * 100
@@ -1145,13 +1145,13 @@ def _compute_costs(
     # Explanation for cost drivers
     if is_cross_category:
         reno_explanation = (
-            f"Classified as {reno_class} renovation — current function "
+            f"Classified as {reno_class} renovation - current function "
             f"({current_fn}) shares {'no' if transition_score < 40 else 'limited'} "
             f"MEP with target ({target_fn})"
         )
     else:
         reno_explanation = (
-            f"Classified as {reno_class} renovation — same category "
+            f"Classified as {reno_class} renovation - same category "
             f"({current_cat}), existing MEP partially reusable"
         )
     renovation["explanation"] = reno_explanation
@@ -1341,17 +1341,17 @@ def _compute_costs(
                 "additional permitting: urbanistic permit application, "
                 "fire department sign-off, and regional health authority notification"
                 if permitting > 0 else
-                "Same-category conversion — no additional permitting required"
+                "Same-category conversion - no additional permitting required"
             ),
         },
         "environmental_review": {
             "amount": environmental,
             "explanation": (
                 f"Low transition score ({transition_score}/100) triggers environmental "
-                "impact assessment — waste classification review, hazardous material "
+                "impact assessment - waste classification review, hazardous material "
                 "survey, and asbestos/lead testing for pre-renovation clearance"
                 if environmental > 0 else
-                "Not triggered — transition score above threshold or same category"
+                "Not triggered - transition score above threshold or same category"
             ),
         },
         "subtotal": fire_safety + accessibility + infection_control + permitting + environmental,
@@ -1372,7 +1372,7 @@ def _compute_costs(
     # ── D. Vendor Concessions & Savings ─────────────────────────────
     # Framework discount on new purchases > EUR 3000
     framework_discount_amt = 0
-    framework_detail = "Not applicable — new purchase below EUR 3,000 threshold"
+    framework_detail = "Not applicable - new purchase below EUR 3,000 threshold"
     if new_purchase > 3000:
         framework_discount_amt = round(new_purchase * 0.12)
         framework_detail = (
@@ -1389,7 +1389,7 @@ def _compute_costs(
             trade_in_credit += round(unit_cost * 0.25 * item["quantity"])
             trade_in_items += item["quantity"]
     trade_in_detail = (
-        f"Trade-in program via existing vendor (GE Healthcare Services) — "
+        f"Trade-in program via existing vendor (GE Healthcare Services) - "
         f"{trade_in_items} item(s) eligible"
         if trade_in_items > 0
         else "No high-value items eligible for trade-in (threshold EUR 500)"
@@ -1397,7 +1397,7 @@ def _compute_costs(
 
     # Bulk procurement: additional 5% if new_purchase > EUR 5000
     bulk_procurement_amt = 0
-    bulk_detail = "Not applicable — new purchase below EUR 5,000 volume tier"
+    bulk_detail = "Not applicable - new purchase below EUR 5,000 volume tier"
     if new_purchase > 5000:
         bulk_procurement_amt = round(new_purchase * 0.05)
         bulk_detail = "Volume tier pricing from GPO contract"
@@ -1406,7 +1406,7 @@ def _compute_costs(
     kept_count = sum(i["quantity"] for i in furnishing_delta["keep"])
     warranty_transfer_amt = kept_count * 45
     warranty_detail = (
-        f"Active warranty carryover, no new service contracts needed — "
+        f"Active warranty carryover, no new service contracts needed - "
         f"{kept_count} item(s)"
     )
 
@@ -1416,7 +1416,7 @@ def _compute_costs(
         replacement_cost = FURNISHING_PRICES.get(item["item_type"], 200)
         reuse_savings += replacement_cost * item["quantity"]
     reuse_detail = (
-        f"Existing assets retained in situ, zero procurement cost — "
+        f"Existing assets retained in situ, zero procurement cost - "
         f"{kept_count} item(s) worth EUR {reuse_savings:,} if purchased new"
     )
 
@@ -1451,7 +1451,7 @@ def _compute_costs(
         },
         "reuse_savings": {
             "amount": -reuse_savings,
-            "vendor": "N/A — retained assets",
+            "vendor": "N/A - retained assets",
             "vendor_status": "registered",
             "explanation": reuse_detail,
         },
@@ -1606,7 +1606,7 @@ def _compute_costs(
     cow_rate = 0.025
     cow_cost = 0
 
-    # Labour subtotal needs base capex for pm/cow percentages — compute
+    # Labour subtotal needs base capex for pm/cow percentages - compute
     # iteratively: pm and cow are based on a preliminary total_capex
     preliminary_capex = (
         renovation["subtotal"] + furnishing["subtotal"]
@@ -1644,7 +1644,7 @@ def _compute_costs(
                     f"at EUR {specialist_rate}/week for {specialist_weeks} weeks "
                     f"(30% of total duration)"
                     if has_infra_items else
-                    "No specialist trades required — no infrastructure changes"
+                    "No specialist trades required - no infrastructure changes"
                 ),
                 "workers": specialist_detail_workers,
                 "weeks": specialist_weeks if has_infra_items else 0,
@@ -1658,7 +1658,7 @@ def _compute_costs(
                     f"Certified medical gas installer at EUR 680/week for "
                     f"{med_gas_weeks} weeks"
                     if med_gas_cost > 0 else
-                    "Not required — target function does not need medical gas"
+                    "Not required - target function does not need medical gas"
                 ),
                 "workers": 1 if med_gas_cost > 0 else 0,
                 "weeks": med_gas_weeks,
@@ -1683,10 +1683,10 @@ def _compute_costs(
             "amount": hs_cost,
             "detail": {
                 "explanation": (
-                    f"Required for works exceeding 4 weeks — "
+                    f"Required for works exceeding 4 weeks - "
                     f"EUR {hs_rate}/week for full {hs_weeks}-week duration"
                     if hs_cost > 0 else
-                    "Not required — works duration under 4 weeks"
+                    "Not required - works duration under 4 weeks"
                 ),
                 "workers": 1 if hs_cost > 0 else 0,
                 "weeks": hs_weeks,
@@ -1699,7 +1699,7 @@ def _compute_costs(
                 "explanation": (
                     f"2.5% of CAPEX for {reno_class} renovation oversight"
                     if cow_cost > 0 else
-                    "Not required — clerk of works only for heavy/structural class"
+                    "Not required - clerk of works only for heavy/structural class"
                 ),
                 "workers": 1 if cow_cost > 0 else 0,
                 "weeks": round(weeks_avg) if cow_cost > 0 else 0,
@@ -1734,7 +1734,7 @@ def _compute_costs(
                 "explanation": (
                     f"Change-of-use permit for {current_cat} to {target_cat} transition"
                     if is_cross_category else
-                    "Not required — same functional category"
+                    "Not required - same functional category"
                 ),
                 "required": is_cross_category,
                 "processing_weeks": 8 if is_cross_category else 0,
@@ -1759,7 +1759,7 @@ def _compute_costs(
                     "Clinical space requires health authority inspection "
                     "and certification before occupation"
                     if is_clinical_target else
-                    "Not required — target function is not clinical"
+                    "Not required - target function is not clinical"
                 ),
                 "required": is_clinical_target,
                 "processing_weeks": 10 if is_clinical_target else 0,
@@ -1780,7 +1780,7 @@ def _compute_costs(
                     f"Environmental clearance for heavy transition "
                     f"(score {transition_score}/100)"
                     if transition_score < 40 else
-                    "Not required — transition score above environmental threshold"
+                    "Not required - transition score above environmental threshold"
                 ),
                 "required": transition_score < 40,
                 "processing_weeks": 12 if transition_score < 40 else 0,
@@ -1869,7 +1869,7 @@ def _compute_costs(
                 f"Cross-category walkthrough for {staffing_ratio * area_m2 / 10:.1f} "
                 f"FTE at 0.5 days x EUR 350/day"
                 if staff_orientation_cost > 0 else
-                "Not required — same category, no reorientation needed"
+                "Not required - same category, no reorientation needed"
             ),
         },
         "subtotal": commissioning_subtotal,
@@ -1902,12 +1902,12 @@ def _compute_costs(
 
     # Temporary relocation: patient-facing with limited floor supply
     temp_relocation = 0
-    temp_relocation_expl = "Not required — current function is not patient-facing or adequate floor capacity exists"
+    temp_relocation_expl = "Not required - current function is not patient-facing or adequate floor capacity exists"
     temp_relocation_just = ""
     if is_patient_facing and current_fn_floor_count <= 3:
         temp_relocation = round(1500 + area_m2 * 15)
         temp_relocation_expl = (
-            f"Temporary relocation setup for {current_fn} — "
+            f"Temporary relocation setup for {current_fn} - "
             f"only {current_fn_floor_count} on this floor"
         )
         temp_relocation_just = (
@@ -1931,7 +1931,7 @@ def _compute_costs(
 
     # Staff retraining for cross-category transitions
     staff_retrain = 0
-    staff_retrain_expl = "Not required — same functional category"
+    staff_retrain_expl = "Not required - same functional category"
     staff_retrain_just = ""
     if is_cross_category and staffing_ratio > 0:
         fte_estimate = staffing_ratio * area_m2 / 10
@@ -1947,7 +1947,7 @@ def _compute_costs(
 
     # Adjacent space mitigation for moderate+ renovations
     adjacent_mitigation = 0
-    adjacent_mitigation_expl = "Not required — light renovation class"
+    adjacent_mitigation_expl = "Not required - light renovation class"
     adjacent_mitigation_just = ""
     if reno_class in ("moderate", "heavy", "structural"):
         adjacent_mitigation = round(400 + area_m2 * 8)
@@ -1962,7 +1962,7 @@ def _compute_costs(
 
     # Patient scheduling loss: only if current function is patient-facing
     patient_scheduling = 0
-    patient_scheduling_expl = "Not applicable — current function is not patient-facing"
+    patient_scheduling_expl = "Not applicable - current function is not patient-facing"
     patient_scheduling_just = ""
     if is_patient_facing:
         ideal_area = profile.get("ideal_area", 20)
@@ -2316,7 +2316,7 @@ def _compute_roi(
         f"EUR {total_investment:,} total investment / EUR {round(net_annual_delta / 12):,} monthly net gain "
         f"= {payback_months} months to full recovery"
         if payback_months else
-        "No payback period — conversion does not generate net positive revenue"
+        "No payback period - conversion does not generate net positive revenue"
     )
 
     downtime_expl = (
@@ -2329,7 +2329,7 @@ def _compute_roi(
         f"(EUR {round(net_annual_delta):,}/yr x 5 years - EUR {total_investment:,} investment) "
         f"/ EUR {total_investment:,} x 100 = {roi_5yr_pct}%"
         if roi_5yr_pct is not None else
-        "Cannot compute — zero investment base"
+        "Cannot compute - zero investment base"
     )
 
     return {
@@ -2918,7 +2918,7 @@ def _build_timeline(
 
 
 # ══════════════════════════════════════════════════════════════════════
-# Main computation — produces one complete option
+# Main computation - produces one complete option
 # ══════════════════════════════════════════════════════════════════════
 
 def _build_option(
@@ -2999,7 +2999,7 @@ def _build_option(
 
     overall = int(sum(scores[k] * SCORE_WEIGHTS[k] for k in SCORE_WEIGHTS))
 
-    # ROI — uses full costs dict for total_project_cost-based calculations
+    # ROI - uses full costs dict for total_project_cost-based calculations
     reno = RENOVATION_COSTS[profile.get("renovation_class", "moderate")]
     roi = _compute_roi(
         area, current_fn, target_fn, profile,
@@ -3105,7 +3105,7 @@ def _build_option(
 
 
 # ══════════════════════════════════════════════════════════════════════
-# Public API — called by intelligence_cache at build time
+# Public API - called by intelligence_cache at build time
 # ══════════════════════════════════════════════════════════════════════
 
 def compute_repurpose_options(

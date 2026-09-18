@@ -97,7 +97,7 @@ export default function FloorPlanCanvas({ floorIdOverride }) {
     setDisambig(null);
   }, [floorId]);
 
-  // Build room list — classify as MEP or occupiable, filter, deduplicate
+  // Build room list - classify as MEP or occupiable, filter, deduplicate
   const rooms = useMemo(() => {
     if (spaces.length === 0) return [];
 
@@ -180,7 +180,7 @@ export default function FloorPlanCanvas({ floorIdOverride }) {
     }
     const deduped = result.filter((_, i) => !removeSet.has(i));
 
-    // Sort by area descending — largest rooms draw first, smallest on top
+    // Sort by area descending - largest rooms draw first, smallest on top
     deduped.sort((a, b) => (b.nw * b.nd) - (a.nw * a.nd));
 
     return deduped;
@@ -272,7 +272,7 @@ export default function FloorPlanCanvas({ floorIdOverride }) {
     else if (heatmapMode === 'occupancy_density') val = room.maxOccupancy > 0 && room.area > 0 ? room.maxOccupancy / room.area : 0;
     else if (heatmapMode === 'evacuation') val = room.absoluteOccupancy;
     const t = Math.max(0, Math.min(1, (val - heatmapStats.min) / heatmapStats.range));
-    // Evacuation: inverted scale — high capacity = green (good), low = red
+    // Evacuation: inverted scale - high capacity = green (good), low = red
     if (heatmapMode === 'evacuation') return heatColor(1 - t);
     return heatColor(t);
   }, [heatmapMode, heatmapStats]);
@@ -439,7 +439,7 @@ export default function FloorPlanCanvas({ floorIdOverride }) {
     ctx.restore();
   }, [rooms, transform, hovered, selectedSpaceId, searchMatches, highlightSet, repurposeSet, getRoomColor, heatmapMode, getLayout]);
 
-  // ── Hit testing — returns all rooms at point (for disambiguation) ──
+  // ── Hit testing - returns all rooms at point (for disambiguation) ──
   const hitTestAll = useCallback((clientX, clientY) => {
     const container = containerRef.current;
     const layout = getLayout();
@@ -504,12 +504,12 @@ export default function FloorPlanCanvas({ floorIdOverride }) {
     if (hits.length === 0) return;
 
     if (hits.length === 1) {
-      // Single room — select directly from intelligence cache
+      // Single room - select directly from intelligence cache
       const room = hits[0];
       const intel = useStore.getState().getIntelligence(room.id);
       selectSpace(room.id, intel || { ifc_guid: room.id });
     } else {
-      // Multiple rooms overlap — show disambiguation
+      // Multiple rooms overlap - show disambiguation
       const container = containerRef.current;
       if (container) {
         const cr = container.getBoundingClientRect();

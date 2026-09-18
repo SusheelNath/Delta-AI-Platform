@@ -78,16 +78,16 @@ export function wrapConfirmation(confirmText, actions) {
   const type = actions[0].type;
 
   const wrappers = {
-    clear_selection: "Done — selection cleared. The view is ready for your next pick.",
+    clear_selection: "Done - selection cleared. The view is ready for your next pick.",
     clear_route: "Route cleared. Select a room to find a new path.",
-    clear_all: "Everything reset — clean slate. What would you like to explore?",
+    clear_all: "Everything reset - clean slate. What would you like to explore?",
     clear_highlights: "Highlights cleared.",
     clear_search: "Search cleared.",
     reset_heatmap: "Back to the default function view.",
     reset_filters: "All room types are now visible.",
     toggle_mep: "Infrastructure layer toggled.",
     set_floor_relative: confirmText,
-    enter_compare_mode: "Compare mode is active — select two floors to see them side by side.",
+    enter_compare_mode: "Compare mode is active - select two floors to see them side by side.",
     exit_compare_mode: "Back to single-floor view.",
     zoom_view: "View adjusted.",
     new_session: "Fresh session started. How can I help?",
@@ -124,7 +124,7 @@ function buildFloorNavResponse(floorId) {
   const areaStr = area > 0 ? ` across ${Math.round(area).toLocaleString()} m²` : '';
   const fnStr = topFns.length > 0 ? `\n\n${topFns.join(' · ')}` : '';
 
-  return `Navigating to **${fname}** — ${count} spaces${areaStr}.${fnStr}`;
+  return `Navigating to **${fname}** - ${count} spaces${areaStr}.${fnStr}`;
 }
 
 function buildAllFloorsOverview() {
@@ -179,7 +179,7 @@ function buildAllFloorsOverview() {
   const parts = [
     `Here's a full overview of the building.`,
     '',
-    `**Chirec Delta Hospital** — ${floorCount} floors, ${totalSpaces.toLocaleString()} spaces, ${totalAreaStr}`,
+    `**Chirec Delta Hospital** - ${floorCount} floors, ${totalSpaces.toLocaleString()} spaces, ${totalAreaStr}`,
     '',
   ];
 
@@ -200,7 +200,7 @@ function buildAllFloorsOverview() {
     const fnStr = meaningfulFns.length > 0
       ? meaningfulFns.join(', ')
       : topCats.join(', ');
-    parts.push(`**${fname}** — ${count} spaces · ${areaStr}  `);
+    parts.push(`**${fname}** - ${count} spaces · ${areaStr}  `);
     parts.push(`${fnStr}`, '');
   }
 
@@ -220,14 +220,14 @@ function buildLargestRoomsResponse() {
   if (polys.length === 0) return 'No non-infrastructure rooms with area data found on this floor.';
 
   const fname = FLOOR_NAMES[floorId] || floorId;
-  const lines = [`Here are the **3 largest rooms** on **${fname}** — highlighted in orange:`, ''];
+  const lines = [`Here are the **3 largest rooms** on **${fname}** - highlighted in orange:`, ''];
 
   polys.forEach((p, i) => {
     const name = p.space_name || p.ifc_guid;
     const fn = p.primary_function || '';
     const area = p.area_m2.toFixed(1);
     const zone = p.functional_zone ? ` · ${p.functional_zone}` : '';
-    lines.push(`${i + 1}. **${name}** — ${area} m² · ${fn}${zone}`);
+    lines.push(`${i + 1}. **${name}** - ${area} m² · ${fn}${zone}`);
   });
 
   return lines.join('\n');
@@ -307,7 +307,7 @@ function buildFindRoomResponse() {
       for (const r of rooms) {
         const area = r.area ? ` · ${r.area.toFixed(1)} m²` : '';
         const tag = shortReason(r);
-        lines.push(`${idx}. **${r.name}** — ${r.fn} · cap. ${r.capacity}${area}${tag ? `\n   _${tag}_` : ''}\n`);
+        lines.push(`${idx}. **${r.name}** - ${r.fn} · cap. ${r.capacity}${area}${tag ? `\n   _${tag}_` : ''}\n`);
         idx++;
       }
     }
@@ -321,7 +321,7 @@ function buildFindRoomResponse() {
       for (const r of rooms) {
         const area = r.area ? ` · ${r.area.toFixed(1)} m²` : '';
         const tag = shortReason(r);
-        lines.push(`${idx}. **${r.name}** — ${r.fn} · cap. ${r.capacity}${area}${tag ? `\n   _${tag}_` : ''}\n`);
+        lines.push(`${idx}. **${r.name}** - ${r.fn} · cap. ${r.capacity}${area}${tag ? `\n   _${tag}_` : ''}\n`);
         idx++;
       }
     }
@@ -572,7 +572,7 @@ export function buildRepurposeResponse(option, spaceName, floorId, activeTab = '
     p.push(`> ${option.overall_score >= 75 ? 'Strong candidate' : option.overall_score >= 50 ? 'Viable candidate' : 'Challenging conversion'} for repurposing. ${roi.payback_months ? `Payback in ${roi.payback_months} months.` : 'Non-revenue investment.'} Total cost ${eur(c.total_project_cost || c.total_capex)}.`);
     p.push('');
 
-    // Room profile — bullets
+    // Room profile - bullets
     p.push('#### Room Profile\n');
     if (area) p.push(`- **Area** \u2014 ${area} m\u00B2`);
     if (currentFunction) p.push(`- **Current function** \u2014 ${currentFunction}`);
@@ -594,7 +594,7 @@ export function buildRepurposeResponse(option, spaceName, floorId, activeTab = '
       p.push('');
     }
 
-    // Score breakdown — bullets
+    // Score breakdown - bullets
     if (option.scores) {
       const scoreLabels = {
         area_fit: 'Size Match', distribution_gap: 'Service Demand', adjacency: 'Location Synergy',
@@ -782,7 +782,7 @@ export function buildRepurposeResponse(option, spaceName, floorId, activeTab = '
 
     hr();
 
-    // Cost Summary — bullets
+    // Cost Summary - bullets
     p.push('#### Cost Summary\n');
     if (c.renovation) p.push(`- Renovation \u2014 ${eur(c.renovation.subtotal)}`);
     if (c.furnishing) p.push(`- Furnishings \u2014 ${eur(c.furnishing.subtotal)}`);
@@ -799,7 +799,7 @@ export function buildRepurposeResponse(option, spaceName, floorId, activeTab = '
     p.push(`- **Total Project Cost** \u2014 **${eur(c.total_project_cost || c.total_capex)}**`);
     p.push('');
 
-    // Financial Structure — bullets, no duplicate retention
+    // Financial Structure - bullets, no duplicate retention
     if (c.financial_structure) {
       const fs = c.financial_structure;
       p.push('#### Financial Structure\n');
@@ -832,7 +832,7 @@ export function buildRepurposeResponse(option, spaceName, floorId, activeTab = '
     p.push(`> ${verdict}`);
     p.push('');
 
-    // Key metrics — bullets
+    // Key metrics - bullets
     p.push('#### Key Metrics\n');
     p.push(`- **Net annual impact** \u2014 ${sign(roi.net_annual_delta)}${eur(roi.net_annual_delta)}/yr${re.net_annual_delta ? `\n  ${re.net_annual_delta}` : ''}`);
     p.push(`- **Total investment** \u2014 ${eur(totalInvestment)}${re.total_investment ? `\n  ${re.total_investment}` : ''}`);
@@ -841,7 +841,7 @@ export function buildRepurposeResponse(option, spaceName, floorId, activeTab = '
     if (roi.downtime_cost > 0) p.push(`- **Downtime revenue loss** \u2014 ${eur(roi.downtime_cost)}${re.downtime_cost ? `\n  ${re.downtime_cost}` : ''}`);
     p.push('');
 
-    // Investment breakdown — bullets
+    // Investment breakdown - bullets
     const ib = roi.investment_breakdown;
     if (ib) {
       const ibAmt = (k) => { const v = ib[k]; if (!v) return 0; return typeof v === 'object' && 'amount' in v ? v.amount : v; };
@@ -856,7 +856,7 @@ export function buildRepurposeResponse(option, spaceName, floorId, activeTab = '
       p.push('');
     }
 
-    // Revenue & OPEX — bullets
+    // Revenue & OPEX - bullets
     p.push('#### Revenue & OPEX Comparison\n');
     p.push(`- **Revenue** \u2014 ${eur(roi.annual_revenue_current)}/yr \u2192 ${eur(roi.annual_revenue_target)}/yr (${sign(roi.annual_revenue_delta)}${eur(roi.annual_revenue_delta)})${re.revenue_delta ? `\n  ${re.revenue_delta}` : ''}`);
     p.push(`- **OPEX** \u2014 ${eur(roi.annual_opex_current)}/yr \u2192 ${eur(roi.annual_opex_target)}/yr (${sign(roi.annual_opex_delta)}${eur(roi.annual_opex_delta)})${re.opex_delta ? `\n  ${re.opex_delta}` : ''}`);
@@ -869,7 +869,7 @@ export function buildRepurposeResponse(option, spaceName, floorId, activeTab = '
       p.push('');
     }
 
-    // Operational impact — bullets
+    // Operational impact - bullets
     if (impact.care_capacity || impact.staffing || impact.occupancy || impact.service_continuity) {
       p.push('#### Operational Impact\n');
       if (impact.care_capacity) {
@@ -919,7 +919,7 @@ export function buildRepurposeResponse(option, spaceName, floorId, activeTab = '
       p.push('');
     }
 
-    // Phases — merged schedule + details
+    // Phases - merged schedule + details
     if (tl.phases?.length > 0) {
       p.push('#### Project Phases\n');
       tl.phases.forEach((phase, i) => {
@@ -932,7 +932,7 @@ export function buildRepurposeResponse(option, spaceName, floorId, activeTab = '
       });
     }
 
-    // Resource requirements — bullets
+    // Resource requirements - bullets
     if (c.labour) {
       p.push('#### Resource Requirements\n');
       for (const [key, label] of [['general_contractor', 'General contractor'], ['specialist_trades', 'Specialist trades'],
@@ -947,7 +947,7 @@ export function buildRepurposeResponse(option, spaceName, floorId, activeTab = '
       p.push('');
     }
 
-    // Payment milestones — bullets
+    // Payment milestones - bullets
     if (c.financial_structure?.payment_milestones?.length > 0) {
       p.push('#### Payment Milestones\n');
       for (const m of c.financial_structure.payment_milestones) {
@@ -985,7 +985,7 @@ export function buildRepurposeResponse(option, spaceName, floorId, activeTab = '
     p.push(`> ${reuseRate}% asset reuse rate. ${keepCount} item types retained, ${removeCount} removed, ${addCount} new to procure. Total procurement: **${eur(addTotal)}**.`);
     p.push('');
 
-    // Transition summary — bullets
+    // Transition summary - bullets
     p.push('#### Transition Summary\n');
     p.push(`- **Items retained** \u2014 ${keepCount} types (${keepQty} units)`);
     p.push(`- **Items to remove** \u2014 ${removeCount} types (${removeQty} units)`);
@@ -997,7 +997,7 @@ export function buildRepurposeResponse(option, spaceName, floorId, activeTab = '
     if (c.furnishing) p.push(`- **Furnishing subtotal** \u2014 **${eur(c.furnishing.subtotal)}**`);
     p.push('');
 
-    // Retained assets — bullets
+    // Retained assets - bullets
     if (keepCount > 0) {
       p.push('#### Retained Assets\n');
       p.push('_Carried over from current layout \u2014 no procurement required._\n');
@@ -1005,7 +1005,7 @@ export function buildRepurposeResponse(option, spaceName, floorId, activeTab = '
       p.push('');
     }
 
-    // Assets to remove — bullets
+    // Assets to remove - bullets
     if (removeCount > 0) {
       p.push('#### Assets to Remove\n');
       p.push('_Relocated, stored, or disposed. Disposal cost included in furnishing removal line._\n');
@@ -1013,7 +1013,7 @@ export function buildRepurposeResponse(option, spaceName, floorId, activeTab = '
       p.push('');
     }
 
-    // New procurement — bullets
+    // New procurement - bullets
     if (addCount > 0) {
       p.push('#### New Procurement\n');
       for (const f of add) {
@@ -1024,7 +1024,7 @@ export function buildRepurposeResponse(option, spaceName, floorId, activeTab = '
       p.push('');
     }
 
-    // Vendor concessions — bullets
+    // Vendor concessions - bullets
     if (c.vendor_concessions && c.vendor_concessions.subtotal < 0) {
       p.push('#### Vendor Concessions Applied\n');
       p.push('_These savings offset the procurement cost above._\n');

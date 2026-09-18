@@ -2,7 +2,7 @@
  * Multi-source corridor routing with smooth navigation lines.
  *
  * 1. Finds ALL corridor entry points adjacent to the source room.
- * 2. Multi-source Dijkstra on corridor network — explores ALL reachable
+ * 2. Multi-source Dijkstra on corridor network - explores ALL reachable
  *    targets and picks the one nearest by straight-line distance from source.
  * 3. Navigation line: centroid-bridge waypoints → Chaikin corner cutting (×2)
  *    → centripetal Catmull-Rom spline for cusp-free smooth curves.
@@ -23,7 +23,7 @@ const INFRA_RE = /elevator|staircase|stairway|stair|lift/i;
 const ELEVATOR_TARGET_RE = /elevator|lift/i;
 const STAIRCASE_TARGET_RE = /stair/i;
 
-// Adjacency graph cache — avoids O(n²) rebuild when polygon set unchanged
+// Adjacency graph cache - avoids O(n²) rebuild when polygon set unchanged
 let _adjCache = null; // { key, fullAdj, corrAdj }
 
 // Binary min-heap for O(log n) Dijkstra priority queue
@@ -117,7 +117,7 @@ export function computeScaleFactor(polygons) {
 // Smooth path line helpers (Approach 5: centroid-bridge → Chaikin → centripetal CR)
 // ---------------------------------------------------------------------------
 
-/** Find bridge point — midpoint of the closest pair of edge midpoints. */
+/** Find bridge point - midpoint of the closest pair of edge midpoints. */
 function findBridgePoint(vertsA, vertsB) {
   let bestDist = Infinity, bestPt = null;
   const edgeMids = (verts) => {
@@ -240,7 +240,7 @@ function computePathLine(path, centroidMap) {
   }
   waypoints.push(centroidMap.get(path[path.length - 1].ifc_guid));
 
-  // Too few points for smoothing — return raw waypoints
+  // Too few points for smoothing - return raw waypoints
   if (waypoints.length < 3) return waypoints;
 
   // Phase 1: Chaikin corner cutting (2 iterations)
@@ -536,7 +536,7 @@ export function computeRouting(polygons, startGuid) {
     return { toElevator: null, toStaircase: null };
   }
 
-  // Cache adjacency graphs — O(n²) build is expensive, skip if polygon set unchanged
+  // Cache adjacency graphs - O(n²) build is expensive, skip if polygon set unchanged
   const cacheKey = valid.length + ':' + valid[0].ifc_guid + ':' + valid[valid.length - 1].ifc_guid;
   let fullAdj, corrAdj;
   if (_adjCache && _adjCache.key === cacheKey) {

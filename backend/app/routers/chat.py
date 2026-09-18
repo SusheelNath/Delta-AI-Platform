@@ -1,5 +1,5 @@
 """
-Chat endpoint — streams Ollama responses via Server-Sent Events.
+Chat endpoint - streams Ollama responses via Server-Sent Events.
 
 All data derives from polygons.json + computed polygon intelligence.
 No DB Space table queries.
@@ -73,7 +73,7 @@ def _build_action_context(
 ) -> str | None:
     """Build hierarchical context for the LLM based on executed actions.
 
-    Decision tree — each tier injects the COMPLETE data for that level so the
+    Decision tree - each tier injects the COMPLETE data for that level so the
     LLM only narrates facts, never searches or invents:
       Tier 1  set_floor            → floor group summary (all groups + counts)
       Tier 2  expand_directory     → room list for that group (index, name, area, occ)
@@ -84,7 +84,7 @@ def _build_action_context(
 
     parts = []
 
-    # Resolve effective floor — use navigated floor if set_floor in this batch
+    # Resolve effective floor - use navigated floor if set_floor in this batch
     effective_fid = active_floor_id
     for a, _ in detected_actions:
         if a.get("type") == "set_floor":
@@ -100,7 +100,7 @@ def _build_action_context(
             groups = get_floor_group_summary(fid)
             total_rooms = sum(g["count"] for g in groups)
             total_area = sum(g["total_area"] for g in groups)
-            lines = [f"NAVIGATED TO: {fname} — {total_rooms} spaces, {total_area:,.0f} m²."]
+            lines = [f"NAVIGATED TO: {fname} - {total_rooms} spaces, {total_area:,.0f} m²."]
             lines.append("Function groups on this floor (use ONLY these names, indices, and counts):")
             for gi, g in enumerate(groups, 1):
                 area_str = f"{g['total_area']:,.0f} m²"
@@ -129,7 +129,7 @@ def _build_action_context(
                         group_idx_str = f" (Group {gi})"
                         break
                 if rooms:
-                    lines = [f"DIRECTORY OPENED: **{fn_name}**{group_idx_str} on {fname} — {len(rooms)} rooms."]
+                    lines = [f"DIRECTORY OPENED: **{fn_name}**{group_idx_str} on {fname} - {len(rooms)} rooms."]
                     lines.append("List ONLY these rooms with their EXACT data. Do NOT invent rooms or values:")
                     for idx, r in enumerate(rooms, 1):
                         entry = f"- [Room {idx}] {r.get('space_name', '?')}"
@@ -145,9 +145,9 @@ def _build_action_context(
                         lines.append(entry)
                     parts.append("\n".join(lines))
                 else:
-                    parts.append(f"DIRECTORY OPENED: **{fn_name}**{group_idx_str} — no matching rooms found on this floor.")
+                    parts.append(f"DIRECTORY OPENED: **{fn_name}**{group_idx_str} - no matching rooms found on this floor.")
             else:
-                parts.append(f"DIRECTORY OPENED: **{fn_name}** — no floor is currently active. Navigate to a floor first.")
+                parts.append(f"DIRECTORY OPENED: **{fn_name}** - no floor is currently active. Navigate to a floor first.")
 
         # ── TIER 3: Room selected (from group ordinal or direct) ──
         elif atype == "select_room_in_group":
@@ -372,7 +372,7 @@ def _enrich_room_selection(
                 actual_idx = len(rooms) - 1
                 confirmation = (
                     f"There are only **{len(rooms)}** {fn_name} rooms "
-                    f"— selecting **#{len(rooms)}**."
+                    f"- selecting **#{len(rooms)}**."
                 )
             else:
                 actual_idx = room_idx - 1
@@ -391,7 +391,7 @@ def _enrich_room_selection(
                 elif room_idx > len(rooms):
                     confirmation = (
                         f"There are only **{len(rooms)}** {resolved_fn} rooms "
-                        f"— selecting **#{len(rooms)}**."
+                        f"- selecting **#{len(rooms)}**."
                     )
                 else:
                     confirmation = f"Selecting room **#{room_idx}** in **{resolved_fn}**..."
@@ -448,7 +448,7 @@ def _enrich_room_selection(
                         break
 
             if current_idx == -1:
-                # Not on any room in this group — pick first or last
+                # Not on any room in this group - pick first or last
                 new_idx = 0 if direction == "next" else len(rooms) - 1
             elif direction == "next":
                 new_idx = current_idx + 1
@@ -540,7 +540,7 @@ def _auto_search(
     phrases = [p for p in _MULTI_WORD if p in msg_lower]
     search_terms = tokens + phrases
 
-    # Search cached blobs — no disk I/O, no DB queries
+    # Search cached blobs - no disk I/O, no DB queries
     intelligence = get_all_intelligence()
     search_blobs = get_search_blobs()
     matches = []
@@ -567,7 +567,7 @@ def _auto_search(
 
 @router.post("/intents")
 def detect_intents(body: IntentRequest):
-    """Lightweight intent detection — returns actions as JSON, no LLM call.
+    """Lightweight intent detection - returns actions as JSON, no LLM call.
 
     Returns actions, confirmations, and optionally rich markdown content.
     When content is non-null, the frontend can display it directly and
@@ -594,7 +594,7 @@ def detect_intents(body: IntentRequest):
     if is_deterministic:
         # Pass frontend space so templates use what the user actually sees
         content = try_render_template(enriched, body.active_floor_id, selected_space=selected_space)
-        # Pure UI actions (clear_all, zoom, toggle, etc.) have no template —
+        # Pure UI actions (clear_all, zoom, toggle, etc.) have no template -
         # use the last confirmation as the chat response
         if content is None:
             confirmations = [c.replace("**", "") for _, c in enriched]
@@ -664,7 +664,7 @@ async def chat(body: ChatRequest, db: Session = Depends(get_db)):
             and (r.get("primary_function") or "").lower().strip() != sel_fn
         ]
 
-    # Deterministic action detection — fires before LLM (supports chained actions)
+    # Deterministic action detection - fires before LLM (supports chained actions)
     parsed_list = parse_intents(latest_user_text, expanded_group=body.expanded_group, active_floor_id=body.active_floor_id)
     detected_actions = intents_to_actions(parsed_list, selected_space, body.active_floor_id)
 
@@ -715,7 +715,7 @@ async def chat(body: ChatRequest, db: Session = Depends(get_db)):
     action_context = _build_action_context(detected_actions, body.active_floor_id)
 
     # When the decision tree provides authoritative data (floor nav, directory,
-    # room selection, routing), suppress search results — the action context
+    # room selection, routing), suppress search results - the action context
     # is the single source of truth and search results would confuse the LLM.
     if action_context:
         _grounded_types = {
@@ -726,7 +726,7 @@ async def chat(body: ChatRequest, db: Session = Depends(get_db)):
         if any(a.get("type") in _grounded_types for a, _ in detected_actions):
             search_results = []
             disambiguation_hint = None
-            # The action context is the single source of truth — suppress
+            # The action context is the single source of truth - suppress
             # floor summaries to prevent the LLM from anchoring on other floors
             floor_summaries = None
 
@@ -748,11 +748,11 @@ async def chat(body: ChatRequest, db: Session = Depends(get_db)):
                     yield f"data: {safe_confirm}\n\n"
 
             if template_text:
-                # Serve pre-rendered template — no LLM call needed
+                # Serve pre-rendered template - no LLM call needed
                 safe = template_text.replace("\n", "\\n")
                 yield f"data: {safe}\n\n"
             else:
-                # Stream LLM narration (no tools — actions already handled)
+                # Stream LLM narration (no tools - actions already handled)
                 async for token in stream_chat(
                     conversation, selected_space, search_results,
                     floor_summaries, learnings, disambiguation_hint,

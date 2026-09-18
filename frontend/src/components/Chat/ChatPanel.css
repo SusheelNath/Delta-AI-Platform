@@ -758,7 +758,7 @@
   color: #c28a60;
 }
 
-/* ── Input tray — floating card ── */
+/* ── Input tray - floating card ── */
 .chat-panel__input-tray {
   display: flex;
   flex-direction: column;
@@ -824,7 +824,7 @@
 
 /* ── Active voice states ── */
 
-/* Listening — pulsing orange ring */
+/* Listening - pulsing orange ring */
 .chat-panel__mic-btn--listening {
   color: #E77133;
   background: rgba(231, 113, 51, 0.08);
@@ -838,13 +838,13 @@
   100% { box-shadow: 0 0 0 0 rgba(231, 113, 51, 0); }
 }
 
-/* Greeting — gentle glow */
+/* Greeting - gentle glow */
 .chat-panel__mic-btn--greeting {
   color: #E77133;
   background: rgba(231, 113, 51, 0.1);
 }
 
-/* Processing — spinning ring */
+/* Processing - spinning ring */
 .chat-panel__mic-btn--processing {
   color: #E77133;
 }
@@ -862,13 +862,13 @@
   to { transform: rotate(360deg); }
 }
 
-/* Acknowledging — solid orange */
+/* Acknowledging - solid orange */
 .chat-panel__mic-btn--acknowledging {
   color: #fff;
   background: #E77133;
 }
 
-/* Announcing — waveform bars */
+/* Announcing - waveform bars */
 .chat-panel__mic-btn--announcing {
   color: #E77133;
   background: rgba(231, 113, 51, 0.08);

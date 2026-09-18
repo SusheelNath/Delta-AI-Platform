@@ -13,7 +13,7 @@ MODEL_PATH = Path(__file__).resolve().parent.parent.parent / "models" / "silero_
 
 # VAD tuning
 SAMPLE_RATE = 16000
-FRAME_SAMPLES = 256          # 16 ms at 16 kHz — Silero VAD v5 expects this
+FRAME_SAMPLES = 256          # 16 ms at 16 kHz - Silero VAD v5 expects this
 SPEECH_THRESHOLD = 0.5       # probability above which a frame is "speech"
 SILENCE_THRESHOLD = 0.35     # probability below which a frame is "silence"
 MIN_SPEECH_MS = 250           # ignore speech shorter than this
@@ -40,14 +40,14 @@ class StreamingVAD:
             str(MODEL_PATH),
             providers=["CPUExecutionProvider"],   # VAD is tiny, CPU is fine
         )
-        # Callbacks — set once, never cleared by reset()
+        # Callbacks - set once, never cleared by reset()
         self.on_speech_start = None
         self.on_speech_end = None    # (audio_f32_array)
         self.on_partial = None       # (audio_f32_array)
         self.reset()
 
     def reset(self):
-        """Clear audio/state — call when mode changes or connection resets.
+        """Clear audio/state - call when mode changes or connection resets.
         Does NOT clear callbacks."""
         # ONNX state tensors  (2, 1, 128)
         self._h = np.zeros((2, 1, 128), dtype=np.float32)

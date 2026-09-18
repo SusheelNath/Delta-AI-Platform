@@ -209,7 +209,7 @@ def compute_space_intelligence(
         "convertible_functions": metadata["convertible_functions"],
         "secondary_functions": metadata["secondary_functions"],
 
-        # Occupancy (from metrics — derived from furnishings/density model)
+        # Occupancy (from metrics - derived from furnishings/density model)
         "normal_occupancy": metrics.normal_occupancy if metrics else 0,
         "max_occupancy": metrics.max_occupancy if metrics else 0,
         "absolute_occupancy": metrics.absolute_occupancy if metrics else 0,
@@ -276,7 +276,7 @@ def search_polygons(
     max_area: float | None = None,
     limit: int = 100,
 ) -> list[dict]:
-    """Search polygons by text, floor, function, area — no DB needed.
+    """Search polygons by text, floor, function, area - no DB needed.
 
     Returns matching polygon dicts (raw, not intelligence-enriched).
     """

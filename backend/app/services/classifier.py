@@ -7,7 +7,7 @@ Maps primary_function strings to structured properties:
   convertible_functions, secondary_functions.
 
 Same keyword-matching pattern as furnishing rules.
-Static defaults that work out of the box — the AI layer can override any field.
+Static defaults that work out of the box - the AI layer can override any field.
 """
 
 # ══════════════════════════════════════════════════════════════════════
@@ -37,7 +37,7 @@ DEFAULT_METADATA = {
 #   keywords: list of case-insensitive substrings (first match wins)
 #   metadata: dict of property overrides (merged onto DEFAULT_METADATA)
 #
-# Rule order matters — more specific keywords must come before generic ones.
+# Rule order matters - more specific keywords must come before generic ones.
 
 FUNCTION_METADATA_RULES = [
     # ═══════════════════ SINGLE PATIENT ROOMS ═══════════════════
@@ -808,7 +808,7 @@ FUNCTION_METADATA_RULES = [
          "secondary_functions": "Department operations",
      }),
 
-    # ═══════════════════ PATIENT (bare keyword — last resort) ═══════════════════
+    # ═══════════════════ PATIENT (bare keyword - last resort) ═══════════════════
     (["patient"],
      {
          "functional_zone": "Inpatient Care",

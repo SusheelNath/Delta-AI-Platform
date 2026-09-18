@@ -403,25 +403,23 @@ export default function SpaceToolkit() {
           <span className={`space-toolkit__dropdown-arrow ${repurposeOpen ? 'space-toolkit__dropdown-arrow--open' : ''}`}>&#9656;</span>
           Repurpose Analysis
         </button>
-        <div className={`space-toolkit__dropdown-body ${repurposeOpen ? '' : 'space-toolkit__dropdown-body--collapsed'}`}>
-          {repurposeOpen && (
-            <RepurposePanel
-              ifcGuid={selectedSpaceId}
-              spaceName={s.space_name}
-              primaryFunction={s.primary_function}
-              floorId={activeFloorId}
-              area_m2={s.area_m2}
-              onClose={() => setRepurposeOpen(false)}
-              onInjectChat={(option, activeTab) => {
-                const text = buildRepurposeResponse(option, s.space_name, activeFloorId, activeTab, s.primary_function, s.area_m2);
-                const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                useStore.getState().addMessage({ role: 'delta', text, time: now });
-              }}
-            />
-          )}
+        <div className={`space-toolkit__dropdown-body space-toolkit__dropdown-body--large ${repurposeOpen ? '' : 'space-toolkit__dropdown-body--collapsed'}`}>
+          <RepurposePanel
+            ifcGuid={selectedSpaceId}
+            spaceName={s.space_name}
+            primaryFunction={s.primary_function}
+            floorId={activeFloorId}
+            area_m2={s.area_m2}
+            onClose={() => setRepurposeOpen(false)}
+            onInjectChat={(option, activeTab) => {
+              const text = buildRepurposeResponse(option, s.space_name, activeFloorId, activeTab, s.primary_function, s.area_m2);
+              const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              useStore.getState().addMessage({ role: 'delta', text, time: now });
+            }}
+          />
         </div>
 
-        {/* Components Library — hidden (kept for future use) */}
+        {/* Components Library - hidden (kept for future use) */}
       </div>
 
       {/* Footer action */}

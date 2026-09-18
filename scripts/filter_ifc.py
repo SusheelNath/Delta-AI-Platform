@@ -1,5 +1,5 @@
 """
-Delta Intelligence Platform — IFC Object Filter
+Delta Intelligence Platform - IFC Object Filter
 
 Reads excluded_objects.json (exported from the browser tool) and removes
 those objects from the source IFC file, producing a filtered IFC ready
@@ -33,7 +33,7 @@ IFC_FILTERED = SCRIPTS_DIR / "hospital_filtered.ifc"
 
 def main():
     print("=" * 60)
-    print("Delta Intelligence Platform — IFC Object Filter")
+    print("Delta Intelligence Platform - IFC Object Filter")
     print("=" * 60)
 
     # Load exclusion list
@@ -95,7 +95,7 @@ def main():
     print(f"\nTotal time: {total_time:.1f}s")
     print("=" * 60)
     print(f"\nFiltered IFC saved to: {IFC_FILTERED}")
-    print("\nNext step — reconvert to XKT:")
+    print("\nNext step - reconvert to XKT:")
     print(f"  node scripts/convert_ifc.mjs --filtered")
     print("=" * 60)
 

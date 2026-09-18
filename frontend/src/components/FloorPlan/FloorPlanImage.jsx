@@ -96,7 +96,7 @@ export default function FloorPlanImage({ floorIdOverride }) {
     );
   }, [searchQuery, spacePositions]);
 
-  // Pan/zoom handlers — lerped smooth zoom
+  // Pan/zoom handlers - lerped smooth zoom
   const LERP_FACTOR = 0.18;
 
   const startZoomLerp = useCallback(() => {
@@ -156,7 +156,7 @@ export default function FloorPlanImage({ floorIdOverride }) {
         ty: cy - (cy - from.ty) * ratio,
       };
       startZoomLerp();
-      return prev; // don't jump — lerp will animate
+      return prev; // don't jump - lerp will animate
     });
   }, [startZoomLerp]);
 
@@ -302,7 +302,7 @@ export default function FloorPlanImage({ floorIdOverride }) {
     const padding = 3;
     const targetScale = Math.min(cw / (polyW * padding), ch / (polyH * padding), MAX_SCALE);
 
-    // Center polygon centroid in container — lerped
+    // Center polygon centroid in container - lerped
     zoomTarget.current = {
       scale: targetScale,
       tx: cw / 2 - cx * targetScale,
@@ -319,7 +319,7 @@ export default function FloorPlanImage({ floorIdOverride }) {
     return () => el.removeEventListener('wheel', handleWheel);
   }, [handleWheel, fitted]);
 
-  // Empty state — no floor selected
+  // Empty state - no floor selected
   if (!activeFloorId) {
     return (
       <div className="floor-plan-image__empty">
@@ -385,7 +385,7 @@ export default function FloorPlanImage({ floorIdOverride }) {
         {/* Redraw drawing overlay */}
         {editingGeometry?.mode === 'redraw' && <PolygonDrawingOverlay mousePos={redrawMousePos} />}
 
-        {/* Route navigation — breathing dot trail */}
+        {/* Route navigation - breathing dot trail */}
         {activeRoute?.pathLine && activeRoute.pathLine.length >= 2 && (() => {
           const pl = activeRoute.pathLine;
           const pts = pl.map((p) => `${p[0]},${p[1]}`).join(' ');
@@ -450,7 +450,7 @@ export default function FloorPlanImage({ floorIdOverride }) {
         })}
       </div>
 
-      {/* Polygon hover tooltip — outside transform so it doesn't scale/pan */}
+      {/* Polygon hover tooltip - outside transform so it doesn't scale/pan */}
       {polygonTooltip && (
         <div className="saved-polygon__tooltip" style={{ left: polygonTooltip.x, top: polygonTooltip.y }}>
           <div className="saved-polygon__tooltip-name">{polygonTooltip.name}</div>

@@ -34,7 +34,7 @@ export function buildEvacTooltip(tip, poly, allPolygons) {
     tip.evacType = 'exit';
     tip.evacLabel = 'Exit Point';
     tip.evacColor = '#00D4FF';
-    tip.evacReason = `${poly.primary_function} — primary evacuation route`;
+    tip.evacReason = `${poly.primary_function} - primary evacuation route`;
   } else if (EVAC_INFRA.has(fn)) {
     tip.evacType = 'infra';
     tip.evacLabel = 'Infrastructure';
@@ -62,10 +62,10 @@ export function buildEvacTooltip(tip, poly, allPolygons) {
 
       const areaStr = area > 0 ? ` across ${Math.round(area)} m²` : '';
       const reasons = {
-        Excellent:  `${occ} people${areaStr} — low density, fast to evacuate`,
-        Good:       `${occ} people${areaStr} — moderate load, standard timeline`,
-        'At Risk':  `${occ} people${areaStr} — high density, potential bottleneck`,
-        Critical:   `${occ} people${areaStr} — highest load on floor, evacuation priority`,
+        Excellent:  `${occ} people${areaStr} - low density, fast to evacuate`,
+        Good:       `${occ} people${areaStr} - moderate load, standard timeline`,
+        'At Risk':  `${occ} people${areaStr} - high density, potential bottleneck`,
+        Critical:   `${occ} people${areaStr} - highest load on floor, evacuation priority`,
       };
       tip.evacReason = reasons[band.label];
     } else {

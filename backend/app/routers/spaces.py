@@ -1,4 +1,4 @@
-"""Space endpoints — polygon-driven.
+"""Space endpoints - polygon-driven.
 
 All data derives from polygons.json + computed intelligence.
 The DB Space table is no longer queried.

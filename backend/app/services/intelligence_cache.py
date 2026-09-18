@@ -6,7 +6,7 @@ request can search, score, and resolve spaces from in-memory dicts (~5ms)
 instead of recomputing 14,500 DB queries per request.
 
 Invalidated by calling rebuild_cache(db) after polygon / furnishing / metric
-mutations — these are rare admin actions, so a full rebuild is fine.
+mutations - these are rare admin actions, so a full rebuild is fine.
 """
 
 import logging
@@ -175,7 +175,7 @@ def _compute_intelligence_from_cache(
     # Layer 3c: patient capacity from cache
     patient_capacity = _get_patient_capacity_cached(ifc_guid)
 
-    # Assemble — IDENTICAL structure to compute_space_intelligence()
+    # Assemble - IDENTICAL structure to compute_space_intelligence()
     return {
         # Identity (from polygon)
         "ifc_guid": ifc_guid,
@@ -471,7 +471,7 @@ def get_floor_group_summary(floor_id: str) -> list[dict]:
         g["count"] += 1
         g["total_area"] += intel.get("area_m2") or 0
         g["max_occupancy"] += intel.get("max_occupancy") or 0
-    # Sort alphabetically with "Unassigned" last — matches frontend RoomDirectory
+    # Sort alphabetically with "Unassigned" last - matches frontend RoomDirectory
     result = sorted(
         groups.values(),
         key=lambda x: (x["function"] == "Unassigned", x["function"]),

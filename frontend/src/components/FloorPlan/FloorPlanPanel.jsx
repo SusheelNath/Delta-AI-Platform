@@ -41,7 +41,7 @@ export default function FloorPlanPanel() {
     return () => el.removeEventListener('wheel', stopWheel);
   }, []);
 
-  // P key — push all edited polygons on current floor to backend with fresh metrics
+  // P key - push all edited polygons on current floor to backend with fresh metrics
   useEffect(() => {
     const handlePush = (e) => {
       if (e.key !== 'p' && e.key !== 'P') return;
@@ -151,7 +151,7 @@ export default function FloorPlanPanel() {
         setFloorPolygons(activeFloorId, [...merged, ...localOnly]);
       })
       .catch(() => {
-        // Backend unavailable — localStorage polygons are already in the store
+        // Backend unavailable - localStorage polygons are already in the store
       });
   }, [activeFloorId, setFloorPolygons]);
 
@@ -277,7 +277,7 @@ export default function FloorPlanPanel() {
                 >
                   <option value="">Select floor...</option>
                   {floors.map((f) => (
-                    <option key={f.id} value={f.id}>{FLOOR_LABELS[f.id] || f.id} — {f.name}</option>
+                    <option key={f.id} value={f.id}>{FLOOR_LABELS[f.id] || f.id} - {f.name}</option>
                   ))}
                 </select>
               </div>

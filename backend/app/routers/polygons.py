@@ -82,7 +82,7 @@ def _upsert_metrics(db: Session, ifc_guid: str, floor_id: str,
     metrics.computed_at = now
 
     if furnishings:
-        # Furnishings are source of truth — recompute from them
+        # Furnishings are source of truth - recompute from them
         ft_map = {ft.item_type: ft for ft in db.query(FurnishingType).all()}
         occ = compute_furnishing_occupancy(furnishings, ft_map, area_m2 or 0)
         density_occ = compute_occupancy(primary_function, area_m2, space_name)
@@ -192,7 +192,7 @@ def upsert_polygon(
             created_at=existing.get("created_at"),
         )
 
-    # New polygon — accept all fields and persist
+    # New polygon - accept all fields and persist
     space_name = body.space_name
     primary_function = body.primary_function
     entry = {
@@ -310,7 +310,7 @@ def save_floor_polygons(floor_id: str, body: list[PolygonSyncItem], db: Session 
     """Append-only floor save.
 
     ── Polygon permanent freeze ──
-    Existing polygons are completely immutable — ALL fields (vertices, name,
+    Existing polygons are completely immutable - ALL fields (vertices, name,
     function, area, perimeter) are preserved from the server copy unchanged.
     Only genuinely new polygons (GUID not yet on server) are appended.
     """
@@ -322,7 +322,7 @@ def save_floor_polygons(floor_id: str, body: list[PolygonSyncItem], db: Session 
     added = 0
     for item in body:
         if item.ifc_guid in existing_guids:
-            continue  # frozen — skip entirely
+            continue  # frozen - skip entirely
         if len(item.vertices) < 3:
             continue
         perimeter_cm = item.perimeter_cm
@@ -444,7 +444,7 @@ def full_save(body: list[PolygonSyncItem], db: Session = Depends(get_db)):
         total_saved = sum(len(v) for v in incoming_floors.values())
         total_all = len(polygons)
         commit_msg = (
-            f"Save polygons — {total_saved} polygons across {len(incoming_floors)} floors\n\n"
+            f"Save polygons - {total_saved} polygons across {len(incoming_floors)} floors\n\n"
             f"Floors updated: {', '.join(floor_details)}\n"
             f"Total polygons in file: {total_all}\n"
             f"Saved at: {now[:19]}"

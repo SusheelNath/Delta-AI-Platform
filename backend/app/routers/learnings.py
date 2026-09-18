@@ -1,5 +1,5 @@
 """
-Learnings endpoint — manages AI-generated user preference learnings.
+Learnings endpoint - manages AI-generated user preference learnings.
 
 Learnings are extracted from conversation history by the local LLM and
 persisted in SQLite. They accumulate across sessions and are injected
@@ -35,7 +35,7 @@ Categories:
 - general_observation: Other patterns (e.g., "Works with surgical department", "Interested in space utilisation")
 
 Rules:
-- Only extract clear, repeated patterns — not one-off mentions
+- Only extract clear, repeated patterns - not one-off mentions
 - Each observation should be a single concise sentence
 - Maximum 5 observations per conversation
 - Return ONLY a JSON array, no other text:

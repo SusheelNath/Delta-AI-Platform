@@ -2,7 +2,7 @@ import React from 'react';
 import './DeltaOrb.css';
 
 /**
- * Delta AI Avatar Orb — a living, animated 3D sphere that
+ * Delta AI Avatar Orb - a living, animated 3D sphere that
  * reflects Delta's current state: idle, listening, processing, speaking.
  */
 export default function DeltaOrb({ state = 'idle' }) {

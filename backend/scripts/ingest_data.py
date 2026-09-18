@@ -1,5 +1,5 @@
 """
-Delta Intelligence Platform — Data Ingestion Pipeline
+Delta Intelligence Platform - Data Ingestion Pipeline
 Reads all Excel workbooks from the Hospital AI Platform folder,
 translates French terms to English, and loads into SQLite.
 """
@@ -191,7 +191,7 @@ VERTICAL_CORE_FILES = {
     "H050": ("H050_NB_IFC_Space_Metadata_Analysis.xlsx", "Vertical Cores"),
 }
 
-# Column mappings — map varying column names to our standardized field names
+# Column mappings - map varying column names to our standardized field names
 COLUMN_MAPPINGS = {
     "Space ID": "space_id",
     "IFC Entity": "ifc_entity",
@@ -275,12 +275,12 @@ def translate_text(text: str) -> str:
     if result in FRENCH_TO_ENGLISH:
         return FRENCH_TO_ENGLISH[result]
 
-    # Handle compound patterns like "Function — Department"
-    # Translate the department part after " — "
-    if " — " in result:
-        parts = result.split(" — ", 1)
+    # Handle compound patterns like "Function - Department"
+    # Translate the department part after " - "
+    if " - " in result:
+        parts = result.split(" - ", 1)
         translated_dept = translate_text(parts[1].strip())
-        result = f"{parts[0]} — {translated_dept}"
+        result = f"{parts[0]} - {translated_dept}"
 
     # Handle compound patterns with " / " separator in department names
     # e.g., "Buanderie / housekeeping support"
@@ -494,7 +494,7 @@ def _float(val) -> float | None:
 def run_ingestion():
     """Main ingestion pipeline."""
     print("=" * 60)
-    print("Delta Intelligence Platform — Data Ingestion")
+    print("Delta Intelligence Platform - Data Ingestion")
     print("=" * 60)
     print(f"Source: {HOSPITAL_DATA_DIR}")
     print(f"Database: {DATABASE_URL}")

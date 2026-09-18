@@ -3,7 +3,7 @@ Generate an Excel workbook for manual furnishing review and override.
 
 POLYGON-FIRST: Only polygons from polygons.json are listed.
 Polygon primary_function and area_m2 are the authoritative values.
-DB Space data is shown for reference only — it never overrides polygon data.
+DB Space data is shown for reference only - it never overrides polygon data.
 
 Sheets:
   1. All Spaces        – every polygon with current furnishings, rule match, and override columns
@@ -110,7 +110,7 @@ def main():
     polygons = [p for p in polygons if p.get("ifc_guid")]
     print(f"Polygons loaded: {len(polygons)}")
 
-    # DB spaces — reference only, never overrides polygon data
+    # DB spaces - reference only, never overrides polygon data
     db_spaces = db.query(Space).filter(Space.ifc_guid.isnot(None)).all()
     db_space_map = {sp.ifc_guid: sp for sp in db_spaces}
 
@@ -158,8 +158,8 @@ def main():
         "Floor ID",                     # A
         "IFC GUID",                     # B
         "Polygon Space Name",           # C
-        "Polygon Primary Function",     # D  — THIS is the effective function
-        "Polygon Area (m\u00b2)",       # E  — THIS is the effective area
+        "Polygon Primary Function",     # D  - THIS is the effective function
+        "Polygon Area (m\u00b2)",       # E  - THIS is the effective area
         # --- Rule matching ---
         "Rule Status",                  # F
         "Matched Rule #",              # G
@@ -181,7 +181,7 @@ def main():
         "Has DB Record",                # U
         # --- Override columns (yellow) ---
         "OVERRIDE: Rule #",             # V
-        "OVERRIDE: Furnishings",        # W  — e.g. "patient_bed:2, desk:1"
+        "OVERRIDE: Furnishings",        # W  - e.g. "patient_bed:2, desk:1"
         "OVERRIDE: Notes",              # X
     ]
 
@@ -211,7 +211,7 @@ def main():
         poly_function = poly.get("primary_function", "") or ""
         area_m2 = poly.get("area_m2") or 0
 
-        # DB space — reference only
+        # DB space - reference only
         sp = db_space_map.get(guid)
         db_name = sp.space_name if sp else ""
         db_function = sp.primary_function if sp else ""

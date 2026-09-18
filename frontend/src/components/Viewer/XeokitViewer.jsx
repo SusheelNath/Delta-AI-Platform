@@ -34,7 +34,7 @@ const MEP_SPACE_CLASSES = new Set([
   'Transition / circulation',
 ]);
 
-// Heatmap gradient: t=0 → green (low), t=1 → red (high) — matches FloorPlanCanvas
+// Heatmap gradient: t=0 → green (low), t=1 → red (high) - matches FloorPlanCanvas
 function heatColorRGB(t) {
   const r = Math.min(1, t * 2);
   const g = Math.min(1, 2 - t * 2);
@@ -207,7 +207,7 @@ export default function XeokitViewer() {
         }
       }
       const result = await fullSavePolygons(payload);
-      setSaveResult({ ok: true, msg: `Saved ${result.saved} polygons` + (result.git_pushed ? ' — pushed to GitHub' : ' — git push failed') });
+      setSaveResult({ ok: true, msg: `Saved ${result.saved} polygons` + (result.git_pushed ? ' - pushed to GitHub' : ' - git push failed') });
     } catch (err) {
       setSaveResult({ ok: false, msg: err.message });
     } finally {
@@ -305,7 +305,7 @@ export default function XeokitViewer() {
           cameraFlyDuration: 0.4,
           fitVisible: false,
         });
-        // Hack internal scene — config edgeColor & resolutionScale are not wired up
+        // Hack internal scene - config edgeColor & resolutionScale are not wired up
         try {
           const ncScene = navCube._navCubeScene;
           if (ncScene && ncScene.edgeMaterial) {
@@ -469,10 +469,10 @@ export default function XeokitViewer() {
         return;
       }
 
-      // ── Instant click — disable double-click delay ──
+      // ── Instant click - disable double-click delay ──
       viewer.cameraControl.doubleClickTimeFrame = 0;
 
-      // ── Click handler — select whichever polygon is currently hovered ──
+      // ── Click handler - select whichever polygon is currently hovered ──
       viewer.cameraControl.on('picked', async () => {
         const ifcGuid = useStore.getState().hoveredPolygonGuid;
         if (!ifcGuid) return;
@@ -491,7 +491,7 @@ export default function XeokitViewer() {
         if (polyData) {
           selectSpaceFromPolygon(polyData, floorId);
         } else {
-          // Polygon not in store (rare) — use intelligence cache fallback
+          // Polygon not in store (rare) - use intelligence cache fallback
           const intel = useStore.getState().getIntelligence(ifcGuid);
           selectSpace(ifcGuid, intel || { ifc_guid: ifcGuid, floor_id: floorId });
         }
@@ -759,7 +759,7 @@ export default function XeokitViewer() {
       let tinted = 0;
       for (const id of h020Ids) {
         const meta = metaObjects[id];
-        if (meta && meta.type === 'IfcSpace') continue; // skip — colored by function
+        if (meta && meta.type === 'IfcSpace') continue; // skip - colored by function
         const obj = viewer.scene.objects[id];
         if (!obj) continue;
         const c = obj.colorize;
@@ -978,7 +978,7 @@ export default function XeokitViewer() {
       setFloorSnapshot(floorId, { imageUrl, spacePositions, viewMatrix, projMatrix });
       console.log(`[Delta] Fast snapshot for ${floorId}: ${w}x${h}px, ${spacePositions.length} spaces`);
 
-      // Tier 2: hi-res 6x capture in background — only if still on the same floor
+      // Tier 2: hi-res 6x capture in background - only if still on the same floor
       requestAnimationFrame(() => {
         if (!viewerRef.current) return;
         if (useStore.getState().activeFloorId !== floorId) return; // floor changed, skip hi-res
@@ -1155,7 +1155,7 @@ export default function XeokitViewer() {
         if (settleTimer) clearTimeout(settleTimer);
       };
     } else {
-      // All floors — fly back to full model perspective
+      // All floors - fly back to full model perspective
       const aabb = modelAABBRef.current || viewer.scene.aabb;
       viewer.cameraFlight.flyTo({ aabb, duration: 1.0 });
       // End transition after flight duration
@@ -1308,7 +1308,7 @@ export default function XeokitViewer() {
     return snap.viewMatrix[12].toFixed(4) + '|' + snap.viewMatrix[14].toFixed(4) + '|' + snap.projMatrix[0].toFixed(4);
   }, [activeFloorId, floorSnapshots]);
 
-  // Create meshes once per floor — delta updates when only polygons change
+  // Create meshes once per floor - delta updates when only polygons change
   const prevMeshStateRef = useRef({ floorId: null, matrixKey: null });
 
   useEffect(() => {
@@ -1337,7 +1337,7 @@ export default function XeokitViewer() {
       || prevMeshStateRef.current.matrixKey !== snapshotMatrixKey;
 
     if (floorOrMatrixChanged) {
-      // Full rebuild — floor or camera matrix changed
+      // Full rebuild - floor or camera matrix changed
       for (const mesh of savedMeshesRef.current.values()) {
         try { mesh.destroy(); } catch {}
       }
@@ -1362,7 +1362,7 @@ export default function XeokitViewer() {
       // Signal highlight effect to re-run with the fresh meshes
       setMeshGeneration(g => g + 1);
     } else {
-      // Delta update — only polygons changed, same floor/matrix
+      // Delta update - only polygons changed, same floor/matrix
       const newGuids = new Set(polygons.map(p => p.ifc_guid));
       const oldGuids = new Set(savedMeshesRef.current.keys());
 
@@ -1785,7 +1785,7 @@ export default function XeokitViewer() {
           mesh.material.diffuse = [0.12, 0.12, 0.15];
           mesh.material.emissive = [0, 0, 0];
         } else if (isEvac && exitGuids.has(guid)) {
-          // Exit marker — cyan fill, distinct from heatmap palette
+          // Exit marker - cyan fill, distinct from heatmap palette
           lerpMeshAlpha(guid, mesh, 0.80);
           mesh.material.diffuse = [0.00, 0.83, 1.00]; // #00D4FF
           mesh.material.emissive = [0.00, 0.40, 0.55];
@@ -1795,7 +1795,7 @@ export default function XeokitViewer() {
           mesh.material.diffuse = [0.10, 0.10, 0.12];
           mesh.material.emissive = [0, 0, 0];
         } else if (isHeatmap && heatValues?.has(guid)) {
-          // Heatmap overlay — evacuation uses discrete bands, others use gradient
+          // Heatmap overlay - evacuation uses discrete bands, others use gradient
           const hc = isEvac ? evacColorRGB(heatValues.get(guid)) : heatColorRGB(heatValues.get(guid));
           lerpMeshAlpha(guid, mesh, isEvac ? 0.72 : 0.55);
           mesh.material.diffuse = hc;
@@ -1962,7 +1962,7 @@ export default function XeokitViewer() {
       }));
     } catch {}
 
-    // ── (b) Breadcrumb dot chain — single batched mesh ──
+    // ── (b) Breadcrumb dot chain - single batched mesh ──
     if (XbuildSphereGeometry) {
       const DOT_SPACING = 0.4;
       const dotPlaneY = planeY + 0.12;
@@ -2036,7 +2036,7 @@ export default function XeokitViewer() {
       }
     }
 
-    // ── (c) Polygon glow borders — outline line mesh + quad-strip halo ──
+    // ── (c) Polygon glow borders - outline line mesh + quad-strip halo ──
     const polygons = useStore.getState().floorPolygons[activeFloorId] || [];
     const borderPlaneY = maxYTop + 0.12;
     const BORDER_HALF_W = 0.04;
@@ -2060,7 +2060,7 @@ export default function XeokitViewer() {
       const worldVerts = unprojectPolygon(verts2D, snapshot.viewMatrix, snapshot.projMatrix, borderPlaneY);
       if (!worldVerts || worldVerts.length < 4) continue;
 
-      // (c1) Crisp outline — primitive 'lines'
+      // (c1) Crisp outline - primitive 'lines'
       const linePos = [];
       const lineIdx = [];
       for (let i = 0; i < worldVerts.length; i++) {
@@ -2075,7 +2075,7 @@ export default function XeokitViewer() {
         }));
       } catch {}
 
-      // (c2) Soft glow halo — quad-strip border
+      // (c2) Soft glow halo - quad-strip border
       const haloPos = [];
       const haloIdx = [];
       for (let i = 0; i < worldVerts.length; i++) {

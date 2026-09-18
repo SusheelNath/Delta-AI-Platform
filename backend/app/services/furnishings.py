@@ -174,7 +174,7 @@ FURNISHING_CATALOG = [
 
 
 # ══════════════════════════════════════════════════════════════════════
-# Excluded function patterns — these rooms NEVER get furnishings
+# Excluded function patterns - these rooms NEVER get furnishings
 # ══════════════════════════════════════════════════════════════════════
 
 EXCLUDED_PATTERNS = [
@@ -799,7 +799,7 @@ def seed_space_furnishings(db: Session, polygons: list[dict]) -> dict:
             skipped_excluded += 1
             continue
 
-        # Find matching rule — two-pass:
+        # Find matching rule - two-pass:
         #   Pass 1: space_name (more specific, e.g. "Cafeteria" vs fn="Commercial")
         #   Pass 2: primary_function (generic fallback)
         matched = False
@@ -876,7 +876,7 @@ def seed_space_furnishings(db: Session, polygons: list[dict]) -> dict:
 
 
 # ── Station-based occupancy classification ──
-# Beds are independent stations — each generates occupancy on its own.
+# Beds are independent stations - each generates occupancy on its own.
 _BED_TYPES = {
     "patient_bed", "patient_bed_double", "icu_bed", "recovery_bed",
     "crib", "examination_table", "surgical_table",
@@ -884,7 +884,7 @@ _BED_TYPES = {
 # Desks need chairs to generate occupancy (paired workstations).
 _DESK_TYPE = "desk"
 _DESK_CHAIR_TYPE = "desk_chair"
-# Independent seating — generates occupancy without needing a desk/bed.
+# Independent seating - generates occupancy without needing a desk/bed.
 _INDEPENDENT_SEATING = {
     "visitor_chair", "waiting_bench", "stool", "wheelchair_bay",
 }
@@ -902,15 +902,15 @@ def compute_furnishing_occupancy(
     using station-based pairing logic.
 
     Station rules:
-      1. Beds — independent stations, use catalog normal/max occ per item.
-      2. Desks + desk chairs — paired workstations.  Occupied stations =
+      1. Beds - independent stations, use catalog normal/max occ per item.
+      2. Desks + desk chairs - paired workstations.  Occupied stations =
          min(desks, desk_chairs).  Each station = 1 normal, 1 max.
          Surplus desk chairs (beyond desk count) spill into independent
          seating (1 normal, 1 max each).
       3. Independent seating (visitor chairs, benches, stools, wheelchair
-         bays) — each generates its catalog normal/max occ.
+         bays) - each generates its catalog normal/max occ.
       4. Everything else (tables, countertops, equipment, storage, fixtures)
-         — 0 occupancy, but footprint still reduces absolute capacity.
+         - 0 occupancy, but footprint still reduces absolute capacity.
 
     Returns dict with:
         normal_occupancy, max_occupancy, absolute_occupancy,
@@ -932,20 +932,20 @@ def compute_furnishing_occupancy(
         used_area += ft.footprint_m2 * f.quantity
 
         if f.item_type in _BED_TYPES:
-            # Beds are independent stations — catalog values apply directly
+            # Beds are independent stations - catalog values apply directly
             normal_occ += ft.normal_occ * f.quantity
             max_occ += ft.max_occ * f.quantity
 
         elif f.item_type == _DESK_TYPE:
-            # Desks tallied for pairing — no occupancy on their own
+            # Desks tallied for pairing - no occupancy on their own
             desk_qty += f.quantity
 
         elif f.item_type == _DESK_CHAIR_TYPE:
-            # Desk chairs tallied for pairing — resolved below
+            # Desk chairs tallied for pairing - resolved below
             desk_chair_qty += f.quantity
 
         elif f.item_type in _INDEPENDENT_SEATING:
-            # Independent seating — catalog values apply directly
+            # Independent seating - catalog values apply directly
             normal_occ += ft.normal_occ * f.quantity
             max_occ += ft.max_occ * f.quantity
 

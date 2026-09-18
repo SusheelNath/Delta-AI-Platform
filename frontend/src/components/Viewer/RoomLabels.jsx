@@ -29,7 +29,7 @@ export default function RoomLabels({ viewerRef }) {
         || (a.ifc_guid || '').localeCompare(b.ifc_guid || ''));
   }, [currentExpandedGroup, polygons]);
 
-  // Project world positions to screen — writes directly to DOM, no setState
+  // Project world positions to screen - writes directly to DOM, no setState
   const projectLabels = useCallback(() => {
     const viewer = viewerRef?.current;
     const container = containerRef.current;
@@ -61,7 +61,7 @@ export default function RoomLabels({ viewerRef }) {
     const projMatrix = camera.projMatrix;
     const currentSelected = useStore.getState().selectedSpaceId;
 
-    // Build HTML string directly — avoids React re-render cycle entirely
+    // Build HTML string directly - avoids React re-render cycle entirely
     let html = '';
     for (let i = 0; i < groupPolygons.length; i++) {
       const poly = groupPolygons[i];

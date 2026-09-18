@@ -4,7 +4,7 @@ import { getAllSessions, getSession, putSession, deleteSession as dbDeleteSessio
 const POLYGONS_KEY = 'delta_floorPolygons';
 
 // Metric keys are server-computed (from space_metrics DB) and must never
-// be cached in localStorage — the server fetch + merge always provides them.
+// be cached in localStorage - the server fetch + merge always provides them.
 const SERVER_METRIC_KEYS = ['normal_occupancy', 'max_occupancy', 'absolute_occupancy',
   'occupiable', 'used_area_m2', 'free_area_m2', 'furnishing_source'];
 
@@ -29,9 +29,9 @@ function loadPolygonsFromStorage() {
         if (!data.H040) delete data.H040;
       }
     }
-    // H050 (rooftop) has no polygons — purge any cached ones
+    // H050 (rooftop) has no polygons - purge any cached ones
     delete data.H050;
-    // Strip cached metric values — these are always server-authoritative
+    // Strip cached metric values - these are always server-authoritative
     for (const floorId of Object.keys(data)) {
       if (!Array.isArray(data[floorId])) continue;
       for (const p of data[floorId]) {
@@ -132,7 +132,7 @@ const useStore = create((set, get) => ({
 
   // Session history
   activeSessionId: null,
-  sessionList: [],        // [{ id, title, created, updated, messageCount, preview }] — no messages (lightweight)
+  sessionList: [],        // [{ id, title, created, updated, messageCount, preview }] - no messages (lightweight)
   sessionHistoryOpen: false,
 
   // Voice (STT / TTS)
@@ -429,7 +429,7 @@ const useStore = create((set, get) => ({
     const poly = (state.floorPolygons[floor_id] || []).find(p => p.ifc_guid === ifc_guid);
     if (!poly || !poly.vertices || poly.vertices.length < 3) return;
 
-    // Get the current world vertices — either stored or compute from unprojection
+    // Get the current world vertices - either stored or compute from unprojection
     const snapshot = state.floorSnapshots[floor_id];
     const geometry = state.floorSpaceGeometry || {};
     const spaces = geometry[floor_id] || [];
@@ -438,7 +438,7 @@ const useStore = create((set, get) => ({
 
     let worldVerts = poly.worldVertices;
     if (!worldVerts && snapshot?.viewMatrix && snapshot?.projMatrix) {
-      // Dynamic import not available here — store the 2D verts + plane info,
+      // Dynamic import not available here - store the 2D verts + plane info,
       // let XeokitViewer compute the initial world verts
       worldVerts = null;
     }
@@ -487,7 +487,7 @@ const useStore = create((set, get) => ({
   setFindRoomResults: (results) => set({ findRoomResults: results }),
   clearHighlights: () => set({ highlightedGuids: [], repurposeGuids: [], findRoomResults: null }),
 
-  // Universal clear — resets UI state to default (preserves chat history)
+  // Universal clear - resets UI state to default (preserves chat history)
   clearAll: () => set({
     heatmapMode: 'function',
     activeFunctionFilters: { 0: true, 1: true, 2: true, 3: true, 4: true, 5: true, 6: true },
@@ -567,7 +567,7 @@ const useStore = create((set, get) => ({
 
   setSessionHistoryOpen: (open) => set({ sessionHistoryOpen: open }),
 
-  /** Load session list from IndexedDB on app start (lightweight — no message bodies). */
+  /** Load session list from IndexedDB on app start (lightweight - no message bodies). */
   loadSessionList: async () => {
     try {
       const all = await getAllSessions();

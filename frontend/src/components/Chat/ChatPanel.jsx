@@ -221,7 +221,7 @@ export default function ChatPanel() {
       voiceManagerRef.current?.mute();
       const audio = await speakText('', 'greeting');
       await playAudio(audio);
-      // Grace period — mic still picks up speaker residue after audio ends
+      // Grace period - mic still picks up speaker residue after audio ends
       await new Promise((r) => setTimeout(r, 700));
     } catch (err) {
       console.warn('[Voice] Greeting TTS failed:', err);
@@ -261,7 +261,7 @@ export default function ChatPanel() {
     setVoiceState('processing');
 
     // Use the text currently displayed in the input field (what the user sees)
-    // as the authoritative source — it's kept in sync by onInterim callbacks.
+    // as the authoritative source - it's kept in sync by onInterim callbacks.
     // Fall back to the voice manager's internal text only if the field is empty.
     const displayedText = inputValueRef.current.trim();
     const finalText = stripSubmitPhrase(displayedText || webSpeechText);
@@ -270,7 +270,7 @@ export default function ChatPanel() {
       setInput(finalText);
       handleSend(finalText);
     } else {
-      // Empty — go back to listening
+      // Empty - go back to listening
       if (voiceActiveRef.current) {
         setVoiceState('listening');
         voiceManagerRef.current?.setMode('listening');
@@ -294,7 +294,7 @@ export default function ChatPanel() {
     const text = (overrideText || input).trim();
     if (!text || isGenerating) return;
 
-    // Bare "clear" — just clear the input, don't send anything
+    // Bare "clear" - just clear the input, don't send anything
     if (/^clear\.?$/i.test(text)) {
       setInput('');
       return;
@@ -320,7 +320,7 @@ export default function ChatPanel() {
     const effectiveSpaceData = liveState.selectedSpace;
     const effectiveGroup = liveState.currentExpandedGroup;
 
-    // ── Phase 1: Instant intent detection — fire BEFORE voice ──
+    // ── Phase 1: Instant intent detection - fire BEFORE voice ──
     // Fetch intents first so we can classify instant vs data actions.
     const INSTANT_ACTIONS = new Set([
       'toggle_drawer', 'clear_selection', 'clear_route', 'clear_all',
@@ -455,7 +455,7 @@ export default function ChatPanel() {
         (m, i) => i < currentMessages.length - 1,
       );
 
-      // Phase 1 fully resolved — display content and skip LLM
+      // Phase 1 fully resolved - display content and skip LLM
       if (phase1Content) {
         // Play "Here is what I found." for data results (skip for instant actions)
         if (voiceOn) {
@@ -548,7 +548,7 @@ export default function ChatPanel() {
       }
       setPendingPhase('generating');
 
-      // Re-read from store — intent actions may have navigated or selected a space
+      // Re-read from store - intent actions may have navigated or selected a space
       const phase2State = useStore.getState();
       let effectiveFloorId = phase2State.activeFloorId;
       if (!effectiveFloorId) {
@@ -566,7 +566,7 @@ export default function ChatPanel() {
       let firstToken = true;
       let skipNextConfirm = false;
 
-      // Play "Here is what I found." concurrently — voice speaks while text streams
+      // Play "Here is what I found." concurrently - voice speaks while text streams
       if (voiceOn) {
         (async () => {
           const annTimer = setTimeout(() => { voiceManagerRef.current?.unmute(); }, 8000);
@@ -615,13 +615,13 @@ export default function ChatPanel() {
             continue;
           }
 
-          // Skip confirmation text that follows [ACTION] — shown in indicator instead
+          // Skip confirmation text that follows [ACTION] - shown in indicator instead
           if (skipNextConfirm) {
             skipNextConfirm = false;
             continue;
           }
 
-          // First LLM text token — dismiss indicator, set timestamp
+          // First LLM text token - dismiss indicator, set timestamp
           if (firstToken) {
             firstToken = false;
             setPendingPhase('idle');
@@ -791,7 +791,7 @@ export default function ChatPanel() {
                       furnLines.push(`- ${f.quantity}\u00D7 ${f.label || f.item_type}${fp}`);
                     }
                   }
-                } catch (_) { /* furnishings fetch failed — continue without */ }
+                } catch (_) { /* furnishings fetch failed - continue without */ }
 
                 const parts = [
                   `Opening the furnishing editor for **${spaceName}** (${fn}).`,
@@ -851,7 +851,7 @@ export default function ChatPanel() {
               if (NON_REPURPOSABLE_CHAT.has(fn.toLowerCase())) {
                 addMessage({
                   role: 'delta',
-                  text: `**${spaceName}** is classified as **${fn}** — this is structural or circulation infrastructure and **cannot be repurposed**.\n\nCorridors, elevators, staircases, technical rooms, and similar spaces are essential to building operations, safety egress, and vertical/horizontal connectivity. Repurposing them would compromise building safety and regulatory compliance.\n\nSelect a functional room (e.g. storage, office, waiting room) to explore repurpose options.`,
+                  text: `**${spaceName}** is classified as **${fn}** - this is structural or circulation infrastructure and **cannot be repurposed**.\n\nCorridors, elevators, staircases, technical rooms, and similar spaces are essential to building operations, safety egress, and vertical/horizontal connectivity. Repurposing them would compromise building safety and regulatory compliance.\n\nSelect a functional room (e.g. storage, office, waiting room) to explore repurpose options.`,
                   time: now,
                 });
                 return;

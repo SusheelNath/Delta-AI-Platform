@@ -2,7 +2,7 @@ import React from 'react';
 import './DeltaSpinner.css';
 
 /**
- * Unified Delta spinner — radial arc orbiting the △ logo.
+ * Unified Delta spinner - radial arc orbiting the △ logo.
  * @param {number} size  Outer diameter in px (default 36)
  * @param {string} label Optional text below the spinner
  */

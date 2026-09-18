@@ -577,7 +577,7 @@
   font-style: italic;
 }
 
-/* ── Route navigation line — breathing dot trail ── */
+/* ── Route navigation line - breathing dot trail ── */
 .routing-line-overlay__glow {
   animation: route-dot-flow 1.2s linear infinite;
 }

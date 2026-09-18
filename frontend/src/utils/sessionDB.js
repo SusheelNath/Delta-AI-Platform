@@ -31,7 +31,7 @@ export async function getAllSessions() {
     const store = tx.objectStore(STORE);
     const req = store.index('updated').getAll();
     req.onsuccess = () => {
-      // Index returns ascending — reverse for most recent first
+      // Index returns ascending - reverse for most recent first
       resolve(req.result.reverse());
     };
     req.onerror = () => reject(req.error);

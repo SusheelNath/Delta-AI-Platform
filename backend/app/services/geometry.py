@@ -2,14 +2,14 @@
 Geometry Engine: computes spatial relationships between polygons.
 
 All computations derive from polygon vertices and primary_function.
-No DB lookups — pure geometry.
+No DB lookups - pure geometry.
 
 Provides:
-- centroid(vertices) — centre point of a polygon
-- bbox(vertices) — axis-aligned bounding box
-- bbox_gap(b1, b2) — distance between two bounding boxes
-- compute_floor_spatial(polygons) — all spatial relationships for a floor
-- compute_space_spatial(polygon, floor_data) — spatial data for one space
+- centroid(vertices) - centre point of a polygon
+- bbox(vertices) - axis-aligned bounding box
+- bbox_gap(b1, b2) - distance between two bounding boxes
+- compute_floor_spatial(polygons) - all spatial relationships for a floor
+- compute_space_spatial(polygon, floor_data) - spatial data for one space
 """
 
 import math
@@ -236,7 +236,7 @@ def compute_space_spatial(ifc_guid: str, floor_data: dict,
         })
     all_lifts.sort(key=lambda x: x["distance_m"])
 
-    # Deduplicate by name — keep the closest instance of each distinct name
+    # Deduplicate by name - keep the closest instance of each distinct name
     seen_lift_names = set()
     nearby_lifts = []
     for lf in all_lifts:
@@ -277,7 +277,7 @@ def compute_space_spatial(ifc_guid: str, floor_data: dict,
     # Step-free access
     step_free = "Yes" if floor_data["has_lift"] else "No"
 
-    # Adjacent spaces — sorted by distance, closest first
+    # Adjacent spaces - sorted by distance, closest first
     neighbor_guids = floor_data["adjacency"].get(ifc_guid, [])
     neighbor_entries = []
     if polygon_map and space_centroid:

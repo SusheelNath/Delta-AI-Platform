@@ -2,7 +2,7 @@
  * Shared helper: compute polygon-derived overrides for Space Metadata.
  *
  * Extracted so that every selection path (viewer click, RoomDirectory click,
- * AI action) produces identical metadata — "frontend data wins".
+ * AI action) produces identical metadata - "frontend data wins".
  */
 
 import useStore from '../store/useStore';

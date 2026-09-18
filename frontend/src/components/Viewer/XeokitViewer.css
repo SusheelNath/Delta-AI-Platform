@@ -6,7 +6,7 @@
   overflow: hidden;
 }
 
-/* Subtle radial glow behind model — cool neutral */
+/* Subtle radial glow behind model - cool neutral */
 .xeokit-viewer::before {
   content: '';
   position: absolute;
@@ -24,7 +24,7 @@
   z-index: 0;
 }
 
-/* NavCube — floating with subtle shadow */
+/* NavCube - floating with subtle shadow */
 .xeokit-viewer__navcube {
   position: absolute;
   top: 14px;

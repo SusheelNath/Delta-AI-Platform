@@ -90,7 +90,7 @@ export async function resolveAction(action) {
         const floorId = poly._floorId || poly.floor_id || store.activeFloorId;
         selectSpaceFromPolygon(poly, floorId);
       } else {
-        // No local polygon — use intelligence cache directly
+        // No local polygon - use intelligence cache directly
         const intel = store.getIntelligence(guid);
         if (intel) {
           store.selectSpace(guid, intel);
@@ -185,7 +185,7 @@ export async function resolveAction(action) {
       const roomIdx = (action.room_index || 1) - 1;
 
       // Expand the directory group UI only (don't trigger RoomDirectory's
-      // handleCardClick — we handle selection here as the single authority)
+      // handleCardClick - we handle selection here as the single authority)
       store.expandDirectoryGroup(action.function_name);
 
       // Resolve the polygon directly from the frontend store
@@ -251,7 +251,7 @@ export async function resolveAction(action) {
     }
 
     case 'no_selection_hint':
-      // No-op — the confirmation text already carries the message
+      // No-op - the confirmation text already carries the message
       break;
 
     case 'clear_all':
@@ -278,7 +278,7 @@ export async function resolveAction(action) {
 
     case 'toggle_profile':
       // Profile mode is handled by the SpaceToolkit component (compact/full)
-      // Currently no dedicated store state — no-op with text narration
+      // Currently no dedicated store state - no-op with text narration
       break;
 
     case 'close_card':
@@ -502,7 +502,7 @@ export async function resolveAction(action) {
           if (zoneScore >= 8) reasons.push(`accessible zone (${zone})`);
           else if (zoneScore >= 5) reasons.push(`${zone} zone`);
           if (floorScore >= 8) reasons.push('well-accessible floor');
-          if (!isDirect) reasons.push(`capacity ${cap} — could be repurposed to fit ${capacity}`);
+          if (!isDirect) reasons.push(`capacity ${cap} - could be repurposed to fit ${capacity}`);
 
           candidates.push({
             guid: p.ifc_guid,

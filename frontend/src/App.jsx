@@ -58,7 +58,7 @@ export default function App() {
             });
             setFloorPolygons(floor.id, [...merged, ...localOnly]);
           } catch {
-            // Backend unavailable — localStorage polygons remain
+            // Backend unavailable - localStorage polygons remain
           }
           loaded++;
           setLoadProgress(3 + Math.round((loaded / floorList.length) * 5));
@@ -73,7 +73,7 @@ export default function App() {
             const intel = await fetchFloorIntelligence(floor.id);
             setFloorIntelligence(floor.id, intel);
           } catch {
-            // Non-critical — fallback to API calls if cache unavailable
+            // Non-critical - fallback to API calls if cache unavailable
           }
         }));
         setLoadProgress(10);
@@ -94,7 +94,7 @@ export default function App() {
             }
             mergeSpaceFurnishings(byGuid);
           } catch {
-            // Non-critical — SpaceToolkit will fetch per-room as fallback
+            // Non-critical - SpaceToolkit will fetch per-room as fallback
           }
         }));
       }
@@ -109,7 +109,7 @@ export default function App() {
               mergeRepurposeOptions(opts);
             }
           } catch {
-            // Non-critical — panel will show empty state
+            // Non-critical - panel will show empty state
           }
         }));
       }

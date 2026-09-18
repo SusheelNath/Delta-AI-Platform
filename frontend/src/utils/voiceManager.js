@@ -1,12 +1,12 @@
 /**
- * Voice manager for Delta AI — Web Speech API edition.
+ * Voice manager for Delta AI - Web Speech API edition.
  *
  * Uses the browser's Web Speech API for:
  *   - Real-time interim transcription display
  *   - Keyword detection (wake / stop / submit / clear)
  *   - Final text sent directly to the LLM on submit
  *
- * No backend audio pipeline — instant response, zero latency on submit.
+ * No backend audio pipeline - instant response, zero latency on submit.
  */
 
 // ── Phonetic / fuzzy matching (keyword detection) ─────────────
@@ -147,7 +147,7 @@ export function createVoiceManager({
         continue;
       }
 
-      // ── Clear/Cancel (both modes — requires "delta" guard) ──
+      // ── Clear/Cancel (both modes - requires "delta" guard) ──
       if (checkAlternatives(result, hasClearPhrase) || hasClearPhrase(combinedText)) {
         accumulatedText = '';
         lastInterim = '';
@@ -177,7 +177,7 @@ export function createVoiceManager({
           accumulatedText = '';
           lastInterim = '';
 
-          // Send empty blob — no audio pipeline, just text
+          // Send empty blob - no audio pipeline, just text
           onSubmit?.(new Blob([], { type: 'audio/webm' }), cleaned);
           return;
         }

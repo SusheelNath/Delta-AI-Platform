@@ -1,11 +1,11 @@
 """
-Voice endpoints — Whisper STT transcription, Edge TTS synthesis,
+Voice endpoints - Whisper STT transcription, Edge TTS synthesis,
 and real-time WebSocket voice streaming with local VAD + Whisper.
 
-POST /api/voice/transcribe  — upload audio → get text
-POST /api/voice/speak       — send text    → get MP3 audio
-GET  /api/voice/status      — check model availability
-WS   /api/voice/stream      — real-time audio streaming with VAD + Whisper
+POST /api/voice/transcribe  - upload audio → get text
+POST /api/voice/speak       - send text    → get MP3 audio
+GET  /api/voice/status      - check model availability
+WS   /api/voice/stream      - real-time audio streaming with VAD + Whisper
 """
 
 import asyncio
@@ -150,8 +150,8 @@ def _transcribe_segment(audio_f32: np.ndarray) -> str:
     segments, _ = model.transcribe(
         audio_f32,
         language="en",
-        beam_size=1,         # Fast greedy decoding — 3-5x faster than beam=5
-        vad_filter=False,    # We already ran VAD — don't re-filter
+        beam_size=1,         # Fast greedy decoding - 3-5x faster than beam=5
+        vad_filter=False,    # We already ran VAD - don't re-filter
     )
     return " ".join(seg.text for seg in segments).strip()
 
@@ -170,7 +170,7 @@ async def voice_stream(ws: WebSocket):
     Protocol:
       Client → Server:
         - JSON text:  {"type":"set_mode","mode":"idle"|"listening"}
-        - JSON text:  {"type":"submit"}           — trigger Whisper transcription
+        - JSON text:  {"type":"submit"}           - trigger Whisper transcription
         - JSON text:  {"type":"mute"} / {"type":"unmute"}
         - Binary:     raw PCM int16, 16 kHz, mono
 
@@ -199,7 +199,7 @@ async def voice_stream(ws: WebSocket):
 
     # ── VAD callbacks ──
     # Only used for speech detection events + audio accumulation.
-    # No real-time transcription — Whisper runs after submit.
+    # No real-time transcription - Whisper runs after submit.
     pending_events: list[dict] = []
 
     def on_speech_start():
@@ -209,11 +209,11 @@ async def voice_stream(ws: WebSocket):
     def on_speech_end(audio_f32: np.ndarray):
         logger.info(f"[WS] VAD: speech end ({len(audio_f32)/16000:.1f}s)")
         pending_events.append({"type": "vad", "speaking": False})
-        # Accumulate audio — don't transcribe yet
+        # Accumulate audio - don't transcribe yet
         speech_segments.append(audio_f32)
 
     def on_partial(audio_f32: np.ndarray):
-        # No interim transcription needed — Web Speech handles display
+        # No interim transcription needed - Web Speech handles display
         pass
 
     vad.on_speech_start = on_speech_start

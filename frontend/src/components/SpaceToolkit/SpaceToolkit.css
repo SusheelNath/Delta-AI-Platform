@@ -287,7 +287,6 @@
   gap: 8px;
   width: 100%;
   padding: 9px 8px;
-  margin-top: 2px;
   background: transparent;
   border: none;
   border-top: 1px solid #f0ede8;
@@ -324,12 +323,22 @@
   transition: grid-template-rows 0.25s ease;
 }
 
+.space-toolkit__dropdown-body--large {
+  transition: grid-template-rows 0.75s ease;
+}
+
 .space-toolkit__dropdown-body--collapsed {
   grid-template-rows: 0fr;
 }
 
 .space-toolkit__dropdown-body > * {
   overflow: hidden;
+  min-height: 0;
+}
+
+.space-toolkit__dropdown-body--collapsed > * {
+  border: none !important;
+  padding: 0 !important;
 }
 
 .space-toolkit__section--nested {
@@ -618,7 +627,7 @@
   border-color: rgba(231, 113, 51, 0.4);
 }
 
-/* Components Library — edit fields */
+/* Components Library - edit fields */
 .space-toolkit__edit-field {
   margin-bottom: 8px;
 }

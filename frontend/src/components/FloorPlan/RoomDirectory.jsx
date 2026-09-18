@@ -68,7 +68,7 @@ export default function RoomDirectory() {
   const initializedFloorRef = useRef(activeFloorId);
   const [fading, setFading] = useState(false);
 
-  // Reset when floor changes — with fade transition
+  // Reset when floor changes - with fade transition
   React.useEffect(() => {
     if (groups.length > 0 && initializedFloorRef.current !== activeFloorId) {
       setFading(true);
@@ -155,7 +155,7 @@ export default function RoomDirectory() {
 
     const [fnName, fnPolygons] = match;
 
-    // Expand the group — defer store writes to avoid mid-render cascade
+    // Expand the group - defer store writes to avoid mid-render cascade
     setCollapsedGroups((prev) => {
       const next = new Set(prev);
       next.delete(fnName);
@@ -262,7 +262,7 @@ export default function RoomDirectory() {
                   <span className="room-directory__col-label">m²</span>
                 </span>
                 <span className="room-directory__group-col room-directory__group-col--occ">
-                  <span className="room-directory__col-value">{totalOcc > 0 ? totalOcc : '—'}</span>
+                  <span className="room-directory__col-value">{totalOcc > 0 ? totalOcc : '-'}</span>
                   <span className="room-directory__col-label">occ</span>
                 </span>
               </span>

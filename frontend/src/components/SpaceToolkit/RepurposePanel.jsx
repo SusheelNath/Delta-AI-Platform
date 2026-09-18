@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import useStore from '../../store/useStore';
 import './RepurposePanel.css';
 
-// Functions that cannot be repurposed — mirrors backend NON_REPURPOSABLE_FUNCTIONS
+// Functions that cannot be repurposed - mirrors backend NON_REPURPOSABLE_FUNCTIONS
 const NON_REPURPOSABLE = new Set([
   'corridor', 'corridor access', 'elevator', 'staircase', 'staircasse',
   'ramp', 'no access', 'no acccess', 'no infrastructure',
@@ -414,37 +414,41 @@ function CostBreakdown({ costs }) {
 
       {/* 4. Vendor Concessions & Savings */}
       {hasConcessions && (
-        <div className="rp__cost-section rp__cost-savings">
-          <div className="rp__cost-header">
+        <div className="rp__savings">
+          <div className="rp__savings-header">
             <span>Vendor Concessions &amp; Savings</span>
-            <span className="rp__cost-savings-line">&euro;{(costs.vendor_concessions.subtotal || 0).toLocaleString()}</span>
+            <span>&euro;{(costs.vendor_concessions.subtotal || 0).toLocaleString()}</span>
           </div>
-          {concessionKeys.map((k) => {
-            const item = costs.vendor_concessions[k];
-            return (
-              <div key={k} className="rp__cost-line rp__cost-savings-line">
-                <span>
-                  {CONCESSION_LABELS[k]}
-                  {item.vendor && (
-                    <span className="rp__cost-vendor-tag">
-                      {item.vendor}{item.vendor_status ? ` \u00B7 ${item.vendor_status}` : ''}
+          <div className="rp__savings-cards">
+            {concessionKeys.map((k) => {
+              const item = costs.vendor_concessions[k];
+              return (
+                <div key={k} className="rp__savings-card">
+                  <div className="rp__savings-card-top">
+                    <span className="rp__savings-card-label">
+                      {CONCESSION_LABELS[k]}
+                      {item.explanation && (
+                        <span
+                          className="rp__cost-info"
+                          onMouseEnter={(e) => handleTipEnter(item.explanation, e)}
+                          onMouseMove={(e) => handleTipEnter(item.explanation, e)}
+                          onMouseLeave={handleTipLeave}
+                        >&#9432;</span>
+                      )}
                     </span>
+                    <span className="rp__savings-card-amount">&euro;{item.amount.toLocaleString()}</span>
+                  </div>
+                  {item.vendor && (
+                    <div className="rp__savings-card-vendor">
+                      {item.vendor}{item.vendor_status ? ` \u00B7 ${item.vendor_status}` : ''}
+                    </div>
                   )}
-                  {item.explanation && (
-                    <span
-                      className="rp__cost-info"
-                      onMouseEnter={(e) => handleTipEnter(item.explanation, e)}
-                      onMouseMove={(e) => handleTipEnter(item.explanation, e)}
-                      onMouseLeave={handleTipLeave}
-                    >&#9432;</span>
-                  )}
-                </span>
-                <span>&euro;{item.amount.toLocaleString()}</span>
-              </div>
-            );
-          })}
+                </div>
+              );
+            })}
+          </div>
           {costs.vendor_concessions.net_furnishing_cost != null && (
-            <div className="rp__cost-line rp__cost-net">
+            <div className="rp__savings-net">
               <span>Net furnishing cost</span>
               <span>&euro;{costs.vendor_concessions.net_furnishing_cost.toLocaleString()}</span>
             </div>
@@ -561,34 +565,38 @@ function CostBreakdown({ costs }) {
 
       {/* 9. Operational Disruption */}
       {hasDisruption && (
-        <div className="rp__cost-section rp__cost-disruption">
-          <div className="rp__cost-header">
+        <div className="rp__disruption">
+          <div className="rp__disruption-header">
             <span>Operational Disruption</span>
             <span>&euro;{(costs.disruption.subtotal || 0).toLocaleString()}</span>
           </div>
-          {disruptionKeys.map((k) => {
-            const item = costs.disruption[k];
-            const amount = typeof item === 'object' ? item.amount : item;
-            const explanation = typeof item === 'object' ? item.explanation : null;
-            const justification = typeof item === 'object' ? item.justification : null;
-            return (
-              <div key={k} className="rp__cost-line">
-                <span>
-                  {DISRUPTION_LABELS[k]}
-                  {explanation && <span className="rp__cost-line-note">{explanation}</span>}
-                  {justification && (
-                    <span
-                      className="rp__cost-info"
-                      onMouseEnter={(e) => handleTipEnter(justification, e)}
-                      onMouseMove={(e) => handleTipEnter(justification, e)}
-                      onMouseLeave={handleTipLeave}
-                    >&#9432;</span>
-                  )}
-                </span>
-                <span>&euro;{amount.toLocaleString()}</span>
-              </div>
-            );
-          })}
+          <div className="rp__disruption-cards">
+            {disruptionKeys.map((k) => {
+              const item = costs.disruption[k];
+              const amount = typeof item === 'object' ? item.amount : item;
+              const explanation = typeof item === 'object' ? item.explanation : null;
+              const justification = typeof item === 'object' ? item.justification : null;
+              return (
+                <div key={k} className="rp__disruption-card">
+                  <div className="rp__disruption-card-top">
+                    <span className="rp__disruption-card-label">
+                      {DISRUPTION_LABELS[k]}
+                      {justification && (
+                        <span
+                          className="rp__cost-info"
+                          onMouseEnter={(e) => handleTipEnter(justification, e)}
+                          onMouseMove={(e) => handleTipEnter(justification, e)}
+                          onMouseLeave={handleTipLeave}
+                        >&#9432;</span>
+                      )}
+                    </span>
+                    <span className="rp__disruption-card-amount">&euro;{amount.toLocaleString()}</span>
+                  </div>
+                  {explanation && <div className="rp__disruption-card-desc">{explanation}</div>}
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -662,7 +670,7 @@ function CostBreakdown({ costs }) {
         <div className="rp__fin">
           <div className="rp__section-title">Financial Structure</div>
 
-          {/* Payment milestones — bar + tooltip only */}
+          {/* Payment milestones - bar + tooltip only */}
           {fin.payment_milestones?.length > 0 && (
             <div className="rp__fin-milestones">
               <div className="rp__fin-bar">
@@ -803,17 +811,17 @@ function ROISection({ roi, impact, costs }) {
     <div className="rp__roi">
       {/* Hero numbers */}
       <div className="rp__roi-hero">
-        <div className="rp__roi-hero-item">
+        <div className={`rp__roi-hero-row rp__roi-hero-row--${netPositive ? 'green' : 'red'}`}>
           <span className="rp__roi-hero-label">Net Annual Impact <Info text={expl.net_annual_delta} /></span>
-          <span className={`rp__roi-hero-value ${netPositive ? 'rp__pos' : 'rp__neg'}`}>
+          <span className="rp__roi-hero-value">
             {roi.net_annual_delta >= 0 ? '+' : '-'}{fmt(roi.net_annual_delta)}<span className="rp__roi-hero-unit">/yr</span>
           </span>
         </div>
-        <div className="rp__roi-hero-item">
+        <div className="rp__roi-hero-row rp__roi-hero-row--orange">
           <span className="rp__roi-hero-label">Total Investment <Info text={expl.total_investment} /></span>
           <span className="rp__roi-hero-value">&euro;{totalInvestment.toLocaleString()}</span>
         </div>
-        <div className="rp__roi-hero-item">
+        <div className="rp__roi-hero-row rp__roi-hero-row--slate">
           <span className="rp__roi-hero-label">Payback <Info text={expl.payback} /></span>
           <span className="rp__roi-hero-value">
             {roi.payback_months ? `${roi.payback_months} mo` : 'Non-revenue'}
@@ -1068,8 +1076,8 @@ function OptionCard({ option, rank, isExpanded, onToggle, onInjectChat }) {
         <div className="rp__card-info">
           <span className="rp__card-fn">{option.target_label}</span>
           <div className="rp__card-pills">
-            <span className="rp__pill">&euro;{(option.cost_breakdown?.total_project_cost || option.cost_breakdown?.total_capex)?.toLocaleString()}</span>
-            <span className="rp__pill">{option.timeline?.total}</span>
+            <span className="rp__pill">&euro;{Math.round(((option.cost_breakdown?.total_project_cost || option.cost_breakdown?.total_capex) || 0) / 1000)}k</span>
+            <span className="rp__pill">{(option.timeline?.total || '').replace(/ weeks?/, ' wks').replace(/ to /g, '-')}</span>
             <span className="rp__pill">{option.operational_impact?.occupancy?.delta >= 0 ? '+' : ''}{option.operational_impact?.occupancy?.delta} occ</span>
           </div>
         </div>

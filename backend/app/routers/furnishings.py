@@ -441,7 +441,7 @@ def seed_all_furnishings(clear: bool = False, db: Session = Depends(get_db)):
     else:
         deleted = 0
 
-    # Build polygon list — polygons.json is the single source of truth
+    # Build polygon list - polygons.json is the single source of truth
     polygons = _read_all()
 
     result = seed_space_furnishings(db, polygons)

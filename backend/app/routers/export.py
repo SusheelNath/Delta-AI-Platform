@@ -126,7 +126,7 @@ def generate_rename_registry(req: ExportRequest):
     # Group elements by (type, name)
     groups = {}
     for el in req.elements:
-        # Skip IfcSpace — those are in Sheet 1
+        # Skip IfcSpace - those are in Sheet 1
         if el.type == "IfcSpace":
             continue
         key = (el.type, el.name or "")

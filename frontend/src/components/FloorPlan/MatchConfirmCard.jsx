@@ -86,7 +86,7 @@ export default function MatchConfirmCard() {
       ifc_guid: candidate.id,
       floor_id: floorId,
       vertices: verts,
-      worldVertices, // 3D world coords — stable across floor transitions
+      worldVertices, // 3D world coords - stable across floor transitions
       space_name: editName.trim() || candidate.name,
       primary_function: editFunction.trim() || null,
       area_m2: areaM2,

@@ -430,7 +430,7 @@ def detect_ambiguity(
                     break
             if len(common_words) >= 2:
                 prefix = " ".join(common_words)
-                variants = [n[len(prefix):].strip(" -—") for n in names if n.startswith(prefix)]
+                variants = [n[len(prefix):].strip(" --") for n in names if n.startswith(prefix)]
                 variants = [v for v in variants if v]
                 if len(variants) >= 2:
                     return {

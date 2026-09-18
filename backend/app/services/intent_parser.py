@@ -530,7 +530,7 @@ _RE_SELECT_ROOM = re.compile(
     re.IGNORECASE,
 )
 
-# Bare ordinal — "select the 4th one" / "open the third one" / "click on the 2nd element"
+# Bare ordinal - "select the 4th one" / "open the third one" / "click on the 2nd element"
 # Requires expanded_group context to resolve the function name.
 _RE_SELECT_BARE_ORDINAL = re.compile(
     r"\b" + _SELECT_VERBS + r"\s+"
@@ -781,14 +781,14 @@ def find_polygon_by_name(name: str, polygons: list[dict]) -> dict | None:
 
 
 # ══════════════════════════════════════════════════════════════════════
-# Main parser — returns list of intents (chained actions)
+# Main parser - returns list of intents (chained actions)
 # ══════════════════════════════════════════════════════════════════════
 
 def parse_intents(message: str, polygons: list[dict] | None = None, expanded_group: str | None = None, active_floor_id: str | None = None) -> list[ParsedIntent]:
     """Parse a user message into one or more structured intents.
 
     Extracts all entities, then checks every classifier. Non-conflicting
-    intents stack — "go to floor 2 and show occupancy" yields two intents.
+    intents stack - "go to floor 2 and show occupancy" yields two intents.
     """
     msg = message.strip()
     if not msg:
@@ -899,7 +899,7 @@ def parse_intents(message: str, polygons: list[dict] | None = None, expanded_gro
         ordinal_raw = m.group(1).lower()
         select_room_index = _WORD_ORDINALS.get(ordinal_raw)
         if select_room_index is None:
-            # Digit ordinal like "5th" — extract the number
+            # Digit ordinal like "5th" - extract the number
             select_room_index = int(re.match(r'\d+', ordinal_raw).group())
         # Function name: prefer the "in <group>" part (group 3), fall back to object (group 2)
         select_room_fn = (m.group(3) or m.group(2)).strip()
@@ -913,7 +913,7 @@ def parse_intents(message: str, polygons: list[dict] | None = None, expanded_gro
         select_room_fn = re.sub(r'[\s,;.?!]+$', '', select_room_fn)  # trailing punctuation
         select_room_fn = re.sub(r'\s+(?:drop\s*-?\s*down|directory|list|group|category)$', '', select_room_fn, flags=re.IGNORECASE)
         select_room_fn = re.sub(r'\s+please$', '', select_room_fn, flags=re.IGNORECASE)
-        # If function name is a bare reference word ("one", "element"), it's not a real function —
+        # If function name is a bare reference word ("one", "element"), it's not a real function -
         # reset and let the bare ordinal fallback handle it
         if select_room_fn.lower() in _BARE_REF_WORDS:
             select_room_index = None
@@ -938,7 +938,7 @@ def parse_intents(message: str, polygons: list[dict] | None = None, expanded_gro
             elif expanded_group:
                 select_room_fn = expanded_group
             else:
-                # No context — can't resolve, reset
+                # No context - can't resolve, reset
                 select_room_index = None
 
     # Verb-at-end fallback: "third waiting room select" / "the 3rd item on storage dropdown select"
@@ -958,7 +958,7 @@ def parse_intents(message: str, polygons: list[dict] | None = None, expanded_gro
             raw_fn = re.sub(r'[\s,;.?!]+$', '', raw_fn)
             raw_fn = re.sub(r'\s+(?:drop(?:ped)?\s*-?\s*down|directory|list|group|category)$', '', raw_fn, flags=re.IGNORECASE)
             if raw_fn.lower() in _BARE_REF_WORDS:
-                # "item on the waiting room" — extract inline group from group 3
+                # "item on the waiting room" - extract inline group from group 3
                 inline = (m_end.group(3) or "").strip() if m_end.lastindex >= 3 else ""
                 inline = re.sub(r'\s+(rooms?|spaces?|units?)$', '', inline, flags=re.IGNORECASE)
                 inline = re.sub(r'[\s,;.?!]+$', '', inline)
@@ -1020,7 +1020,7 @@ def parse_intents(message: str, polygons: list[dict] | None = None, expanded_gro
 
     used_types = set()  # prevent duplicate type emissions
 
-    # 0. Universal clear — "clear everything", "reset all"
+    # 0. Universal clear - "clear everything", "reset all"
     # Skip if message mentions furnishings (handled by furnishing intent instead)
     _furnish_guard = {"furnishing", "furniture", "furnish", "the room"}
     _has_clear_all = any(kw in msg_lower for kw in CLEAR_ALL_KEYWORDS)
@@ -1130,7 +1130,7 @@ def parse_intents(message: str, polygons: list[dict] | None = None, expanded_gro
             ))
             used_types.add("select_room_relative")
 
-    # 10c. Smart search — largest rooms (early priority so LLM doesn't handle it)
+    # 10c. Smart search - largest rooms (early priority so LLM doesn't handle it)
     _largest_patterns_early = [
         "largest rooms", "biggest rooms", "largest spaces", "biggest spaces",
         "largest room", "biggest room",
@@ -1334,7 +1334,7 @@ def parse_intents(message: str, polygons: list[dict] | None = None, expanded_gro
                             furnish_quantity=cont_qty,
                         ))
 
-    # 22. Compare mode toggle (not pair — just on/off)
+    # 22. Compare mode toggle (not pair - just on/off)
     for alias, action in sorted(COMPARE_MODE_KEYWORDS.items(), key=lambda x: -len(x[0])):
         if alias in msg_lower and "compare_toggle" not in used_types and "compare" not in used_types:
             intents.append(ParsedIntent(intent_type="compare_toggle", compare_action=action))
@@ -1404,7 +1404,7 @@ def parse_intents(message: str, polygons: list[dict] | None = None, expanded_gro
         ))
         used_types.add("count")
 
-    # 29. Search (fallback — only if no other spatial intent matched)
+    # 29. Search (fallback - only if no other spatial intent matched)
     if not used_types or used_types == {"clear_all"}:
         m = _RE_SEARCH.search(msg)
         if m and "search" not in used_types:
@@ -1424,7 +1424,7 @@ def parse_intents(message: str, polygons: list[dict] | None = None, expanded_gro
 
 # Backward compat alias
 def parse_intent(message: str, polygons: list[dict] | None = None) -> ParsedIntent:
-    """Single-intent parse — returns the first (highest priority) intent."""
+    """Single-intent parse - returns the first (highest priority) intent."""
     results = parse_intents(message, polygons)
     return results[0] if results else ParsedIntent()
 
@@ -1497,7 +1497,7 @@ def intents_to_actions(
         elif t == "evacuate":
             actions.append((
                 {"type": "set_heatmap", "mode": "evacuation"},
-                "Activating **evacuation access** view — green rooms have high capacity near exits. Red rooms need evacuation attention.",
+                "Activating **evacuation access** view - green rooms have high capacity near exits. Red rooms need evacuation attention.",
             ))
 
         elif t == "capacity_plan":
@@ -1743,6 +1743,6 @@ def intents_to_actions(
                     rem_desc,
                 ))
 
-        # "query" type produces no actions — LLM handles narratively
+        # "query" type produces no actions - LLM handles narratively
 
     return actions
