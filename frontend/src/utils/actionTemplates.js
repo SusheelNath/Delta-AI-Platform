@@ -539,485 +539,513 @@ function buildSuggestFurnishingsResponse() {
  * Build a rich chat message from a repurpose option.
  * Used when the user clicks "Inject to Chat" in the RepurposePanel.
  */
-export function buildRepurposeResponse(option, spaceName, floorId, activeTab = 'overview') {
+export function buildRepurposeResponse(option, spaceName, floorId, activeTab = 'overview', currentFunction = '', areaM2 = 0) {
   const fname = FLOOR_NAMES[floorId] || floorId || '';
-  const parts = [];
+  const p = [];
   const sign = (v) => v >= 0 ? '+' : '';
   const eur = (v) => `\u20AC${(v || 0).toLocaleString()}`;
+  const pct = (r) => r != null ? Math.round(r * 100) : 0;
+  const hr = () => p.push('\n---\n');
+  // Extract amount/explanation from {amount, explanation} or plain number
+  const itemAmt = (v) => typeof v === 'object' && v ? (v.amount || 0) : (v || 0);
+  const itemExpl = (v) => typeof v === 'object' && v ? v.explanation : null;
 
-  parts.push(`### Repurpose Analysis \u2014 ${spaceName || 'Selected Space'} (${fname})`);
-  parts.push(`**Recommended:** Convert to **${option.target_label}** \u2014 Overall Score: **${option.overall_score}%**\n`);
+  // Shared references
+  const c = option.cost_breakdown || {};
+  const roi = option.roi || {};
+  const impact = option.operational_impact || {};
+  const tl = option.timeline || {};
+  const delta = option.furnishing_delta || {};
+  const re = roi.explanations || {};
+  const totalInvestment = roi.total_investment || c.total_project_cost || c.total_capex || 0;
+  const area = Math.round(areaM2 || (c.cost_per_m2 ? (c.total_project_cost || 0) / c.cost_per_m2 : 0));
 
+  // Header
+  p.push(`### Repurpose Analysis \u2014 ${spaceName || 'Selected Space'} (${fname})`);
+  p.push(`**${currentFunction || 'Current'}** \u2192 **${option.target_label}** | Score: **${option.overall_score}%** | ${option.target_category || ''}\n`);
+
+  // ════════════════════════════════════════════════════════════════
   if (activeTab === 'overview') {
-    // ── Deep-dive Overview ──
-    const scoreLabels = {
-      area_fit: 'Size Match', distribution_gap: 'Service Demand', adjacency: 'Location Synergy',
-      zone_fit: 'Zone Fit', infrastructure: 'Infrastructure', regulatory: 'Regulatory',
-      furnishing_reuse: 'Asset Retention', cost_efficiency: 'Cost Efficiency',
-      revenue_impact: 'Revenue Impact', service_continuity: 'Service Continuity',
-    };
+  // ════════════════════════════════════════════════════════════════
 
+    // Executive summary
+    p.push(`> ${option.overall_score >= 75 ? 'Strong candidate' : option.overall_score >= 50 ? 'Viable candidate' : 'Challenging conversion'} for repurposing. ${roi.payback_months ? `Payback in ${roi.payback_months} months.` : 'Non-revenue investment.'} Total cost ${eur(c.total_project_cost || c.total_capex)}.`);
+    p.push('');
+
+    // Room profile — bullets
+    p.push('#### Room Profile\n');
+    if (area) p.push(`- **Area** \u2014 ${area} m\u00B2`);
+    if (currentFunction) p.push(`- **Current function** \u2014 ${currentFunction}`);
+    p.push(`- **Target function** \u2014 ${option.target_label}`);
+    p.push(`- **Category** \u2014 ${option.target_category || '-'}`);
+    p.push(`- **Renovation class** \u2014 ${c.renovation?.explanation?.match(/(\w+)\s+renovation/)?.[1] || '-'}`);
+    p.push(`- **Total project cost** \u2014 ${eur(c.total_project_cost || c.total_capex)} (${eur(c.cost_per_m2)}/m\u00B2)`);
+    if (roi.payback_months) p.push(`- **Payback** \u2014 ${roi.payback_months} months`);
+    if (roi.roi_5yr_pct != null) p.push(`- **5-year ROI** \u2014 ${sign(roi.roi_5yr_pct)}${roi.roi_5yr_pct}%`);
+    const keepCount = delta.keep?.length || 0;
+    const totalFurnItems = keepCount + (delta.remove?.length || 0) + (delta.add?.length || 0);
+    if (totalFurnItems) p.push(`- **Asset reuse** \u2014 ${Math.round(keepCount / totalFurnItems * 100)}% (${keepCount}/${totalFurnItems} items)`);
+    p.push('');
+
+    // Justification
     if (option.justification?.length > 0) {
-      parts.push('**Why this conversion works:**');
-      for (const j of option.justification) parts.push(`- ${j}`);
-      parts.push('');
+      p.push('#### Why This Conversion Works\n');
+      for (const j of option.justification) p.push(`- ${j}`);
+      p.push('');
     }
 
+    // Score breakdown — bullets
     if (option.scores) {
-      parts.push('**Detailed Score Breakdown (each dimension 0\u2013100):**\n');
-      parts.push('| Dimension | Score | Assessment | Rationale |');
-      parts.push('|---|:---:|---|---|');
-      for (const [key, val] of Object.entries(option.scores)) {
-        const label = scoreLabels[key] || key;
-        const icon = val >= 75 ? '\u2705' : val >= 50 ? '\u26A0\uFE0F' : '\u274C';
-        const grade = val >= 80 ? 'Excellent' : val >= 65 ? 'Good' : val >= 50 ? 'Moderate' : val >= 30 ? 'Weak' : 'Poor';
-        const reason = option.score_reasons?.[key] || '';
-        parts.push(`| ${icon} ${label} | **${val}** | ${grade} | ${reason} |`);
+      const scoreLabels = {
+        area_fit: 'Size Match', distribution_gap: 'Service Demand', adjacency: 'Location Synergy',
+        zone_fit: 'Zone Fit', infrastructure: 'Infrastructure', regulatory: 'Regulatory',
+        furnishing_reuse: 'Asset Retention', cost_efficiency: 'Cost Efficiency',
+        revenue_impact: 'Revenue Impact', service_continuity: 'Service Continuity',
+        patient_flow: 'Patient Flow', operational_complexity: 'Conversion Ease',
+        utilisation_potential: 'Utilisation',
+      };
+      const entries = Object.entries(option.scores);
+      const strengths = entries.filter(([, v]) => v >= 65);
+      const moderate = entries.filter(([, v]) => v >= 40 && v < 65);
+      const risks = entries.filter(([, v]) => v < 40);
+
+      if (strengths.length) {
+        p.push('#### Strengths\n');
+        for (const [key, val] of strengths) {
+          p.push(`- **${scoreLabels[key] || key}** (${val}) \u2014 ${option.score_reasons?.[key] || ''}`);
+        }
+        p.push('');
+      } else {
+        p.push('#### Strengths\n');
+        p.push('_No dimensions scored above 65._');
+        p.push('');
       }
-      parts.push('');
+
+      if (moderate.length) {
+        p.push('#### Moderate\n');
+        for (const [key, val] of moderate) {
+          p.push(`- **${scoreLabels[key] || key}** (${val}) \u2014 ${option.score_reasons?.[key] || ''}`);
+        }
+        p.push('');
+      }
+
+      if (risks.length) {
+        p.push('#### Risks & Weaknesses\n');
+        for (const [key, val] of risks) {
+          p.push(`- **${scoreLabels[key] || key}** (${val}) \u2014 ${option.score_reasons?.[key] || ''}`);
+        }
+        p.push('');
+      }
     }
 
-  } else if (activeTab === 'costs') {
-    // ── Deep-dive Costs ──
-    const c = option.cost_breakdown;
-    if (!c) return parts.join('\n');
+    hr();
+    p.push(`_See Costs, ROI, Timeline, and Furnishings tabs for detailed breakdowns._`);
 
-    parts.push('**Full Project Cost Breakdown:**\n');
+  // ════════════════════════════════════════════════════════════════
+  } else if (activeTab === 'costs') {
+  // ════════════════════════════════════════════════════════════════
+
+    // Executive summary
+    p.push(`> Total project cost **${eur(c.total_project_cost || c.total_capex)}** (${eur(c.cost_per_m2)}/m\u00B2). CAPEX ${eur(c.total_capex)}, design fees ${eur(c.design_fees)}, contingency ${eur(c.contingency)}.`);
+    p.push('');
 
     // Cost drivers context
     if (c.cost_drivers?.length > 0) {
-      parts.push('_Cost Analysis Context:_');
-      for (const d of c.cost_drivers) parts.push(`- ${d}`);
-      parts.push('');
+      p.push('#### Cost Drivers\n');
+      for (const d of c.cost_drivers) p.push(`- ${d}`);
+      p.push('');
     }
 
-    // Helper: extract amount/explanation from sub-items that may be {amount, explanation} or plain number
-    const itemAmt = (v) => typeof v === 'object' && v ? (v.amount || 0) : (v || 0);
-    const itemExpl = (v) => typeof v === 'object' && v ? v.explanation : null;
+    // Bullet-list section builder
+    const costSection = (num, title, data, keys) => {
+      if (!data) return;
+      p.push(`#### ${num}. ${title} \u2014 ${eur(data.subtotal)}\n`);
+      for (const [k, label] of keys) {
+        const raw = data[k];
+        const amt = itemAmt(raw);
+        if (!amt) continue;
+        const expl = itemExpl(raw);
+        p.push(`- **${label}** \u2014 ${eur(amt)}${expl ? `\n  ${expl}` : ''}`);
+      }
+      p.push('');
+    };
 
     // 1. Renovation
-    if (c.renovation) {
-      parts.push(`**1. Renovation Works** - ${eur(c.renovation.subtotal)}`);
-      for (const [k, label] of [['paint_flooring', 'Paint & flooring'], ['ceiling_walls', 'Ceiling & walls'], ['mep_services', 'MEP services']]) {
-        const raw = c.renovation[k];
-        const amt = itemAmt(raw);
-        if (!amt) continue;
-        let line = `   - ${label}: ${eur(amt)}`;
-        const ex = itemExpl(raw);
-        if (ex) line += ` - _${ex}_`;
-        parts.push(line);
-      }
-      if (c.renovation.explanation) parts.push(`   _${c.renovation.explanation}_`);
-      parts.push('');
-    }
+    costSection(1, 'Renovation Works', c.renovation, [
+      ['paint_flooring', 'Paint & flooring'], ['ceiling_walls', 'Ceiling & walls'], ['mep_services', 'MEP services'],
+    ]);
 
     // 2. Furnishings
-    if (c.furnishing) {
-      parts.push(`**2. Furnishings** - ${eur(c.furnishing.subtotal)}`);
-      for (const [k, label] of [['removal', 'Removal & disposal'], ['new_purchase', 'New purchase'], ['installation', 'Installation & fitting']]) {
-        const raw = c.furnishing[k];
-        const amt = itemAmt(raw);
-        if (!amt) continue;
-        let line = `   - ${label}: ${eur(amt)}`;
-        const ex = itemExpl(raw);
-        if (ex) line += ` - _${ex}_`;
-        parts.push(line);
-      }
-      parts.push('');
-    }
+    costSection(2, 'Furnishings', c.furnishing, [
+      ['removal', 'Removal & disposal'], ['new_purchase', 'New purchase'], ['installation', 'Installation & fitting'],
+    ]);
 
-    // 3. Vendor Concessions & Savings
+    // 3. Vendor Concessions
     if (c.vendor_concessions) {
       const vc = c.vendor_concessions;
-      parts.push(`**3. Vendor Concessions & Savings** - ${eur(Math.abs(vc.subtotal || 0))} (savings)`);
-      const vcItems = [
-        { key: 'framework_discount', label: 'Framework agreement discount' },
-        { key: 'trade_in_credit', label: 'Equipment trade-in credit' },
-        { key: 'bulk_procurement', label: 'Volume procurement discount' },
-        { key: 'warranty_transfer', label: 'Warranty transfer savings' },
-        { key: 'reuse_savings', label: 'Asset reuse savings' },
-      ];
-      for (const { key, label } of vcItems) {
+      p.push(`#### 3. Vendor Concessions \u2014 ${eur(Math.abs(vc.subtotal || 0))} savings\n`);
+      for (const [key, label] of [['framework_discount', 'Framework discount'], ['trade_in_credit', 'Trade-in credit'],
+        ['bulk_procurement', 'Bulk procurement'], ['warranty_transfer', 'Warranty transfer'], ['reuse_savings', 'Asset reuse']]) {
         const item = vc[key];
         if (!item || item.amount === 0) continue;
-        let line = `   - ${label}: -${eur(Math.abs(item.amount))}`;
-        if (item.vendor) line += ` _(${item.vendor}${item.vendor_status ? `, ${item.vendor_status}` : ''})_`;
-        if (item.explanation) line += ` - ${item.explanation}`;
-        parts.push(line);
+        const vendor = item.vendor ? ` _(${item.vendor})_` : '';
+        p.push(`- **${label}** \u2014 -${eur(Math.abs(item.amount))}${vendor}${item.explanation ? `\n  ${item.explanation}` : ''}`);
       }
-      if (vc.net_furnishing_cost != null) {
-        parts.push(`   Net furnishing cost after concessions: ${eur(vc.net_furnishing_cost)}`);
-      }
-      parts.push('');
+      if (vc.net_furnishing_cost != null) p.push(`\n_Net furnishing cost after concessions: ${eur(vc.net_furnishing_cost)}_`);
+      p.push('');
     }
 
     // 4. Infrastructure
-    if (c.infrastructure) {
-      parts.push(`**4. Infrastructure** - ${eur(c.infrastructure.subtotal)}`);
-      const infraLabels = { medical_gas: 'Medical gas install', nurse_call: 'Nurse call install',
-        hvac_upgrade: 'HVAC upgrade (surgical)', plumbing: 'Plumbing / new sink',
-        data_cabling: 'Data cabling point' };
-      for (const [k, v] of Object.entries(c.infrastructure)) {
-        if (k === 'subtotal' || k === 'explanation' || !v) continue;
-        const amt = itemAmt(v);
-        if (!amt) continue;
-        const label = infraLabels[k] || k.replace(/_/g, ' ');
-        let line = `   - ${label}: ${eur(amt)}`;
-        const ex = itemExpl(v);
-        if (ex) line += ` - _${ex}_`;
-        parts.push(line);
-      }
-      if (c.infrastructure.explanation) parts.push(`   _${c.infrastructure.explanation}_`);
-      parts.push('');
-    }
+    costSection(4, 'Infrastructure', c.infrastructure, [
+      ['medical_gas', 'Medical gas install'], ['nurse_call', 'Nurse call install'],
+      ['hvac_upgrade', 'HVAC upgrade (surgical)'], ['plumbing', 'Plumbing / new sink'], ['data_cabling', 'Data cabling point'],
+    ]);
 
-    // 4b. Compliance
-    if (c.compliance) {
-      parts.push(`**4b. Compliance** - ${eur(c.compliance.subtotal)}`);
-      const complianceLabels = {
-        fire_safety_review: 'Fire safety review', accessibility_audit: 'Accessibility audit',
-        infection_control: 'Infection control review', permitting_fees: 'Permitting & approvals',
-        environmental_review: 'Environmental assessment',
-      };
-      for (const [k, label] of Object.entries(complianceLabels)) {
-        const raw = c.compliance[k];
-        const amt = itemAmt(raw);
-        if (!amt) continue;
-        let line = `   - ${label}: ${eur(amt)}`;
-        const ex = itemExpl(raw);
-        if (ex) line += ` - _${ex}_`;
-        parts.push(line);
-      }
-      if (c.compliance.explanation) parts.push(`   _${c.compliance.explanation}_`);
-      parts.push('');
-    }
+    // 5. Compliance
+    costSection(5, 'Compliance', c.compliance, [
+      ['fire_safety_review', 'Fire safety review'], ['accessibility_audit', 'Accessibility audit'],
+      ['infection_control', 'Infection control review'], ['permitting_fees', 'Permitting & approvals'],
+      ['environmental_review', 'Environmental assessment'],
+    ]);
 
-    // 5. Labour & Human Resources
+    // 6. Labour
     if (c.labour) {
-      parts.push(`**5. Labour & Human Resources** - ${eur(c.labour.subtotal)}`);
-      const labourItems = [
-        { key: 'general_contractor', label: 'General contractor' },
-        { key: 'specialist_trades', label: 'Specialist trades' },
-        { key: 'medical_gas_installer', label: 'Medical gas installer' },
-        { key: 'project_management', label: 'Project management' },
-        { key: 'health_safety_officer', label: 'Health & safety officer' },
-        { key: 'clerk_of_works', label: 'Clerk of works' },
-      ];
-      for (const { key, label } of labourItems) {
+      p.push(`#### 6. Labour & Human Resources \u2014 ${eur(c.labour.subtotal)}\n`);
+      for (const [key, label] of [['general_contractor', 'General contractor'], ['specialist_trades', 'Specialist trades'],
+        ['medical_gas_installer', 'Medical gas installer'], ['project_management', 'Project management'],
+        ['health_safety_officer', 'Health & safety officer'], ['clerk_of_works', 'Clerk of works']]) {
         const item = c.labour[key];
-        if (!item || !item.amount) continue;
-        let line = `   - ${label}: ${eur(item.amount)}`;
+        if (!item?.amount) continue;
         const d = item.detail;
-        if (d) {
-          if (d.workers && d.weeks && d.rate) {
-            line += ` (${d.workers} workers x ${d.weeks} weeks @ ${eur(d.rate)}/week)`;
-          } else if (d.explanation) {
-            line += ` - ${d.explanation}`;
-          }
-        }
-        parts.push(line);
+        const detail = d ? (d.workers && d.weeks && d.rate ? `${d.workers} workers \u00D7 ${d.weeks} wk @ ${eur(d.rate)}/wk` : d.explanation || '') : '';
+        p.push(`- **${label}** \u2014 ${eur(item.amount)}${detail ? `\n  ${detail}` : ''}`);
       }
-      parts.push('');
+      p.push('');
     }
 
-    // 6. Commune & Municipal Permits
+    // 7. Permits
     if (c.commune_permits) {
-      parts.push(`**6. Commune & Municipal Permits** - ${eur(c.commune_permits.subtotal)}`);
-      const permitItems = [
-        { key: 'building_permit', label: 'Building permit' },
-        { key: 'change_of_use', label: 'Change of use permit' },
-        { key: 'fire_inspection', label: 'Fire inspection' },
-        { key: 'health_authority', label: 'Health authority approval' },
-        { key: 'occupation_certificate', label: 'Occupation certificate' },
-        { key: 'environmental_clearance', label: 'Environmental clearance' },
-      ];
-      for (const { key, label } of permitItems) {
+      p.push(`#### 7. Commune & Municipal Permits \u2014 ${eur(c.commune_permits.subtotal)}\n`);
+      for (const [key, label] of [['building_permit', 'Building permit'], ['change_of_use', 'Change of use'],
+        ['fire_inspection', 'Fire inspection'], ['health_authority', 'Health authority'],
+        ['occupation_certificate', 'Occupation certificate'], ['environmental_clearance', 'Environmental clearance']]) {
         const item = c.commune_permits[key];
-        if (!item || !item.amount) continue;
-        let line = `   - ${label}: ${eur(item.amount)}`;
+        if (!item?.amount) continue;
         const d = item.detail;
-        if (d) {
-          if (d.processing_weeks) line += ` (${d.processing_weeks} weeks processing)`;
-          if (d.explanation) line += ` - ${d.explanation}`;
-        }
-        parts.push(line);
+        const processing = d?.processing_weeks ? ` _(${d.processing_weeks} weeks)_` : '';
+        p.push(`- **${label}** \u2014 ${eur(item.amount)}${processing}${d?.explanation ? `\n  ${d.explanation}` : ''}`);
       }
-      parts.push('');
+      p.push('');
     }
 
-    // 7. Commissioning & Handover
+    // 8. Commissioning
     if (c.commissioning) {
-      parts.push(`**7. Commissioning & Handover** - ${eur(c.commissioning.subtotal)}`);
-      const commItems = [
-        { key: 'systems_testing', label: 'Systems testing' },
-        { key: 'infection_control_clean', label: 'Infection control clean' },
-        { key: 'snagging', label: 'Snagging & defects' },
-        { key: 'equipment_calibration', label: 'Equipment calibration' },
-        { key: 'as_built_docs', label: 'As-built documentation' },
-        { key: 'staff_orientation', label: 'Staff orientation' },
-      ];
-      for (const { key, label } of commItems) {
+      p.push(`#### 8. Commissioning & Handover \u2014 ${eur(c.commissioning.subtotal)}\n`);
+      for (const [key, label] of [['systems_testing', 'Systems testing'], ['infection_control_clean', 'Infection control clean'],
+        ['snagging', 'Snagging & defects'], ['equipment_calibration', 'Equipment calibration'],
+        ['as_built_docs', 'As-built documentation'], ['staff_orientation', 'Staff orientation']]) {
         const item = c.commissioning[key];
-        if (!item || !item.amount) continue;
-        let line = `   - ${label}: ${eur(item.amount)}`;
-        if (item.explanation) line += ` - ${item.explanation}`;
-        parts.push(line);
+        if (!item?.amount) continue;
+        p.push(`- **${label}** \u2014 ${eur(item.amount)}${item.explanation ? `\n  ${item.explanation}` : ''}`);
       }
-      parts.push('');
+      p.push('');
     }
 
-    // 8. Operational Disruption
+    // 9. Operational Disruption
     if (c.disruption) {
-      parts.push(`**8. Operational Disruption** - ${eur(c.disruption.subtotal)}`);
-      const disruptItems = [
-        { key: 'temporary_relocation', label: 'Temporary relocation' },
-        { key: 'wayfinding_signage', label: 'Wayfinding & signage' },
-        { key: 'it_reconfiguration', label: 'IT reconfiguration' },
-        { key: 'staff_retraining', label: 'Staff retraining' },
-        { key: 'adjacent_mitigation', label: 'Adjacent area mitigation' },
-        { key: 'patient_scheduling', label: 'Patient scheduling' },
-        { key: 'communication_plan', label: 'Communication plan' },
-      ];
-      for (const { key, label } of disruptItems) {
+      p.push(`#### 9. Operational Disruption \u2014 ${eur(c.disruption.subtotal)}\n`);
+      for (const [key, label] of [['temporary_relocation', 'Temporary relocation'], ['wayfinding_signage', 'Wayfinding & signage'],
+        ['it_reconfiguration', 'IT reconfiguration'], ['staff_retraining', 'Staff retraining'],
+        ['adjacent_mitigation', 'Adjacent area mitigation'], ['patient_scheduling', 'Patient scheduling'],
+        ['communication_plan', 'Communication plan']]) {
         const item = c.disruption[key];
-        if (!item || !item.amount) continue;
-        let line = `   - ${label}: ${eur(item.amount)}`;
-        if (item.explanation) line += ` - ${item.explanation}`;
-        parts.push(line);
-        if (item.justification) parts.push(`     _Justification: ${item.justification}_`);
+        if (!item?.amount) continue;
+        const reason = item.justification || item.explanation || '';
+        p.push(`- **${label}** \u2014 ${eur(item.amount)}${reason ? `\n  ${reason}` : ''}`);
       }
-      parts.push('');
+      p.push('');
     }
 
-    // CAPEX total
-    parts.push(`**Capital Expenditure (CAPEX):** ${eur(c.total_capex)}\n`);
-
-    // Contingency Breakdown table
+    // 10. Contingency
     if (c.contingency_breakdown) {
       const cb = c.contingency_breakdown;
-      const totalPct = cb.total_rate != null ? Math.round(cb.total_rate * 100) : '';
-      parts.push(`**Contingency Breakdown** (${totalPct}%)`);
-      parts.push('| Component | Rate | Amount | Rationale |');
-      parts.push('|---|:---:|---:|---|');
-      const cbItems = [
-        { key: 'base', label: 'Base contingency' },
-        { key: 'complexity', label: 'Complexity premium' },
-        { key: 'regulatory', label: 'Regulatory risk' },
-        { key: 'supply_chain', label: 'Supply chain' },
-      ];
-      for (const { key, label } of cbItems) {
+      p.push(`#### 10. Contingency Reserve \u2014 ${pct(cb.total_rate)}%\n`);
+      for (const [key, label] of [['base', 'Base contingency'], ['complexity', 'Complexity premium'],
+        ['regulatory', 'Regulatory risk'], ['supply_chain', 'Supply chain']]) {
         const item = cb[key];
         if (!item) continue;
-        const rate = item.rate != null ? `${Math.round(item.rate * 100)}%` : '';
-        parts.push(`| ${label} | ${rate} | ${eur(item.amount)} | ${item.explanation || ''} |`);
+        p.push(`- **${label}** \u2014 ${pct(item.rate)}% (${eur(item.amount)})${item.explanation ? `\n  ${item.explanation}` : ''}`);
       }
-      parts.push(`| **Total** | **${totalPct}%** | **${eur(cb.total)}** | |`);
-      parts.push('');
+      p.push(`- **Total** \u2014 ${pct(cb.total_rate)}% (${eur(cb.total)})`);
+      p.push('');
     }
 
-    // Design fees
-    parts.push(`- Design & professional fees (6%): ${eur(c.design_fees)}`);
-    parts.push('');
+    hr();
 
-    // Total Project Cost
-    parts.push(`### Total Project Cost: ${eur(c.total_project_cost || c.total_capex)}`);
-    if (c.cost_per_m2) parts.push(`_${eur(c.cost_per_m2)} per m\u00B2_`);
-    parts.push('');
+    // Cost Summary — bullets
+    p.push('#### Cost Summary\n');
+    if (c.renovation) p.push(`- Renovation \u2014 ${eur(c.renovation.subtotal)}`);
+    if (c.furnishing) p.push(`- Furnishings \u2014 ${eur(c.furnishing.subtotal)}`);
+    if (c.vendor_concessions) p.push(`- Vendor concessions \u2014 -${eur(Math.abs(c.vendor_concessions.subtotal || 0))}`);
+    if (c.infrastructure) p.push(`- Infrastructure \u2014 ${eur(c.infrastructure.subtotal)}`);
+    if (c.compliance) p.push(`- Compliance \u2014 ${eur(c.compliance.subtotal)}`);
+    if (c.labour) p.push(`- Labour \u2014 ${eur(c.labour.subtotal)}`);
+    if (c.commune_permits) p.push(`- Permits \u2014 ${eur(c.commune_permits.subtotal)}`);
+    if (c.commissioning) p.push(`- Commissioning \u2014 ${eur(c.commissioning.subtotal)}`);
+    if (c.disruption) p.push(`- Disruption \u2014 ${eur(c.disruption.subtotal)}`);
+    p.push(`- **CAPEX** \u2014 **${eur(c.total_capex)}**`);
+    if (c.design_fees) p.push(`- Design fees (6%) \u2014 ${eur(c.design_fees)}`);
+    if (c.contingency) p.push(`- Contingency \u2014 ${eur(c.contingency)}`);
+    p.push(`- **Total Project Cost** \u2014 **${eur(c.total_project_cost || c.total_capex)}**`);
+    p.push('');
 
-    // Financial Structure
+    // Financial Structure — bullets, no duplicate retention
     if (c.financial_structure) {
       const fs = c.financial_structure;
-      parts.push('**Financial Structure:**');
-
-      // Payment milestones table
-      if (fs.payment_milestones?.length > 0) {
-        parts.push('| Payment Stage | % | Amount |');
-        parts.push('|---|:---:|---:|');
-        for (const m of fs.payment_milestones) {
-          parts.push(`| ${m.stage} | ${m.pct}% | ${eur(m.amount)} |`);
-        }
-        if (fs.retention) {
-          parts.push(`| Retention | ${fs.retention.pct}% | ${eur(fs.retention.amount)} |`);
-        }
-        parts.push('');
+      p.push('#### Financial Structure\n');
+      const milestones = fs.payment_milestones || [];
+      const hasRetentionMilestone = milestones.some(m => /retention/i.test(m.stage));
+      for (const m of milestones) p.push(`- **${m.stage}** \u2014 ${m.pct}% (${eur(m.amount)})`);
+      if (fs.retention && !hasRetentionMilestone) {
+        p.push(`- **Retention** \u2014 ${fs.retention.pct}% (${eur(fs.retention.amount)}) \u2014 held for ${fs.retention.period_months}-month defects liability`);
       }
-
-      // Retention detail
-      if (fs.retention) {
-        parts.push(`- Retention: ${eur(fs.retention.amount)} withheld for ${fs.retention.period_months}-month defects liability period`);
-      }
-
-      // CAPEX/OPEX split
-      if (fs.capex_opex_split) {
-        parts.push(`- CAPEX/OPEX split: ${eur(fs.capex_opex_split.capex)} capital / ${eur(fs.capex_opex_split.opex)} operational`);
-      }
-
-      // VAT
-      if (fs.vat) {
-        let vatLine = `- VAT (${fs.vat.rate}%): ${eur(fs.vat.amount)}`;
-        if (fs.vat.note) vatLine += ` - ${fs.vat.note}`;
-        parts.push(vatLine);
-      }
-
-      // Depreciation
+      p.push('');
+      if (fs.vat) p.push(`- VAT: ${fs.vat.rate}% (${eur(fs.vat.amount)})${fs.vat.note ? ` \u2014 ${fs.vat.note}` : ''}`);
+      if (fs.retention) p.push(`- Retention: ${eur(fs.retention.amount)} held for ${fs.retention.period_months}-month defects liability`);
+      if (fs.capex_opex_split) p.push(`- CAPEX/OPEX split: ${eur(fs.capex_opex_split.capex)} capital / ${eur(fs.capex_opex_split.opex)} operational`);
       if (fs.depreciation) {
         const dep = fs.depreciation;
-        parts.push(`- Depreciation: Fit-out ${eur(dep.fitout_annual)}/yr (${dep.fitout_years}yr), Furnishings ${eur(dep.furnishing_annual)}/yr (${dep.furnishing_years}yr)`);
+        p.push(`- Depreciation: fit-out ${eur(dep.fitout_annual)}/yr (${dep.fitout_years}y), furnishings ${eur(dep.furnishing_annual)}/yr (${dep.furnishing_years}y)`);
       }
     }
 
+  // ════════════════════════════════════════════════════════════════
   } else if (activeTab === 'roi') {
-    // ── Deep-dive ROI ──
-    const roi = option.roi;
-    const impact = option.operational_impact;
-    const c = option.cost_breakdown;
-    if (!roi) return parts.join('\n');
+  // ════════════════════════════════════════════════════════════════
 
-    const totalInvestment = roi.total_investment || c?.total_project_cost || c?.total_capex || 0;
+    // Executive summary / verdict
+    const verdict = roi.net_annual_delta > 0
+      ? `Positive-return investment with ${roi.payback_months ? roi.payback_months + '-month payback' : 'long-term recovery'}. 5-year ROI: ${sign(roi.roi_5yr_pct)}${roi.roi_5yr_pct}%.`
+      : roi.net_annual_delta === 0
+        ? 'Revenue-neutral conversion. Value is operational, not financial.'
+        : `Service-quality investment. Net annual cost of ${eur(Math.abs(roi.net_annual_delta))}/yr offset by operational benefit.`;
+    p.push(`> ${verdict}`);
+    p.push('');
 
-    parts.push('**Financial Impact Analysis:**\n');
+    // Key metrics — bullets
+    p.push('#### Key Metrics\n');
+    p.push(`- **Net annual impact** \u2014 ${sign(roi.net_annual_delta)}${eur(roi.net_annual_delta)}/yr${re.net_annual_delta ? `\n  ${re.net_annual_delta}` : ''}`);
+    p.push(`- **Total investment** \u2014 ${eur(totalInvestment)}${re.total_investment ? `\n  ${re.total_investment}` : ''}`);
+    p.push(`- **Payback period** \u2014 ${roi.payback_months ? `${roi.payback_months} months` : 'Non-revenue'}${re.payback ? `\n  ${re.payback}` : ''}`);
+    if (roi.roi_5yr_pct != null) p.push(`- **5-year ROI** \u2014 ${sign(roi.roi_5yr_pct)}${roi.roi_5yr_pct}%${re.roi_5yr ? `\n  ${re.roi_5yr}` : ''}`);
+    if (roi.downtime_cost > 0) p.push(`- **Downtime revenue loss** \u2014 ${eur(roi.downtime_cost)}${re.downtime_cost ? `\n  ${re.downtime_cost}` : ''}`);
+    p.push('');
 
-    // Key metrics
-    const re = roi.explanations || {};
-    parts.push('| Metric | Value | Rationale |');
-    parts.push('|---|---|---|');
-    parts.push(`| Net annual impact | **${sign(roi.net_annual_delta)}${eur(roi.net_annual_delta)}/yr** | ${re.net_annual_delta || ''} |`);
-    parts.push(`| Total investment | ${eur(totalInvestment)} | ${re.total_investment || ''} |`);
-    parts.push(`| Payback period | ${roi.payback_months ? `${roi.payback_months} months` : 'Non-revenue investment'} | ${re.payback || ''} |`);
-    if (roi.roi_5yr_pct != null) parts.push(`| 5-year ROI | ${sign(roi.roi_5yr_pct)}${roi.roi_5yr_pct}% | ${re.roi_5yr || ''} |`);
-    parts.push('');
-
-    // Investment breakdown (items may be {amount, explanation} objects)
+    // Investment breakdown — bullets
     const ib = roi.investment_breakdown;
     if (ib) {
-      const ibAmt = (k) => {
-        const v = ib[k];
-        if (!v) return 0;
-        return typeof v === 'object' && 'amount' in v ? v.amount : v;
-      };
-      const ibExpl = (k) => {
-        const v = ib[k];
-        return typeof v === 'object' ? v.explanation : null;
-      };
-      parts.push('**Investment Breakdown:**\n');
-      parts.push('| Component | Amount | Rationale |');
-      parts.push('|---|---:|---|');
-      if (ibAmt('capex') > 0) parts.push(`| Capital expenditure | ${eur(ibAmt('capex'))} | ${ibExpl('capex') || ''} |`);
-      if (ibAmt('design_fees') > 0) parts.push(`| Design & professional fees | ${eur(ibAmt('design_fees'))} | ${ibExpl('design_fees') || ''} |`);
-      if (ibAmt('contingency') > 0) parts.push(`| Contingency reserve | ${eur(ibAmt('contingency'))} | ${ibExpl('contingency') || ''} |`);
-      if (ibAmt('disruption') > 0) parts.push(`| Operational disruption | ${eur(ibAmt('disruption'))} | ${ibExpl('disruption') || ''} |`);
-      if (ibAmt('commune_permits') > 0) parts.push(`| Commune & municipal permits | ${eur(ibAmt('commune_permits'))} | ${ibExpl('commune_permits') || ''} |`);
-      if (ibAmt('vendor_concessions') < 0) parts.push(`| Vendor concessions (savings) | ${eur(ibAmt('vendor_concessions'))} | ${ibExpl('vendor_concessions') || ''} |`);
-      parts.push(`| **Total project investment** | **${eur(totalInvestment)}** | |`);
-      parts.push('');
+      const ibAmt = (k) => { const v = ib[k]; if (!v) return 0; return typeof v === 'object' && 'amount' in v ? v.amount : v; };
+      const ibExpl = (k) => { const v = ib[k]; return typeof v === 'object' ? v.explanation : null; };
+      p.push('#### Investment Breakdown\n');
+      for (const [k, label] of [['capex', 'Capital expenditure'], ['design_fees', 'Design & professional fees'],
+        ['contingency', 'Contingency reserve'], ['disruption', 'Operational disruption'], ['commune_permits', 'Commune & municipal permits']]) {
+        if (ibAmt(k) > 0) p.push(`- **${label}** \u2014 ${eur(ibAmt(k))}${ibExpl(k) ? `\n  ${ibExpl(k)}` : ''}`);
+      }
+      if (ibAmt('vendor_concessions') < 0) p.push(`- **Vendor concessions** \u2014 ${eur(ibAmt('vendor_concessions'))}${ibExpl('vendor_concessions') ? `\n  ${ibExpl('vendor_concessions')}` : ''}`);
+      p.push(`- **Total project investment** \u2014 ${eur(totalInvestment)}`);
+      p.push('');
     }
 
-    // Revenue comparison
-    parts.push('**Revenue & Operating Cost Comparison:**\n');
-    parts.push('| | Current | After Conversion | Change | Basis |');
-    parts.push('|---|---|---|---|---|');
-    parts.push(`| Annual revenue | ${eur(roi.annual_revenue_current)} | ${eur(roi.annual_revenue_target)} | ${sign(roi.annual_revenue_delta)}${eur(roi.annual_revenue_delta)} | ${re.revenue_delta || ''} |`);
-    parts.push(`| Annual OPEX | ${eur(roi.annual_opex_current)} | ${eur(roi.annual_opex_target)} | ${sign(roi.annual_opex_delta)}${eur(roi.annual_opex_delta)} | ${re.opex_delta || ''} |`);
-    parts.push(`| **Net annual** | | | **${sign(roi.net_annual_delta)}${eur(roi.net_annual_delta)}** | |`);
-    parts.push('');
+    // Revenue & OPEX — bullets
+    p.push('#### Revenue & OPEX Comparison\n');
+    p.push(`- **Revenue** \u2014 ${eur(roi.annual_revenue_current)}/yr \u2192 ${eur(roi.annual_revenue_target)}/yr (${sign(roi.annual_revenue_delta)}${eur(roi.annual_revenue_delta)})${re.revenue_delta ? `\n  ${re.revenue_delta}` : ''}`);
+    p.push(`- **OPEX** \u2014 ${eur(roi.annual_opex_current)}/yr \u2192 ${eur(roi.annual_opex_target)}/yr (${sign(roi.annual_opex_delta)}${eur(roi.annual_opex_delta)})${re.opex_delta ? `\n  ${re.opex_delta}` : ''}`);
+    p.push(`- **Net annual** \u2014 ${sign(roi.net_annual_delta)}${eur(roi.net_annual_delta)}/yr${re.net_annual_delta ? `\n  ${re.net_annual_delta}` : ''}`);
+    p.push('');
 
-    if (roi.downtime_cost > 0) {
-      parts.push(`_Revenue lost during works: ${eur(roi.downtime_cost)} - ${re.downtime_cost || ''}_\n`);
-    }
-
+    // Narrative
     if (roi.roi_narrative) {
-      parts.push(`> ${roi.roi_narrative}\n`);
+      p.push(`> ${roi.roi_narrative}`);
+      p.push('');
     }
 
-    // Operational impact
-    if (impact) {
-      parts.push('**Operational Impact:**\n');
+    // Operational impact — bullets
+    if (impact.care_capacity || impact.staffing || impact.occupancy || impact.service_continuity) {
+      p.push('#### Operational Impact\n');
       if (impact.care_capacity) {
-        let line = `- **Care capacity:** ${impact.care_capacity.assessment} (${impact.care_capacity.current_beds} \u2192 ${impact.care_capacity.projected_beds} beds)`;
-        if (impact.care_capacity.explanation) line += ` _${impact.care_capacity.explanation}_`;
-        parts.push(line);
+        const cc = impact.care_capacity;
+        p.push(`- **Care capacity** \u2014 ${cc.current_beds} \u2192 ${cc.projected_beds} beds (${sign(cc.delta)}${cc.delta})\n  ${cc.assessment}`);
       }
       if (impact.staffing) {
-        let line = `- **Staffing:** ${sign(impact.staffing.delta_fte)}${impact.staffing.delta_fte} FTE (${impact.staffing.current_fte} \u2192 ${impact.staffing.projected_fte})${impact.staffing.annual_cost_delta !== 0 ? ` - annual cost: ${sign(impact.staffing.annual_cost_delta)}${eur(impact.staffing.annual_cost_delta)}` : ''}`;
-        if (impact.staffing.explanation) line += ` _${impact.staffing.explanation}_`;
-        parts.push(line);
+        const st = impact.staffing;
+        const costNote = st.annual_cost_delta !== 0 ? `, ${sign(st.annual_cost_delta)}${eur(st.annual_cost_delta)}/yr` : '';
+        p.push(`- **Staffing** \u2014 ${st.current_fte} \u2192 ${st.projected_fte} FTE (${sign(st.delta_fte)}${st.delta_fte} FTE${costNote})`);
       }
       if (impact.occupancy) {
-        let line = `- **Occupancy:** ${impact.occupancy.current} \u2192 ${impact.occupancy.projected} persons (${sign(impact.occupancy.delta)}${impact.occupancy.delta}), density ${impact.occupancy.current_density} \u2192 ${impact.occupancy.projected_density} persons/m\u00B2`;
-        if (impact.occupancy.explanation) line += ` _${impact.occupancy.explanation}_`;
-        parts.push(line);
+        const oc = impact.occupancy;
+        p.push(`- **Occupancy** \u2014 ${oc.current} \u2192 ${oc.projected} persons (density ${oc.current_density} \u2192 ${oc.projected_density}/m\u00B2)`);
       }
       if (impact.service_continuity) {
-        parts.push(`- **Service continuity risk:** ${impact.service_continuity.risk_level} - ${impact.service_continuity.assessment}`);
+        const sc = impact.service_continuity;
+        p.push(`- **Service risk** \u2014 ${sc.risk_level}\n  ${sc.assessment}`);
       }
+      p.push('');
     }
 
+    // Risk factors
+    const risks = [];
+    if (roi.downtime_cost > 0) risks.push(`Revenue loss of ${eur(roi.downtime_cost)} during ${tl.weeks_min || '?'}\u2013${tl.weeks_max || '?'} week construction period`);
+    if (impact.service_continuity?.risk_level === 'high') risks.push(`High service continuity risk \u2014 ${impact.service_continuity.assessment}`);
+    if (impact.staffing?.delta_fte > 1) risks.push(`Staffing increase of ${impact.staffing.delta_fte} FTE (${eur(impact.staffing.annual_cost_delta)}/yr ongoing)`);
+    if (roi.roi_5yr_pct != null && roi.roi_5yr_pct < 0) risks.push(`Negative 5-year ROI (${roi.roi_5yr_pct}%) \u2014 non-financial benefits must justify`);
+    if (risks.length) {
+      hr();
+      p.push('#### Risk Factors\n');
+      for (const r of risks) p.push(`- ${r}`);
+    }
+
+  // ════════════════════════════════════════════════════════════════
   } else if (activeTab === 'timeline') {
-    // ── Deep-dive Timeline ──
-    const tl = option.timeline;
-    if (!tl) return parts.join('\n');
+  // ════════════════════════════════════════════════════════════════
 
-    parts.push(`**Project Timeline:** ${tl.total}\n`);
+    // Executive summary
+    p.push(`> Estimated **${tl.total || '?'}** from mobilisation to handover. Room unavailable throughout.`);
+    p.push('');
 
-    for (const phase of (tl.phases || [])) {
-      parts.push(`**${phase.name}** (${phase.weeks})`);
-      if (phase.description) parts.push(`_${phase.description}_`);
-      if (phase.tasks?.length > 0) {
-        for (const task of phase.tasks) parts.push(`- ${task}`);
+    // Duration factors
+    if (tl.reasons?.length > 0) {
+      p.push('#### Duration Factors\n');
+      for (const r of tl.reasons) p.push(`- ${r}`);
+      p.push('');
+    }
+
+    // Phases — merged schedule + details
+    if (tl.phases?.length > 0) {
+      p.push('#### Project Phases\n');
+      tl.phases.forEach((phase, i) => {
+        p.push(`**${i + 1}. ${phase.name}** \u2014 ${phase.weeks}${phase.responsible ? ` _(${phase.responsible})_` : ''}`);
+        if (phase.description) p.push(`_${phase.description}_`);
+        if (phase.tasks?.length > 0) {
+          for (const task of phase.tasks) p.push(`- ${task}`);
+        }
+        p.push('');
+      });
+    }
+
+    // Resource requirements — bullets
+    if (c.labour) {
+      p.push('#### Resource Requirements\n');
+      for (const [key, label] of [['general_contractor', 'General contractor'], ['specialist_trades', 'Specialist trades'],
+        ['medical_gas_installer', 'Medical gas installer'], ['project_management', 'Project management'],
+        ['health_safety_officer', 'Health & safety officer'], ['clerk_of_works', 'Clerk of works']]) {
+        const item = c.labour[key];
+        if (!item?.amount) continue;
+        const d = item.detail;
+        p.push(`- **${label}** \u2014 ${d?.weeks ? d.weeks + ' weeks' : '-'}, ${d?.workers || '-'} workers \u2014 ${eur(item.amount)}`);
       }
-      if (phase.responsible) parts.push(`Responsible: ${phase.responsible}`);
-      parts.push('');
+      p.push(`- **Total labour** \u2014 ${eur(c.labour.subtotal)}`);
+      p.push('');
     }
 
-    parts.push(`_Room will be unavailable for **${tl.weeks_min} to ${tl.weeks_max} weeks** during conversion. Coordinate with floor operations to minimise disruption._`);
-
-    // Add cost context
-    const c = option.cost_breakdown;
-    if (c?.downtime_cost > 0) {
-      parts.push(`\n_Estimated revenue loss during downtime: ${eur(c.downtime_cost)}_`);
+    // Payment milestones — bullets
+    if (c.financial_structure?.payment_milestones?.length > 0) {
+      p.push('#### Payment Milestones\n');
+      for (const m of c.financial_structure.payment_milestones) {
+        p.push(`- **${m.stage}** \u2014 ${m.pct}% (${eur(m.amount)})`);
+      }
+      p.push('');
     }
 
+    hr();
+
+    // Disruption impact
+    p.push('#### Disruption Impact\n');
+    if (roi.downtime_cost > 0) p.push(`- Revenue loss during works: **${eur(roi.downtime_cost)}**${re.downtime_cost ? ` \u2014 ${re.downtime_cost}` : ''}`);
+    if (c.disruption?.subtotal > 0) p.push(`- Operational disruption costs: **${eur(c.disruption.subtotal)}** \u2014 relocation, signage, IT, retraining`);
+    p.push(`- Room unavailable for **${tl.weeks_min || '?'}\u2013${tl.weeks_max || '?'} weeks** \u2014 coordinate with floor operations`);
+
+  // ════════════════════════════════════════════════════════════════
   } else if (activeTab === 'furnishings') {
-    // ── Deep-dive Furnishings ──
-    const delta = option.furnishing_delta;
-    if (!delta) return parts.join('\n');
+  // ════════════════════════════════════════════════════════════════
 
-    parts.push('**Furnishing Transition Plan:**\n');
-
-    if (delta.keep?.length > 0) {
-      parts.push('_Assets retained (no cost, carried over from current layout):_');
-      for (const f of delta.keep) parts.push(`- ${f.quantity}\u00D7 ${f.label}`);
-      parts.push('');
-    }
-
-    if (delta.remove?.length > 0) {
-      parts.push('_Assets to remove / relocate:_');
-      for (const f of delta.remove) parts.push(`- ${f.quantity}\u00D7 ${f.label}`);
-      parts.push('');
-    }
-
-    if (delta.add?.length > 0) {
-      parts.push('_New assets to procure:_');
-      let addTotal = 0;
-      for (const f of delta.add) {
-        const cost = f.unit_cost * f.quantity;
-        addTotal += cost;
-        parts.push(`- ${f.quantity}\u00D7 ${f.label}${cost > 0 ? `, ${eur(cost)}` : ''}`);
-      }
-      if (addTotal > 0) {
-        parts.push(`\n**Total furnishing procurement: ${eur(addTotal)}**`);
-      }
-      parts.push('');
-    }
-
-    const keepCount = delta.keep?.length || 0;
-    const removeCount = delta.remove?.length || 0;
-    const addCount = delta.add?.length || 0;
+    const keep = delta.keep || [];
+    const remove = delta.remove || [];
+    const add = delta.add || [];
+    const keepCount = keep.length;
+    const removeCount = remove.length;
+    const addCount = add.length;
     const totalItems = keepCount + removeCount + addCount;
-    const reuseRate = totalItems > 0 ? Math.round((keepCount / totalItems) * 100) : 0;
-    parts.push(`_Asset reuse rate: **${reuseRate}%** (${keepCount} kept, ${removeCount} removed, ${addCount} new)_`);
+    const reuseRate = totalItems > 0 ? Math.round(keepCount / totalItems * 100) : 0;
+    const addTotal = add.reduce((s, f) => s + (f.unit_cost || 0) * (f.quantity || 0), 0);
+    const removeQty = remove.reduce((s, f) => s + (f.quantity || 0), 0);
+    const addQty = add.reduce((s, f) => s + (f.quantity || 0), 0);
+    const keepQty = keep.reduce((s, f) => s + (f.quantity || 0), 0);
+
+    // Executive summary
+    p.push(`> ${reuseRate}% asset reuse rate. ${keepCount} item types retained, ${removeCount} removed, ${addCount} new to procure. Total procurement: **${eur(addTotal)}**.`);
+    p.push('');
+
+    // Transition summary — bullets
+    p.push('#### Transition Summary\n');
+    p.push(`- **Items retained** \u2014 ${keepCount} types (${keepQty} units)`);
+    p.push(`- **Items to remove** \u2014 ${removeCount} types (${removeQty} units)`);
+    p.push(`- **Items to procure** \u2014 ${addCount} types (${addQty} units)`);
+    p.push(`- **Reuse rate** \u2014 ${reuseRate}%`);
+    p.push(`- **Procurement cost** \u2014 ${eur(addTotal)}`);
+    if (c.furnishing) p.push(`- **Removal & disposal** \u2014 ${eur(itemAmt(c.furnishing.removal))}`);
+    if (c.furnishing) p.push(`- **Installation** \u2014 ${eur(itemAmt(c.furnishing.installation))}`);
+    if (c.furnishing) p.push(`- **Furnishing subtotal** \u2014 **${eur(c.furnishing.subtotal)}**`);
+    p.push('');
+
+    // Retained assets — bullets
+    if (keepCount > 0) {
+      p.push('#### Retained Assets\n');
+      p.push('_Carried over from current layout \u2014 no procurement required._\n');
+      for (const f of keep) p.push(`- ${f.quantity}\u00D7 ${f.label}`);
+      p.push('');
+    }
+
+    // Assets to remove — bullets
+    if (removeCount > 0) {
+      p.push('#### Assets to Remove\n');
+      p.push('_Relocated, stored, or disposed. Disposal cost included in furnishing removal line._\n');
+      for (const f of remove) p.push(`- ${f.quantity}\u00D7 ${f.label}`);
+      p.push('');
+    }
+
+    // New procurement — bullets
+    if (addCount > 0) {
+      p.push('#### New Procurement\n');
+      for (const f of add) {
+        const cost = (f.unit_cost || 0) * (f.quantity || 0);
+        p.push(`- ${f.quantity}\u00D7 **${f.label}** \u2014 ${f.unit_cost ? `${eur(f.unit_cost)}/ea` : 'included'}${cost > 0 ? ` \u2014 ${eur(cost)}` : ''}`);
+      }
+      p.push(`- **Total procurement** \u2014 **${eur(addTotal)}**`);
+      p.push('');
+    }
+
+    // Vendor concessions — bullets
+    if (c.vendor_concessions && c.vendor_concessions.subtotal < 0) {
+      p.push('#### Vendor Concessions Applied\n');
+      p.push('_These savings offset the procurement cost above._\n');
+      for (const [key, label] of [['framework_discount', 'Framework discount'], ['trade_in_credit', 'Trade-in credit'],
+        ['bulk_procurement', 'Bulk procurement'], ['warranty_transfer', 'Warranty transfer'], ['reuse_savings', 'Asset reuse']]) {
+        const item = c.vendor_concessions[key];
+        if (!item || item.amount === 0) continue;
+        const vendor = item.vendor ? ` _(${item.vendor})_` : '';
+        p.push(`- **${label}** \u2014 -${eur(Math.abs(item.amount))}${vendor}`);
+      }
+      p.push(`- **Total savings** \u2014 -${eur(Math.abs(c.vendor_concessions.subtotal))}`);
+      if (c.vendor_concessions.net_furnishing_cost != null) {
+        p.push(`\n_Net furnishing cost after concessions: **${eur(c.vendor_concessions.net_furnishing_cost)}**_`);
+      }
+      p.push('');
+    }
+
+    hr();
+    p.push(`_Procurement lead times may affect the project timeline (currently ${tl.total || '?'}). Coordinate with vendors early._`);
   }
 
-  return parts.join('\n');
+  return p.join('\n');
 }
 

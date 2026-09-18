@@ -413,7 +413,7 @@ export default function SpaceToolkit() {
               area_m2={s.area_m2}
               onClose={() => setRepurposeOpen(false)}
               onInjectChat={(option, activeTab) => {
-                const text = buildRepurposeResponse(option, s.space_name, activeFloorId, activeTab);
+                const text = buildRepurposeResponse(option, s.space_name, activeFloorId, activeTab, s.primary_function, s.area_m2);
                 const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 useStore.getState().addMessage({ role: 'delta', text, time: now });
               }}
