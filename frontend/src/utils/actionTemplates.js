@@ -584,61 +584,287 @@ export function buildRepurposeResponse(option, spaceName, floorId, activeTab = '
 
     parts.push('**Full Project Cost Breakdown:**\n');
 
-    // Renovation
+    // Cost drivers context
+    if (c.cost_drivers?.length > 0) {
+      parts.push('_Cost Analysis Context:_');
+      for (const d of c.cost_drivers) parts.push(`- ${d}`);
+      parts.push('');
+    }
+
+    // Helper: extract amount/explanation from sub-items that may be {amount, explanation} or plain number
+    const itemAmt = (v) => typeof v === 'object' && v ? (v.amount || 0) : (v || 0);
+    const itemExpl = (v) => typeof v === 'object' && v ? v.explanation : null;
+
+    // 1. Renovation
     if (c.renovation) {
-      parts.push('**1. Renovation Works** \u2014 ' + eur(c.renovation.subtotal));
-      if (c.renovation.paint_flooring) parts.push(`   - Paint & flooring: ${eur(c.renovation.paint_flooring)}`);
-      if (c.renovation.ceiling_walls) parts.push(`   - Ceiling & walls: ${eur(c.renovation.ceiling_walls)}`);
-      if (c.renovation.mep_services) parts.push(`   - MEP services: ${eur(c.renovation.mep_services)}`);
+      parts.push(`**1. Renovation Works** - ${eur(c.renovation.subtotal)}`);
+      for (const [k, label] of [['paint_flooring', 'Paint & flooring'], ['ceiling_walls', 'Ceiling & walls'], ['mep_services', 'MEP services']]) {
+        const raw = c.renovation[k];
+        const amt = itemAmt(raw);
+        if (!amt) continue;
+        let line = `   - ${label}: ${eur(amt)}`;
+        const ex = itemExpl(raw);
+        if (ex) line += ` - _${ex}_`;
+        parts.push(line);
+      }
+      if (c.renovation.explanation) parts.push(`   _${c.renovation.explanation}_`);
       parts.push('');
     }
 
-    // Furnishings
+    // 2. Furnishings
     if (c.furnishing) {
-      parts.push('**2. Furnishings** \u2014 ' + eur(c.furnishing.subtotal));
-      if (c.furnishing.removal) parts.push(`   - Removal & disposal: ${eur(c.furnishing.removal)}`);
-      if (c.furnishing.new_purchase) parts.push(`   - New purchase: ${eur(c.furnishing.new_purchase)}`);
-      if (c.furnishing.installation) parts.push(`   - Installation & fitting: ${eur(c.furnishing.installation)}`);
+      parts.push(`**2. Furnishings** - ${eur(c.furnishing.subtotal)}`);
+      for (const [k, label] of [['removal', 'Removal & disposal'], ['new_purchase', 'New purchase'], ['installation', 'Installation & fitting']]) {
+        const raw = c.furnishing[k];
+        const amt = itemAmt(raw);
+        if (!amt) continue;
+        let line = `   - ${label}: ${eur(amt)}`;
+        const ex = itemExpl(raw);
+        if (ex) line += ` - _${ex}_`;
+        parts.push(line);
+      }
       parts.push('');
     }
 
-    // Infrastructure
+    // 3. Vendor Concessions & Savings
+    if (c.vendor_concessions) {
+      const vc = c.vendor_concessions;
+      parts.push(`**3. Vendor Concessions & Savings** - ${eur(Math.abs(vc.subtotal || 0))} (savings)`);
+      const vcItems = [
+        { key: 'framework_discount', label: 'Framework agreement discount' },
+        { key: 'trade_in_credit', label: 'Equipment trade-in credit' },
+        { key: 'bulk_procurement', label: 'Volume procurement discount' },
+        { key: 'warranty_transfer', label: 'Warranty transfer savings' },
+        { key: 'reuse_savings', label: 'Asset reuse savings' },
+      ];
+      for (const { key, label } of vcItems) {
+        const item = vc[key];
+        if (!item || item.amount === 0) continue;
+        let line = `   - ${label}: -${eur(Math.abs(item.amount))}`;
+        if (item.vendor) line += ` _(${item.vendor}${item.vendor_status ? `, ${item.vendor_status}` : ''})_`;
+        if (item.explanation) line += ` - ${item.explanation}`;
+        parts.push(line);
+      }
+      if (vc.net_furnishing_cost != null) {
+        parts.push(`   Net furnishing cost after concessions: ${eur(vc.net_furnishing_cost)}`);
+      }
+      parts.push('');
+    }
+
+    // 4. Infrastructure
     if (c.infrastructure) {
-      parts.push('**3. Infrastructure** \u2014 ' + eur(c.infrastructure.subtotal));
+      parts.push(`**4. Infrastructure** - ${eur(c.infrastructure.subtotal)}`);
+      const infraLabels = { medical_gas: 'Medical gas install', nurse_call: 'Nurse call install',
+        hvac_upgrade: 'HVAC upgrade (surgical)', plumbing: 'Plumbing / new sink',
+        data_cabling: 'Data cabling point' };
       for (const [k, v] of Object.entries(c.infrastructure)) {
-        if (k === 'subtotal' || !v) continue;
-        const label = { medical_gas: 'Medical gas install', nurse_call: 'Nurse call install',
-          hvac_upgrade: 'HVAC upgrade (surgical)', plumbing: 'Plumbing / new sink',
-          data_cabling: 'Data cabling point' }[k] || k;
-        parts.push(`   - ${label}: ${eur(v)}`);
+        if (k === 'subtotal' || k === 'explanation' || !v) continue;
+        const amt = itemAmt(v);
+        if (!amt) continue;
+        const label = infraLabels[k] || k.replace(/_/g, ' ');
+        let line = `   - ${label}: ${eur(amt)}`;
+        const ex = itemExpl(v);
+        if (ex) line += ` - _${ex}_`;
+        parts.push(line);
       }
+      if (c.infrastructure.explanation) parts.push(`   _${c.infrastructure.explanation}_`);
       parts.push('');
     }
 
-    // Compliance
+    // 4b. Compliance
     if (c.compliance) {
-      parts.push('**4. Compliance & Permits** \u2014 ' + eur(c.compliance.subtotal));
-      for (const [k, v] of Object.entries(c.compliance)) {
-        if (k === 'subtotal' || !v) continue;
-        const label = { fire_safety_review: 'Fire safety review', accessibility_audit: 'Accessibility audit',
-          infection_control: 'Infection control review', permitting_fees: 'Permitting & approvals',
-          environmental_review: 'Environmental assessment' }[k] || k;
-        parts.push(`   - ${label}: ${eur(v)}`);
+      parts.push(`**4b. Compliance** - ${eur(c.compliance.subtotal)}`);
+      const complianceLabels = {
+        fire_safety_review: 'Fire safety review', accessibility_audit: 'Accessibility audit',
+        infection_control: 'Infection control review', permitting_fees: 'Permitting & approvals',
+        environmental_review: 'Environmental assessment',
+      };
+      for (const [k, label] of Object.entries(complianceLabels)) {
+        const raw = c.compliance[k];
+        const amt = itemAmt(raw);
+        if (!amt) continue;
+        let line = `   - ${label}: ${eur(amt)}`;
+        const ex = itemExpl(raw);
+        if (ex) line += ` - _${ex}_`;
+        parts.push(line);
+      }
+      if (c.compliance.explanation) parts.push(`   _${c.compliance.explanation}_`);
+      parts.push('');
+    }
+
+    // 5. Labour & Human Resources
+    if (c.labour) {
+      parts.push(`**5. Labour & Human Resources** - ${eur(c.labour.subtotal)}`);
+      const labourItems = [
+        { key: 'general_contractor', label: 'General contractor' },
+        { key: 'specialist_trades', label: 'Specialist trades' },
+        { key: 'medical_gas_installer', label: 'Medical gas installer' },
+        { key: 'project_management', label: 'Project management' },
+        { key: 'health_safety_officer', label: 'Health & safety officer' },
+        { key: 'clerk_of_works', label: 'Clerk of works' },
+      ];
+      for (const { key, label } of labourItems) {
+        const item = c.labour[key];
+        if (!item || !item.amount) continue;
+        let line = `   - ${label}: ${eur(item.amount)}`;
+        const d = item.detail;
+        if (d) {
+          if (d.workers && d.weeks && d.rate) {
+            line += ` (${d.workers} workers x ${d.weeks} weeks @ ${eur(d.rate)}/week)`;
+          } else if (d.explanation) {
+            line += ` - ${d.explanation}`;
+          }
+        }
+        parts.push(line);
       }
       parts.push('');
     }
 
+    // 6. Commune & Municipal Permits
+    if (c.commune_permits) {
+      parts.push(`**6. Commune & Municipal Permits** - ${eur(c.commune_permits.subtotal)}`);
+      const permitItems = [
+        { key: 'building_permit', label: 'Building permit' },
+        { key: 'change_of_use', label: 'Change of use permit' },
+        { key: 'fire_inspection', label: 'Fire inspection' },
+        { key: 'health_authority', label: 'Health authority approval' },
+        { key: 'occupation_certificate', label: 'Occupation certificate' },
+        { key: 'environmental_clearance', label: 'Environmental clearance' },
+      ];
+      for (const { key, label } of permitItems) {
+        const item = c.commune_permits[key];
+        if (!item || !item.amount) continue;
+        let line = `   - ${label}: ${eur(item.amount)}`;
+        const d = item.detail;
+        if (d) {
+          if (d.processing_weeks) line += ` (${d.processing_weeks} weeks processing)`;
+          if (d.explanation) line += ` - ${d.explanation}`;
+        }
+        parts.push(line);
+      }
+      parts.push('');
+    }
+
+    // 7. Commissioning & Handover
+    if (c.commissioning) {
+      parts.push(`**7. Commissioning & Handover** - ${eur(c.commissioning.subtotal)}`);
+      const commItems = [
+        { key: 'systems_testing', label: 'Systems testing' },
+        { key: 'infection_control_clean', label: 'Infection control clean' },
+        { key: 'snagging', label: 'Snagging & defects' },
+        { key: 'equipment_calibration', label: 'Equipment calibration' },
+        { key: 'as_built_docs', label: 'As-built documentation' },
+        { key: 'staff_orientation', label: 'Staff orientation' },
+      ];
+      for (const { key, label } of commItems) {
+        const item = c.commissioning[key];
+        if (!item || !item.amount) continue;
+        let line = `   - ${label}: ${eur(item.amount)}`;
+        if (item.explanation) line += ` - ${item.explanation}`;
+        parts.push(line);
+      }
+      parts.push('');
+    }
+
+    // 8. Operational Disruption
+    if (c.disruption) {
+      parts.push(`**8. Operational Disruption** - ${eur(c.disruption.subtotal)}`);
+      const disruptItems = [
+        { key: 'temporary_relocation', label: 'Temporary relocation' },
+        { key: 'wayfinding_signage', label: 'Wayfinding & signage' },
+        { key: 'it_reconfiguration', label: 'IT reconfiguration' },
+        { key: 'staff_retraining', label: 'Staff retraining' },
+        { key: 'adjacent_mitigation', label: 'Adjacent area mitigation' },
+        { key: 'patient_scheduling', label: 'Patient scheduling' },
+        { key: 'communication_plan', label: 'Communication plan' },
+      ];
+      for (const { key, label } of disruptItems) {
+        const item = c.disruption[key];
+        if (!item || !item.amount) continue;
+        let line = `   - ${label}: ${eur(item.amount)}`;
+        if (item.explanation) line += ` - ${item.explanation}`;
+        parts.push(line);
+        if (item.justification) parts.push(`     _Justification: ${item.justification}_`);
+      }
+      parts.push('');
+    }
+
+    // CAPEX total
     parts.push(`**Capital Expenditure (CAPEX):** ${eur(c.total_capex)}\n`);
 
-    // Additional project costs
-    parts.push('**Additional Project Costs:**');
+    // Contingency Breakdown table
+    if (c.contingency_breakdown) {
+      const cb = c.contingency_breakdown;
+      const totalPct = cb.total_rate != null ? Math.round(cb.total_rate * 100) : '';
+      parts.push(`**Contingency Breakdown** (${totalPct}%)`);
+      parts.push('| Component | Rate | Amount | Rationale |');
+      parts.push('|---|:---:|---:|---|');
+      const cbItems = [
+        { key: 'base', label: 'Base contingency' },
+        { key: 'complexity', label: 'Complexity premium' },
+        { key: 'regulatory', label: 'Regulatory risk' },
+        { key: 'supply_chain', label: 'Supply chain' },
+      ];
+      for (const { key, label } of cbItems) {
+        const item = cb[key];
+        if (!item) continue;
+        const rate = item.rate != null ? `${Math.round(item.rate * 100)}%` : '';
+        parts.push(`| ${label} | ${rate} | ${eur(item.amount)} | ${item.explanation || ''} |`);
+      }
+      parts.push(`| **Total** | **${totalPct}%** | **${eur(cb.total)}** | |`);
+      parts.push('');
+    }
+
+    // Design fees
     parts.push(`- Design & professional fees (6%): ${eur(c.design_fees)}`);
-    parts.push(`- Contingency reserve (12%): ${eur(c.contingency)}`);
-    if (c.downtime_cost > 0) parts.push(`- Revenue loss during works: ${eur(c.downtime_cost)}`);
     parts.push('');
 
+    // Total Project Cost
     parts.push(`### Total Project Cost: ${eur(c.total_project_cost || c.total_capex)}`);
     if (c.cost_per_m2) parts.push(`_${eur(c.cost_per_m2)} per m\u00B2_`);
+    parts.push('');
+
+    // Financial Structure
+    if (c.financial_structure) {
+      const fs = c.financial_structure;
+      parts.push('**Financial Structure:**');
+
+      // Payment milestones table
+      if (fs.payment_milestones?.length > 0) {
+        parts.push('| Payment Stage | % | Amount |');
+        parts.push('|---|:---:|---:|');
+        for (const m of fs.payment_milestones) {
+          parts.push(`| ${m.stage} | ${m.pct}% | ${eur(m.amount)} |`);
+        }
+        if (fs.retention) {
+          parts.push(`| Retention | ${fs.retention.pct}% | ${eur(fs.retention.amount)} |`);
+        }
+        parts.push('');
+      }
+
+      // Retention detail
+      if (fs.retention) {
+        parts.push(`- Retention: ${eur(fs.retention.amount)} withheld for ${fs.retention.period_months}-month defects liability period`);
+      }
+
+      // CAPEX/OPEX split
+      if (fs.capex_opex_split) {
+        parts.push(`- CAPEX/OPEX split: ${eur(fs.capex_opex_split.capex)} capital / ${eur(fs.capex_opex_split.opex)} operational`);
+      }
+
+      // VAT
+      if (fs.vat) {
+        let vatLine = `- VAT (${fs.vat.rate}%): ${eur(fs.vat.amount)}`;
+        if (fs.vat.note) vatLine += ` - ${fs.vat.note}`;
+        parts.push(vatLine);
+      }
+
+      // Depreciation
+      if (fs.depreciation) {
+        const dep = fs.depreciation;
+        parts.push(`- Depreciation: Fit-out ${eur(dep.fitout_annual)}/yr (${dep.fitout_years}yr), Furnishings ${eur(dep.furnishing_annual)}/yr (${dep.furnishing_years}yr)`);
+      }
+    }
 
   } else if (activeTab === 'roi') {
     // ── Deep-dive ROI ──
@@ -647,28 +873,56 @@ export function buildRepurposeResponse(option, spaceName, floorId, activeTab = '
     const c = option.cost_breakdown;
     if (!roi) return parts.join('\n');
 
+    const totalInvestment = roi.total_investment || c?.total_project_cost || c?.total_capex || 0;
+
     parts.push('**Financial Impact Analysis:**\n');
 
     // Key metrics
-    parts.push('| Metric | Value |');
-    parts.push('|---|---|');
-    parts.push(`| Net annual impact | **${sign(roi.net_annual_delta)}${eur(roi.net_annual_delta)}/yr** |`);
-    parts.push(`| Total investment | ${eur(c?.total_project_cost || c?.total_capex)} |`);
-    parts.push(`| Payback period | ${roi.payback_months ? `${roi.payback_months} months` : 'Non-revenue investment'} |`);
-    if (roi.roi_5yr_pct != null) parts.push(`| 5-year ROI | ${sign(roi.roi_5yr_pct)}${roi.roi_5yr_pct}% |`);
+    const re = roi.explanations || {};
+    parts.push('| Metric | Value | Rationale |');
+    parts.push('|---|---|---|');
+    parts.push(`| Net annual impact | **${sign(roi.net_annual_delta)}${eur(roi.net_annual_delta)}/yr** | ${re.net_annual_delta || ''} |`);
+    parts.push(`| Total investment | ${eur(totalInvestment)} | ${re.total_investment || ''} |`);
+    parts.push(`| Payback period | ${roi.payback_months ? `${roi.payback_months} months` : 'Non-revenue investment'} | ${re.payback || ''} |`);
+    if (roi.roi_5yr_pct != null) parts.push(`| 5-year ROI | ${sign(roi.roi_5yr_pct)}${roi.roi_5yr_pct}% | ${re.roi_5yr || ''} |`);
     parts.push('');
+
+    // Investment breakdown (items may be {amount, explanation} objects)
+    const ib = roi.investment_breakdown;
+    if (ib) {
+      const ibAmt = (k) => {
+        const v = ib[k];
+        if (!v) return 0;
+        return typeof v === 'object' && 'amount' in v ? v.amount : v;
+      };
+      const ibExpl = (k) => {
+        const v = ib[k];
+        return typeof v === 'object' ? v.explanation : null;
+      };
+      parts.push('**Investment Breakdown:**\n');
+      parts.push('| Component | Amount | Rationale |');
+      parts.push('|---|---:|---|');
+      if (ibAmt('capex') > 0) parts.push(`| Capital expenditure | ${eur(ibAmt('capex'))} | ${ibExpl('capex') || ''} |`);
+      if (ibAmt('design_fees') > 0) parts.push(`| Design & professional fees | ${eur(ibAmt('design_fees'))} | ${ibExpl('design_fees') || ''} |`);
+      if (ibAmt('contingency') > 0) parts.push(`| Contingency reserve | ${eur(ibAmt('contingency'))} | ${ibExpl('contingency') || ''} |`);
+      if (ibAmt('disruption') > 0) parts.push(`| Operational disruption | ${eur(ibAmt('disruption'))} | ${ibExpl('disruption') || ''} |`);
+      if (ibAmt('commune_permits') > 0) parts.push(`| Commune & municipal permits | ${eur(ibAmt('commune_permits'))} | ${ibExpl('commune_permits') || ''} |`);
+      if (ibAmt('vendor_concessions') < 0) parts.push(`| Vendor concessions (savings) | ${eur(ibAmt('vendor_concessions'))} | ${ibExpl('vendor_concessions') || ''} |`);
+      parts.push(`| **Total project investment** | **${eur(totalInvestment)}** | |`);
+      parts.push('');
+    }
 
     // Revenue comparison
     parts.push('**Revenue & Operating Cost Comparison:**\n');
-    parts.push('| | Current | After Conversion | Change |');
-    parts.push('|---|---|---|---|');
-    parts.push(`| Annual revenue | ${eur(roi.annual_revenue_current)} | ${eur(roi.annual_revenue_target)} | ${sign(roi.annual_revenue_delta)}${eur(roi.annual_revenue_delta)} |`);
-    parts.push(`| Annual OPEX | ${eur(roi.annual_opex_current)} | ${eur(roi.annual_opex_target)} | ${sign(roi.annual_opex_delta)}${eur(roi.annual_opex_delta)} |`);
-    parts.push(`| **Net annual** | | | **${sign(roi.net_annual_delta)}${eur(roi.net_annual_delta)}** |`);
+    parts.push('| | Current | After Conversion | Change | Basis |');
+    parts.push('|---|---|---|---|---|');
+    parts.push(`| Annual revenue | ${eur(roi.annual_revenue_current)} | ${eur(roi.annual_revenue_target)} | ${sign(roi.annual_revenue_delta)}${eur(roi.annual_revenue_delta)} | ${re.revenue_delta || ''} |`);
+    parts.push(`| Annual OPEX | ${eur(roi.annual_opex_current)} | ${eur(roi.annual_opex_target)} | ${sign(roi.annual_opex_delta)}${eur(roi.annual_opex_delta)} | ${re.opex_delta || ''} |`);
+    parts.push(`| **Net annual** | | | **${sign(roi.net_annual_delta)}${eur(roi.net_annual_delta)}** | |`);
     parts.push('');
 
     if (roi.downtime_cost > 0) {
-      parts.push(`_Revenue lost during ${c?.total_project_cost ? 'works' : 'renovation'}: ${eur(roi.downtime_cost)}_\n`);
+      parts.push(`_Revenue lost during works: ${eur(roi.downtime_cost)} - ${re.downtime_cost || ''}_\n`);
     }
 
     if (roi.roi_narrative) {
@@ -679,16 +933,22 @@ export function buildRepurposeResponse(option, spaceName, floorId, activeTab = '
     if (impact) {
       parts.push('**Operational Impact:**\n');
       if (impact.care_capacity) {
-        parts.push(`- **Care capacity:** ${impact.care_capacity.assessment} (${impact.care_capacity.current_beds} \u2192 ${impact.care_capacity.projected_beds} beds)`);
+        let line = `- **Care capacity:** ${impact.care_capacity.assessment} (${impact.care_capacity.current_beds} \u2192 ${impact.care_capacity.projected_beds} beds)`;
+        if (impact.care_capacity.explanation) line += ` _${impact.care_capacity.explanation}_`;
+        parts.push(line);
       }
       if (impact.staffing) {
-        parts.push(`- **Staffing:** ${sign(impact.staffing.delta_fte)}${impact.staffing.delta_fte} FTE (${impact.staffing.current_fte} \u2192 ${impact.staffing.projected_fte})${impact.staffing.annual_cost_delta !== 0 ? ` \u2014 annual cost: ${sign(impact.staffing.annual_cost_delta)}${eur(impact.staffing.annual_cost_delta)}` : ''}`);
+        let line = `- **Staffing:** ${sign(impact.staffing.delta_fte)}${impact.staffing.delta_fte} FTE (${impact.staffing.current_fte} \u2192 ${impact.staffing.projected_fte})${impact.staffing.annual_cost_delta !== 0 ? ` - annual cost: ${sign(impact.staffing.annual_cost_delta)}${eur(impact.staffing.annual_cost_delta)}` : ''}`;
+        if (impact.staffing.explanation) line += ` _${impact.staffing.explanation}_`;
+        parts.push(line);
       }
       if (impact.occupancy) {
-        parts.push(`- **Occupancy:** ${impact.occupancy.current} \u2192 ${impact.occupancy.projected} persons (${sign(impact.occupancy.delta)}${impact.occupancy.delta}), density ${impact.occupancy.current_density} \u2192 ${impact.occupancy.projected_density} persons/m\u00B2`);
+        let line = `- **Occupancy:** ${impact.occupancy.current} \u2192 ${impact.occupancy.projected} persons (${sign(impact.occupancy.delta)}${impact.occupancy.delta}), density ${impact.occupancy.current_density} \u2192 ${impact.occupancy.projected_density} persons/m\u00B2`;
+        if (impact.occupancy.explanation) line += ` _${impact.occupancy.explanation}_`;
+        parts.push(line);
       }
       if (impact.service_continuity) {
-        parts.push(`- **Service continuity risk:** ${impact.service_continuity.risk_level} \u2014 ${impact.service_continuity.assessment}`);
+        parts.push(`- **Service continuity risk:** ${impact.service_continuity.risk_level} - ${impact.service_continuity.assessment}`);
       }
     }
 

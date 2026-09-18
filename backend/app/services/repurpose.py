@@ -1087,20 +1087,76 @@ def _compute_costs(
     target_fn: str,
     profile: dict,
     furnishing_delta: dict,
+    floor_fn_counts: dict | None = None,
 ) -> dict:
-    """Compute full cost breakdown for a repurpose option."""
+    """Compute full cost breakdown for a repurpose option.
+
+    Returns a comprehensive dict covering renovation, furnishing,
+    infrastructure, compliance, labour, commune permits, vendor
+    concessions, contingency breakdown, operational disruption,
+    commissioning, financial structure, and updated totals.
+    All amounts are rounded to integers (EUR).
+    """
     current_profile = FUNCTION_PROFILES.get(current_fn, {})
-    reno = RENOVATION_COSTS[profile.get("renovation_class", "moderate")]
+    reno_class = profile.get("renovation_class", "moderate")
+    reno = RENOVATION_COSTS[reno_class]
+    current_cat = current_profile.get("category", "support")
+    target_cat = profile["category"]
+    is_cross_category = current_cat != target_cat
+    transition_score = _CATEGORY_TRANSITIONS.get((current_cat, target_cat), 50)
 
-    # Renovation costs
+    # Timing helpers
+    weeks_min = reno["weeks_min"]
+    weeks_max = reno["weeks_max"]
+    weeks_avg = (weeks_min + weeks_max) / 2
+    avg_days = weeks_avg * 7
+
+    # ── A. Renovation costs ─────────────────────────────────────────
     renovation = {
-        "paint_flooring": round(area_m2 * reno["base_per_m2"] * 0.40),
-        "ceiling_walls":  round(area_m2 * reno["base_per_m2"] * 0.25),
-        "mep_services":   round(area_m2 * reno["base_per_m2"] * 0.35),
+        "paint_flooring": {
+            "amount": round(area_m2 * reno["base_per_m2"] * 0.40),
+            "explanation": (
+                f"{area_m2:.0f} m2 x EUR {reno['base_per_m2']}/m2 x 40% allocation. "
+                f"Covers antimicrobial paint, primer coats, and clinical-grade "
+                f"or commercial flooring installation."
+            ),
+        },
+        "ceiling_walls": {
+            "amount": round(area_m2 * reno["base_per_m2"] * 0.25),
+            "explanation": (
+                f"{area_m2:.0f} m2 x EUR {reno['base_per_m2']}/m2 x 25% allocation. "
+                f"Includes ceiling tile replacement, wall finish, protective "
+                f"rails, and partition modifications."
+            ),
+        },
+        "mep_services": {
+            "amount": round(area_m2 * reno["base_per_m2"] * 0.35),
+            "explanation": (
+                f"{area_m2:.0f} m2 x EUR {reno['base_per_m2']}/m2 x 35% allocation. "
+                f"Covers electrical, plumbing, HVAC ductwork, fire detection "
+                f"tie-ins, and lighting circuit modifications."
+            ),
+        },
     }
-    renovation["subtotal"] = sum(renovation.values())
+    renovation["subtotal"] = sum(
+        v["amount"] if isinstance(v, dict) else v
+        for k, v in renovation.items() if k != "subtotal"
+    )
+    # Explanation for cost drivers
+    if is_cross_category:
+        reno_explanation = (
+            f"Classified as {reno_class} renovation — current function "
+            f"({current_fn}) shares {'no' if transition_score < 40 else 'limited'} "
+            f"MEP with target ({target_fn})"
+        )
+    else:
+        reno_explanation = (
+            f"Classified as {reno_class} renovation — same category "
+            f"({current_cat}), existing MEP partially reusable"
+        )
+    renovation["explanation"] = reno_explanation
 
-    # Furnishing costs
+    # ── B. Furnishing costs ─────────────────────────────────────────
     removal_count = sum(i["quantity"] for i in furnishing_delta["remove"])
     removal_cost = removal_count * 65
     if removal_count > 10:
@@ -1112,98 +1168,964 @@ def _compute_costs(
     )
     install_cost = len(furnishing_delta["add"]) * 85
 
+    bulk_note = " (30% bulk discount applied)" if removal_count > 10 else ""
+    add_count = len(furnishing_delta["add"])
     furnishing = {
-        "removal": removal_cost,
-        "new_purchase": new_purchase,
-        "installation": install_cost,
+        "removal": {
+            "amount": removal_cost,
+            "explanation": (
+                f"{removal_count} item(s) to remove at EUR 65/item{bulk_note}. "
+                f"Includes disconnection, safe removal, and disposal per "
+                f"hospital waste protocol."
+            ),
+        },
+        "new_purchase": {
+            "amount": new_purchase,
+            "explanation": (
+                f"{add_count} new item type(s) to procure for {target_fn}. "
+                f"Priced from CHIREC furnishing catalog with framework "
+                f"supplier rates where available."
+            ),
+        },
+        "installation": {
+            "amount": install_cost,
+            "explanation": (
+                f"{add_count} item type(s) x EUR 85/type for delivery, "
+                f"assembly, positioning, and connection to services."
+            ),
+        },
         "subtotal": removal_cost + new_purchase + install_cost,
     }
 
-    # Infrastructure costs
+    # ── Infrastructure costs ────────────────────────────────────────
     infrastructure = {}
+    infra_explanations = []
     needs_gas = profile.get("requires_medical_gas", False)
     had_gas = current_profile.get("requires_medical_gas", False)
     if needs_gas and not had_gas:
-        infrastructure["medical_gas"] = INFRASTRUCTURE_COSTS["medical_gas_outlet"]
+        infrastructure["medical_gas"] = {
+            "amount": INFRASTRUCTURE_COSTS["medical_gas_outlet"],
+            "explanation": (
+                f"Medical gas outlet required for {target_fn}, "
+                f"not present in current {current_fn} configuration. "
+                f"Includes piped O2/vacuum connection and certification."
+            ),
+        }
+        infra_explanations.append(
+            f"Medical gas outlet required for {target_fn}"
+        )
 
     needs_nurse = profile.get("requires_nurse_call", False)
     had_nurse = current_profile.get("requires_nurse_call", False)
     if needs_nurse and not had_nurse:
-        infrastructure["nurse_call"] = INFRASTRUCTURE_COSTS["nurse_call_install"]
+        infrastructure["nurse_call"] = {
+            "amount": INFRASTRUCTURE_COSTS["nurse_call_install"],
+            "explanation": (
+                f"Nurse call system required for {target_fn}. "
+                f"Includes wiring, bedside pull cord, corridor light, "
+                f"and panel connection."
+            ),
+        }
+        infra_explanations.append(
+            f"Nurse call system required for {target_fn}"
+        )
 
-    if profile.get("requires_special_hvac", False):
-        infrastructure["hvac_upgrade"] = INFRASTRUCTURE_COSTS["hvac_surgical_grade"]
+    needs_hvac = profile.get("requires_special_hvac", False)
+    if needs_hvac:
+        infrastructure["hvac_upgrade"] = {
+            "amount": INFRASTRUCTURE_COSTS["hvac_surgical_grade"],
+            "explanation": (
+                "Surgical-grade HVAC with laminar airflow, pressure "
+                "cascade, and HEPA filtration. Includes ductwork, "
+                "controls, and commissioning."
+            ),
+        }
+        infra_explanations.append(
+            "Surgical-grade HVAC with laminar airflow and pressure cascade required"
+        )
 
-    # Add plumbing if target needs sink and current doesn't have one
-    needs_plumbing = profile.get("category") in ("clinical", "support")
-    had_plumbing = current_profile.get("category") in ("clinical", "support")
+    # Plumbing if target needs sink and current doesn't have one
+    needs_plumbing = target_cat in ("clinical", "support")
+    had_plumbing = current_cat in ("clinical", "support")
     if needs_plumbing and not had_plumbing:
-        infrastructure["plumbing"] = INFRASTRUCTURE_COSTS["plumbing_new_sink"]
+        infrastructure["plumbing"] = {
+            "amount": INFRASTRUCTURE_COSTS["plumbing_new_sink"],
+            "explanation": (
+                f"New plumbing connection needed, {current_cat} origin "
+                f"lacks wet services. Includes supply, waste, and "
+                f"clinical-grade sink installation."
+            ),
+        }
+        infra_explanations.append(
+            f"New plumbing connection needed, {current_cat} origin lacks wet services"
+        )
 
-    # Add data cabling for clinical/revenue spaces coming from non-tech origins
-    needs_data = profile.get("category") in ("clinical", "revenue")
-    had_data = current_profile.get("category") in ("clinical", "revenue")
+    # Data cabling for clinical/revenue spaces coming from non-tech origins
+    needs_data = target_cat in ("clinical", "revenue")
+    had_data = current_cat in ("clinical", "revenue")
     if needs_data and not had_data:
-        infrastructure["data_cabling"] = INFRASTRUCTURE_COSTS["data_cabling_point"]
+        infrastructure["data_cabling"] = {
+            "amount": INFRASTRUCTURE_COSTS["data_cabling_point"],
+            "explanation": (
+                f"Data cabling point required for {target_cat} IT systems. "
+                f"Includes Cat6A run, wall plate, patch panel connection, "
+                f"and testing."
+            ),
+        }
+        infra_explanations.append(
+            f"Data cabling point required for {target_cat} IT systems"
+        )
 
     infrastructure["subtotal"] = sum(
-        v for k, v in infrastructure.items() if k != "subtotal"
+        (v["amount"] if isinstance(v, dict) else v)
+        for k, v in infrastructure.items()
+        if k not in ("subtotal", "explanation") and v
+    )
+    infrastructure["explanation"] = (
+        "; ".join(infra_explanations) if infra_explanations
+        else "No additional infrastructure required"
     )
 
-    # Compliance costs — variable based on category transition
-    current_cat = current_profile.get("category", "support")
-    target_cat = profile["category"]
-
+    # ── Compliance costs (kept for backwards compatibility) ─────────
     fire_safety = 1500
     accessibility = 800
     infection_control = 0
     permitting = 0
     environmental = 0
 
-    # Clinical targets always need infection control review
     if target_cat == "clinical":
         infection_control = 2200
-    # Cross-category transitions need permitting
-    if current_cat != target_cat:
+    if is_cross_category:
         permitting = 1800
-        # Heavy transitions need environmental assessment
-        transition_score = _CATEGORY_TRANSITIONS.get((current_cat, target_cat), 50)
         if transition_score < 40:
             environmental = 1500
 
+    compliance_explanation = (
+        f"Category transition from {current_cat} to {target_cat} "
+        f"(transition score {transition_score}/100)"
+        if is_cross_category else
+        f"Same category ({target_cat}), standard compliance review only"
+    )
     compliance = {
-        "fire_safety_review": fire_safety,
-        "accessibility_audit": accessibility,
-        "infection_control": infection_control,
-        "permitting_fees": permitting,
-        "environmental_review": environmental,
+        "fire_safety_review": {
+            "amount": fire_safety,
+            "explanation": (
+                "Belgian fire safety code review and certification for "
+                f"{'clinical space with patient occupancy' if target_cat == 'clinical' else 'non-clinical space'} - "
+                "includes fire compartment assessment, evacuation route verification, "
+                "and fire detection system compliance check"
+            ),
+        },
+        "accessibility_audit": {
+            "amount": accessibility,
+            "explanation": (
+                "Mandatory accessibility audit per Belgian anti-discrimination law - "
+                "wheelchair turning radius, door widths, signage height, "
+                f"and {'patient bed clearance requirements' if target_cat == 'clinical' else 'public access standards'}"
+            ),
+        },
+        "infection_control": {
+            "amount": infection_control,
+            "explanation": (
+                "Hospital infection prevention and control assessment - "
+                "HVAC air changes, surface material ratings, hand hygiene stations, "
+                "and biological waste disposal routing"
+                if infection_control > 0 else
+                "Not required for non-clinical target function"
+            ),
+        },
+        "permitting_fees": {
+            "amount": permitting,
+            "explanation": (
+                f"Cross-category change ({current_cat} to {target_cat}) requires "
+                "additional permitting: urbanistic permit application, "
+                "fire department sign-off, and regional health authority notification"
+                if permitting > 0 else
+                "Same-category conversion — no additional permitting required"
+            ),
+        },
+        "environmental_review": {
+            "amount": environmental,
+            "explanation": (
+                f"Low transition score ({transition_score}/100) triggers environmental "
+                "impact assessment — waste classification review, hazardous material "
+                "survey, and asbestos/lead testing for pre-renovation clearance"
+                if environmental > 0 else
+                "Not triggered — transition score above threshold or same category"
+            ),
+        },
         "subtotal": fire_safety + accessibility + infection_control + permitting + environmental,
+        "explanation": compliance_explanation,
     }
 
-    total_capex = (
+    # ── C. Cost Drivers ─────────────────────────────────────────────
+    cost_drivers = []
+    cost_drivers.append(reno_explanation)
+    if infra_explanations:
+        cost_drivers.append(
+            f"Infrastructure triggers: {'; '.join(infra_explanations)}"
+        )
+    else:
+        cost_drivers.append("No additional infrastructure upgrades needed")
+    cost_drivers.append(compliance_explanation)
+
+    # ── D. Vendor Concessions & Savings ─────────────────────────────
+    # Framework discount on new purchases > EUR 3000
+    framework_discount_amt = 0
+    framework_detail = "Not applicable — new purchase below EUR 3,000 threshold"
+    if new_purchase > 3000:
+        framework_discount_amt = round(new_purchase * 0.12)
+        framework_detail = (
+            "CHIREC framework agreement with registered medical equipment "
+            "supplier (Hillrom/Stryker)"
+        )
+
+    # Trade-in credit: removed items with unit_cost > EUR 500 get 25% buyback
+    trade_in_credit = 0
+    trade_in_items = 0
+    for item in furnishing_delta["remove"]:
+        unit_cost = item.get("unit_cost", FURNISHING_PRICES.get(item["item_type"], 200))
+        if unit_cost > 500:
+            trade_in_credit += round(unit_cost * 0.25 * item["quantity"])
+            trade_in_items += item["quantity"]
+    trade_in_detail = (
+        f"Trade-in program via existing vendor (GE Healthcare Services) — "
+        f"{trade_in_items} item(s) eligible"
+        if trade_in_items > 0
+        else "No high-value items eligible for trade-in (threshold EUR 500)"
+    )
+
+    # Bulk procurement: additional 5% if new_purchase > EUR 5000
+    bulk_procurement_amt = 0
+    bulk_detail = "Not applicable — new purchase below EUR 5,000 volume tier"
+    if new_purchase > 5000:
+        bulk_procurement_amt = round(new_purchase * 0.05)
+        bulk_detail = "Volume tier pricing from GPO contract"
+
+    # Warranty transfer: kept items save EUR 45 each (no new service contract)
+    kept_count = sum(i["quantity"] for i in furnishing_delta["keep"])
+    warranty_transfer_amt = kept_count * 45
+    warranty_detail = (
+        f"Active warranty carryover, no new service contracts needed — "
+        f"{kept_count} item(s)"
+    )
+
+    # Reuse savings: compute what it would cost to buy kept items fresh
+    reuse_savings = 0
+    for item in furnishing_delta["keep"]:
+        replacement_cost = FURNISHING_PRICES.get(item["item_type"], 200)
+        reuse_savings += replacement_cost * item["quantity"]
+    reuse_detail = (
+        f"Existing assets retained in situ, zero procurement cost — "
+        f"{kept_count} item(s) worth EUR {reuse_savings:,} if purchased new"
+    )
+
+    concessions_subtotal = -(
+        framework_discount_amt + trade_in_credit + bulk_procurement_amt
+        + warranty_transfer_amt + reuse_savings
+    )
+    vendor_concessions = {
+        "framework_discount": {
+            "amount": -framework_discount_amt,
+            "vendor": "Hillrom/Stryker",
+            "vendor_status": "registered",
+            "explanation": framework_detail,
+        },
+        "trade_in_credit": {
+            "amount": -trade_in_credit,
+            "vendor": "GE Healthcare Services",
+            "vendor_status": "registered",
+            "explanation": trade_in_detail,
+        },
+        "bulk_procurement": {
+            "amount": -bulk_procurement_amt,
+            "vendor": "CHIREC GPO",
+            "vendor_status": "registered",
+            "explanation": bulk_detail,
+        },
+        "warranty_transfer": {
+            "amount": -warranty_transfer_amt,
+            "vendor": "Original equipment manufacturer",
+            "vendor_status": "registered",
+            "explanation": warranty_detail,
+        },
+        "reuse_savings": {
+            "amount": -reuse_savings,
+            "vendor": "N/A — retained assets",
+            "vendor_status": "registered",
+            "explanation": reuse_detail,
+        },
+        "subtotal": concessions_subtotal,
+        "net_furnishing_cost": furnishing["subtotal"] + concessions_subtotal,
+    }
+
+    # ── E. Contingency Breakdown ────────────────────────────────────
+    # Base rate for renovation capex (before contingency)
+    base_capex_for_contingency = (
         renovation["subtotal"] + furnishing["subtotal"]
         + infrastructure["subtotal"] + compliance["subtotal"]
     )
 
-    # Professional fees & contingency
+    cont_base_rate = 0.05
+    cont_base_amt = round(base_capex_for_contingency * cont_base_rate)
+
+    # Complexity rate
+    if reno_class in ("heavy", "structural"):
+        cont_complexity_rate = 0.04
+        cont_complexity_expl = (
+            f"High complexity buffer for {reno_class} renovation class"
+        )
+    elif is_cross_category:
+        cont_complexity_rate = 0.03
+        cont_complexity_expl = (
+            f"Cross-category transition ({current_cat} to {target_cat}) "
+            f"adds design uncertainty"
+        )
+    else:
+        cont_complexity_rate = 0.02
+        cont_complexity_expl = (
+            f"Same-category conversion ({target_cat}), low design complexity"
+        )
+    cont_complexity_amt = round(base_capex_for_contingency * cont_complexity_rate)
+
+    # Regulatory rate
+    needs_env_review = transition_score < 40
+    if needs_env_review:
+        cont_regulatory_rate = 0.03
+        cont_regulatory_expl = (
+            f"Environmental review required (transition score {transition_score}), "
+            f"higher regulatory risk buffer"
+        )
+    elif is_cross_category and target_cat == "clinical":
+        cont_regulatory_rate = 0.02
+        cont_regulatory_expl = (
+            "Cross-category transition to clinical use, moderate regulatory risk"
+        )
+    elif is_cross_category:
+        cont_regulatory_rate = 0.01
+        cont_regulatory_expl = (
+            "Cross-category transition, standard regulatory risk buffer"
+        )
+    else:
+        cont_regulatory_rate = 0.01
+        cont_regulatory_expl = (
+            "Same-category conversion, minimal regulatory risk"
+        )
+    cont_regulatory_amt = round(base_capex_for_contingency * cont_regulatory_rate)
+
+    # Supply chain rate
+    has_infra_items = infrastructure["subtotal"] > 0
+    has_complex_infra = needs_gas or needs_hvac
+    if has_complex_infra:
+        cont_supply_rate = 0.02
+        cont_supply_expl = (
+            "Medical gas or HVAC components have long lead times "
+            "and volatile pricing"
+        )
+    elif has_infra_items:
+        cont_supply_rate = 0.01
+        cont_supply_expl = (
+            "Standard infrastructure items with moderate supply chain risk"
+        )
+    else:
+        cont_supply_rate = 0.0
+        cont_supply_expl = "No infrastructure procurement, zero supply chain risk"
+    cont_supply_amt = round(base_capex_for_contingency * cont_supply_rate)
+
+    cont_total_rate = (
+        cont_base_rate + cont_complexity_rate
+        + cont_regulatory_rate + cont_supply_rate
+    )
+    cont_total = cont_base_amt + cont_complexity_amt + cont_regulatory_amt + cont_supply_amt
+
+    contingency_breakdown = {
+        "base": {
+            "rate": cont_base_rate,
+            "amount": cont_base_amt,
+            "explanation": (
+                "Standard construction risk buffer for hospital "
+                "renovation projects"
+            ),
+        },
+        "complexity": {
+            "rate": cont_complexity_rate,
+            "amount": cont_complexity_amt,
+            "explanation": cont_complexity_expl,
+        },
+        "regulatory": {
+            "rate": cont_regulatory_rate,
+            "amount": cont_regulatory_amt,
+            "explanation": cont_regulatory_expl,
+        },
+        "supply_chain": {
+            "rate": cont_supply_rate,
+            "amount": cont_supply_amt,
+            "explanation": cont_supply_expl,
+        },
+        "total_rate": round(cont_total_rate, 4),
+        "total": cont_total,
+    }
+
+    # ── F. Labour & Human Resources ─────────────────────────────────
+    worker_counts = {"light": 2, "moderate": 3, "heavy": 5, "structural": 7}
+    gc_workers = worker_counts.get(reno_class, 3)
+    gc_rate = 480  # EUR/worker/week
+    gc_cost = round(gc_workers * gc_rate * weeks_avg)
+
+    # Specialist trades: electrician + plumber if infrastructure needed
+    specialist_weeks = round(weeks_avg * 0.3)
+    specialist_rate = 580
+    specialist_cost = 0
+    specialist_detail_workers = 0
+    if has_infra_items:
+        # Electrician always, plumber if plumbing needed
+        specialist_detail_workers = 1  # electrician
+        if needs_plumbing and not had_plumbing:
+            specialist_detail_workers += 1  # plumber
+        specialist_cost = round(specialist_detail_workers * specialist_rate * specialist_weeks)
+
+    # Medical gas installer
+    med_gas_cost = 0
+    med_gas_weeks = 0
+    if needs_gas and not had_gas:
+        med_gas_weeks = 2
+        med_gas_cost = round(680 * med_gas_weeks)
+
+    # Project management
+    pm_rate = 0.04 if reno_class in ("moderate", "heavy", "structural") else 0.02
+
+    # Health & safety officer: required if works > 4 weeks
+    hs_rate = 420
+    hs_cost = 0
+    hs_weeks = 0
+    if weeks_avg > 4:
+        hs_weeks = round(weeks_avg)
+        hs_cost = round(hs_rate * hs_weeks)
+
+    # Clerk of works: only for heavy/structural
+    cow_rate = 0.025
+    cow_cost = 0
+
+    # Labour subtotal needs base capex for pm/cow percentages — compute
+    # iteratively: pm and cow are based on a preliminary total_capex
+    preliminary_capex = (
+        renovation["subtotal"] + furnishing["subtotal"]
+        + infrastructure["subtotal"] + compliance["subtotal"]
+    )
+    pm_cost = round(preliminary_capex * pm_rate)
+
+    if reno_class in ("heavy", "structural"):
+        cow_cost = round(preliminary_capex * cow_rate)
+
+    labour_subtotal = (
+        gc_cost + specialist_cost + med_gas_cost
+        + pm_cost + hs_cost + cow_cost
+    )
+
+    labour = {
+        "general_contractor": {
+            "amount": gc_cost,
+            "detail": {
+                "explanation": (
+                    f"{reno_class.title()} renovation requires {gc_workers} "
+                    f"general workers at EUR {gc_rate}/week for "
+                    f"{weeks_avg:.0f} weeks avg"
+                ),
+                "workers": gc_workers,
+                "weeks": round(weeks_avg),
+                "rate": gc_rate,
+            },
+        },
+        "specialist_trades": {
+            "amount": specialist_cost,
+            "detail": {
+                "explanation": (
+                    f"Electrician{' + plumber' if specialist_detail_workers > 1 else ''} "
+                    f"at EUR {specialist_rate}/week for {specialist_weeks} weeks "
+                    f"(30% of total duration)"
+                    if has_infra_items else
+                    "No specialist trades required — no infrastructure changes"
+                ),
+                "workers": specialist_detail_workers,
+                "weeks": specialist_weeks if has_infra_items else 0,
+                "rate": specialist_rate,
+            },
+        },
+        "medical_gas_installer": {
+            "amount": med_gas_cost,
+            "detail": {
+                "explanation": (
+                    f"Certified medical gas installer at EUR 680/week for "
+                    f"{med_gas_weeks} weeks"
+                    if med_gas_cost > 0 else
+                    "Not required — target function does not need medical gas"
+                ),
+                "workers": 1 if med_gas_cost > 0 else 0,
+                "weeks": med_gas_weeks,
+                "rate": 680,
+            },
+        },
+        "project_management": {
+            "amount": pm_cost,
+            "detail": {
+                "explanation": (
+                    f"{pm_rate * 100:.0f}% of preliminary CAPEX "
+                    f"(EUR {preliminary_capex:,}) for "
+                    f"{'senior' if pm_rate >= 0.04 else 'standard'} "
+                    f"project management"
+                ),
+                "workers": 1,
+                "weeks": round(weeks_avg),
+                "rate": round(pm_cost / max(1, weeks_avg)),
+            },
+        },
+        "health_safety_officer": {
+            "amount": hs_cost,
+            "detail": {
+                "explanation": (
+                    f"Required for works exceeding 4 weeks — "
+                    f"EUR {hs_rate}/week for full {hs_weeks}-week duration"
+                    if hs_cost > 0 else
+                    "Not required — works duration under 4 weeks"
+                ),
+                "workers": 1 if hs_cost > 0 else 0,
+                "weeks": hs_weeks,
+                "rate": hs_rate,
+            },
+        },
+        "clerk_of_works": {
+            "amount": cow_cost,
+            "detail": {
+                "explanation": (
+                    f"2.5% of CAPEX for {reno_class} renovation oversight"
+                    if cow_cost > 0 else
+                    "Not required — clerk of works only for heavy/structural class"
+                ),
+                "workers": 1 if cow_cost > 0 else 0,
+                "weeks": round(weeks_avg) if cow_cost > 0 else 0,
+                "rate": round(cow_cost / max(1, weeks_avg)) if cow_cost > 0 else 0,
+            },
+        },
+        "subtotal": labour_subtotal,
+    }
+
+    # ── G. Commune & Municipal Permits ──────────────────────────────
+    permit_costs = {
+        "light": 400, "moderate": 600, "heavy": 750, "structural": 800
+    }
+    building_permit_cost = permit_costs.get(reno_class, 600)
+    is_clinical_target = target_cat == "clinical"
+    is_revenue_target = target_cat == "revenue"
+
+    commune_permits = {
+        "building_permit": {
+            "amount": building_permit_cost,
+            "detail": {
+                "explanation": (
+                    f"Standard building permit for {reno_class} renovation class"
+                ),
+                "required": True,
+                "processing_weeks": 4 if reno_class == "light" else 6,
+            },
+        },
+        "change_of_use": {
+            "amount": 800 if is_cross_category else 0,
+            "detail": {
+                "explanation": (
+                    f"Change-of-use permit for {current_cat} to {target_cat} transition"
+                    if is_cross_category else
+                    "Not required — same functional category"
+                ),
+                "required": is_cross_category,
+                "processing_weeks": 8 if is_cross_category else 0,
+            },
+        },
+        "fire_inspection": {
+            "amount": 400 if (is_clinical_target or is_revenue_target) else 0,
+            "detail": {
+                "explanation": (
+                    f"Mandatory fire inspection for {target_cat} space"
+                    if (is_clinical_target or is_revenue_target) else
+                    "Not required for non-clinical, non-revenue target"
+                ),
+                "required": is_clinical_target or is_revenue_target,
+                "processing_weeks": 2,
+            },
+        },
+        "health_authority": {
+            "amount": 1200 if is_clinical_target else 0,
+            "detail": {
+                "explanation": (
+                    "Clinical space requires health authority inspection "
+                    "and certification before occupation"
+                    if is_clinical_target else
+                    "Not required — target function is not clinical"
+                ),
+                "required": is_clinical_target,
+                "processing_weeks": 10 if is_clinical_target else 0,
+            },
+        },
+        "occupation_certificate": {
+            "amount": 250,
+            "detail": {
+                "explanation": "Final occupation certificate prior to commissioning",
+                "required": True,
+                "processing_weeks": 2,
+            },
+        },
+        "environmental_clearance": {
+            "amount": 1200 if transition_score < 40 else 0,
+            "detail": {
+                "explanation": (
+                    f"Environmental clearance for heavy transition "
+                    f"(score {transition_score}/100)"
+                    if transition_score < 40 else
+                    "Not required — transition score above environmental threshold"
+                ),
+                "required": transition_score < 40,
+                "processing_weeks": 12 if transition_score < 40 else 0,
+            },
+        },
+    }
+    commune_permits_subtotal = sum(
+        v["amount"] for k, v in commune_permits.items()
+        if isinstance(v, dict) and "amount" in v
+    )
+    commune_permits["subtotal"] = commune_permits_subtotal
+
+    # ── I. Commissioning & Handover ─────────────────────────────────
+    systems_testing_map = {
+        "light": 500, "moderate": 1200, "heavy": 2000, "structural": 2000
+    }
+    systems_testing = systems_testing_map.get(reno_class, 1200)
+
+    infection_clean = round(area_m2 * 25) if is_clinical_target else round(area_m2 * 8)
+
+    snagging = round(renovation["subtotal"] * 0.015)
+
+    # Medical equipment in add list (unit_cost > EUR 2000)
+    med_equip_count = 0
+    for item in furnishing_delta["add"]:
+        uc = item.get("unit_cost", FURNISHING_PRICES.get(item["item_type"], 200))
+        if uc > 2000:
+            med_equip_count += item["quantity"]
+    equip_calibration = med_equip_count * 350
+
+    as_built_docs = 400
+
+    # Staff orientation for cross-category conversions
+    staffing_ratio = profile.get("staffing_ratio", 0)
+    staff_orientation_cost = 0
+    if is_cross_category and staffing_ratio > 0:
+        fte_estimate = staffing_ratio * area_m2 / 10
+        staff_orientation_cost = round(fte_estimate * 0.5 * 350)
+
+    commissioning_subtotal = (
+        systems_testing + infection_clean + snagging
+        + equip_calibration + as_built_docs + staff_orientation_cost
+    )
+    commissioning = {
+        "systems_testing": {
+            "amount": systems_testing,
+            "explanation": (
+                "MEP commissioning, fire alarm verification, "
+                "nurse call system testing"
+            ),
+        },
+        "infection_control_clean": {
+            "amount": infection_clean,
+            "explanation": (
+                f"Clinical-grade deep clean at EUR 25/m2 for {area_m2:.0f} m2"
+                if is_clinical_target else
+                f"Standard deep clean at EUR 8/m2 for {area_m2:.0f} m2"
+            ),
+        },
+        "snagging": {
+            "amount": snagging,
+            "explanation": (
+                "Defects liability allowance for punch list items during "
+                "6-month retention period"
+            ),
+        },
+        "equipment_calibration": {
+            "amount": equip_calibration,
+            "explanation": (
+                f"{med_equip_count} medical equipment item(s) "
+                f"requiring calibration at EUR 350 each"
+                if med_equip_count > 0 else
+                "No medical equipment requiring calibration"
+            ),
+        },
+        "as_built_docs": {
+            "amount": as_built_docs,
+            "explanation": (
+                "Updated floor plans, BIM model amendments, facility "
+                "management records, fire safety drawings"
+            ),
+        },
+        "staff_orientation": {
+            "amount": staff_orientation_cost,
+            "explanation": (
+                f"Cross-category walkthrough for {staffing_ratio * area_m2 / 10:.1f} "
+                f"FTE at 0.5 days x EUR 350/day"
+                if staff_orientation_cost > 0 else
+                "Not required — same category, no reorientation needed"
+            ),
+        },
+        "subtotal": commissioning_subtotal,
+    }
+
+    # ── Updated CAPEX total ─────────────────────────────────────────
+    # total_capex now includes: renovation + furnishing + infrastructure
+    #                         + compliance + labour + commissioning
+    total_capex = (
+        renovation["subtotal"] + furnishing["subtotal"]
+        + infrastructure["subtotal"] + compliance["subtotal"]
+        + labour_subtotal + commissioning_subtotal
+    )
+
+    # Apply vendor concessions (subtract savings from total)
+    # concessions_subtotal is already negative
+    total_capex_after_concessions = total_capex + concessions_subtotal
+
+    # Professional fees (6% of pre-concession capex)
     design_fees = round(total_capex * 0.06)
-    contingency = round(total_capex * 0.12)
 
-    # Downtime cost (revenue lost during renovation)
+    # Contingency from breakdown (uses pre-concession base)
+    contingency = cont_total
+
+    # ── H. Operational Disruption ───────────────────────────────────
     current_revenue = area_m2 * current_profile.get("revenue_per_m2_year", 0)
-    avg_days = ((reno["weeks_min"] + reno["weeks_max"]) / 2) * 7
-    downtime_cost = round((current_revenue / 365) * avg_days)
+    is_patient_facing = current_profile.get("patient_facing", False)
+    floor_counts = floor_fn_counts or {}
+    current_fn_floor_count = floor_counts.get(current_fn, 0)
 
-    total_project_cost = total_capex + design_fees + contingency + downtime_cost
+    # Temporary relocation: patient-facing with limited floor supply
+    temp_relocation = 0
+    temp_relocation_expl = "Not required — current function is not patient-facing or adequate floor capacity exists"
+    temp_relocation_just = ""
+    if is_patient_facing and current_fn_floor_count <= 3:
+        temp_relocation = round(1500 + area_m2 * 15)
+        temp_relocation_expl = (
+            f"Temporary relocation setup for {current_fn} — "
+            f"only {current_fn_floor_count} on this floor"
+        )
+        temp_relocation_just = (
+            "Maintaining service continuity requires temporary accommodation "
+            "while the space is offline for renovation"
+        )
+
+    # Wayfinding signage: always
+    wayfinding = 350
+    wayfinding_expl = (
+        "Updated directional signage, door plaques, and digital "
+        "wayfinding system entries"
+    )
+
+    # IT reconfiguration: always
+    it_reconfig = 600
+    it_reconfig_expl = (
+        "BMS/HMS room registry update, badge access reconfiguration, "
+        "scheduling system modification"
+    )
+
+    # Staff retraining for cross-category transitions
+    staff_retrain = 0
+    staff_retrain_expl = "Not required — same functional category"
+    staff_retrain_just = ""
+    if is_cross_category and staffing_ratio > 0:
+        fte_estimate = staffing_ratio * area_m2 / 10
+        staff_retrain = round(fte_estimate * 800)
+        staff_retrain_expl = (
+            f"Clinical protocol training for {fte_estimate:.1f} FTE "
+            f"at EUR 800/FTE"
+        )
+        staff_retrain_just = (
+            f"Staff must be trained on {target_fn} protocols, equipment, "
+            f"and emergency procedures before the space goes live"
+        )
+
+    # Adjacent space mitigation for moderate+ renovations
+    adjacent_mitigation = 0
+    adjacent_mitigation_expl = "Not required — light renovation class"
+    adjacent_mitigation_just = ""
+    if reno_class in ("moderate", "heavy", "structural"):
+        adjacent_mitigation = round(400 + area_m2 * 8)
+        adjacent_mitigation_expl = (
+            f"Dust barriers, noise insulation, temporary HVAC isolation "
+            f"for neighbouring operational spaces"
+        )
+        adjacent_mitigation_just = (
+            "Hospital operational continuity requires protecting adjacent "
+            "occupied spaces from construction disruption"
+        )
+
+    # Patient scheduling loss: only if current function is patient-facing
+    patient_scheduling = 0
+    patient_scheduling_expl = "Not applicable — current function is not patient-facing"
+    patient_scheduling_just = ""
+    if is_patient_facing:
+        ideal_area = profile.get("ideal_area", 20)
+        slots_per_day = (area_m2 / max(1, ideal_area)) * 4
+        lost_appointments = round(slots_per_day * avg_days)
+        patient_scheduling = round(lost_appointments * 120)
+        patient_scheduling_expl = (
+            f"{lost_appointments} lost appointment slots "
+            f"({slots_per_day:.1f}/day x {avg_days:.0f} days) "
+            f"at EUR 120/appointment"
+        )
+        patient_scheduling_just = (
+            "Appointments must be rebooked to other facilities or rescheduled, "
+            "impacting patient access and scheduling efficiency"
+        )
+
+    # Communication plan: always
+    comms_plan = 200
+    comms_plan_expl = (
+        "Staff bulletins, patient notifications, department "
+        "coordination meetings"
+    )
+
+    # Downtime revenue loss (legacy concept, now part of disruption)
+    downtime_revenue_loss = round((current_revenue / 365) * avg_days)
+
+    disruption_subtotal = (
+        temp_relocation + wayfinding + it_reconfig + staff_retrain
+        + adjacent_mitigation + patient_scheduling + comms_plan
+    )
+
+    disruption = {
+        "temporary_relocation": {
+            "amount": temp_relocation,
+            "explanation": temp_relocation_expl,
+            "justification": temp_relocation_just or "N/A",
+        },
+        "wayfinding_signage": {
+            "amount": wayfinding,
+            "explanation": wayfinding_expl,
+            "justification": "All function changes require updated signage and wayfinding for patient safety",
+        },
+        "it_reconfiguration": {
+            "amount": it_reconfig,
+            "explanation": it_reconfig_expl,
+            "justification": "Hospital management systems must reflect the new room function for scheduling, access control, and asset tracking",
+        },
+        "staff_retraining": {
+            "amount": staff_retrain,
+            "explanation": staff_retrain_expl,
+            "justification": staff_retrain_just or "N/A",
+        },
+        "adjacent_mitigation": {
+            "amount": adjacent_mitigation,
+            "explanation": adjacent_mitigation_expl,
+            "justification": adjacent_mitigation_just or "N/A",
+        },
+        "patient_scheduling": {
+            "amount": patient_scheduling,
+            "explanation": patient_scheduling_expl,
+            "justification": patient_scheduling_just or "N/A",
+        },
+        "communication_plan": {
+            "amount": comms_plan,
+            "explanation": comms_plan_expl,
+            "justification": "Structured communication minimises confusion and maintains staff confidence during transition",
+        },
+        "subtotal": disruption_subtotal,
+    }
+
+    # ── J. Financial Structure ──────────────────────────────────────
+    # Updated total project cost
+    disruption_total = disruption_subtotal
+    total_project_cost = (
+        total_capex_after_concessions + design_fees + contingency
+        + disruption_total + commune_permits_subtotal
+    )
+
+    # Payment milestones
+    milestones = [
+        {"stage": "Mobilisation", "pct": 20, "amount": round(total_project_cost * 0.20)},
+        {"stage": "Mid-works", "pct": 40, "amount": round(total_project_cost * 0.40)},
+        {"stage": "Completion", "pct": 35, "amount": round(total_project_cost * 0.35)},
+        {"stage": "Retention", "pct": 5, "amount": round(total_project_cost * 0.05)},
+    ]
+
+    retention_amount = round(total_project_cost * 0.05)
+    capex_portion = (
+        renovation["subtotal"] + infrastructure["subtotal"]
+        + furnishing["subtotal"] + commissioning_subtotal
+    )
+    opex_portion = disruption_total + labour_subtotal
+    vat_amount = round(total_project_cost * 0.21)
+
+    fitout_annual = round(renovation["subtotal"] / 15) if renovation["subtotal"] > 0 else 0
+    furnishing_annual = round(new_purchase / 7) if new_purchase > 0 else 0
+
+    financial_structure = {
+        "payment_milestones": milestones,
+        "retention": {
+            "pct": 5,
+            "amount": retention_amount,
+            "period_months": 12,
+            "explanation": (
+                "Withheld for defects liability period per FIDIC "
+                "contract terms"
+            ),
+        },
+        "capex_opex_split": {
+            "capex": capex_portion,
+            "opex": opex_portion,
+            "explanation": (
+                f"CAPEX covers renovation, infrastructure, furnishing, "
+                f"and commissioning (EUR {capex_portion:,}). "
+                f"OPEX covers disruption management and labour "
+                f"(EUR {opex_portion:,})."
+            ),
+        },
+        "vat": {
+            "rate": 21,
+            "amount": vat_amount,
+            "note": (
+                "Belgian standard rate, potentially recoverable for "
+                "healthcare institutions under Article 44 VAT Code"
+            ),
+        },
+        "depreciation": {
+            "fitout_years": 15,
+            "fitout_annual": fitout_annual,
+            "furnishing_years": 7,
+            "furnishing_annual": furnishing_annual,
+            "explanation": (
+                "Straight-line depreciation per Belgian accounting "
+                "standards (IFRS 16 / Belgian GAAP)"
+            ),
+        },
+    }
+
+    # ── Backwards-compatible legacy keys ────────────────────────────
+    # downtime_cost kept as the revenue-loss portion of disruption
+    downtime_cost = downtime_revenue_loss
 
     return {
+        # Original sections (enriched with explanations)
         "renovation": renovation,
         "furnishing": furnishing,
         "infrastructure": infrastructure,
         "compliance": compliance,
-        "total_capex": total_capex,
+        # New sections
+        "cost_drivers": cost_drivers,
+        "labour": labour,
+        "commune_permits": commune_permits,
+        "vendor_concessions": vendor_concessions,
+        "contingency_breakdown": contingency_breakdown,
+        "disruption": disruption,
+        "commissioning": commissioning,
+        "financial_structure": financial_structure,
+        # Updated totals
+        "total_capex": total_capex_after_concessions,
         "design_fees": design_fees,
         "contingency": contingency,
+        "disruption_total": disruption_total,
+        # Backwards-compatible keys
         "downtime_cost": downtime_cost,
         "total_project_cost": total_project_cost,
         "cost_per_m2": round(total_project_cost / max(1, area_m2)),
@@ -1215,11 +2137,16 @@ def _compute_roi(
     current_fn: str,
     target_fn: str,
     profile: dict,
-    total_capex: float,
+    costs: dict,
     weeks_min: int,
     weeks_max: int,
 ) -> dict:
-    """Compute ROI metrics for a repurpose option."""
+    """Compute ROI metrics for a repurpose option.
+
+    Uses full total_project_cost (including labour, disruption, permits,
+    contingency, commissioning, and vendor concessions) for payback and
+    5-year ROI calculations.
+    """
     current_profile = FUNCTION_PROFILES.get(current_fn, {})
 
     current_revenue = area_m2 * current_profile.get("revenue_per_m2_year", 0)
@@ -1236,41 +2163,99 @@ def _compute_roi(
     daily_revenue_loss = current_revenue / 365
     downtime_cost = round(daily_revenue_loss * avg_days)
 
+    # Full investment figure for payback/ROI (all cost categories)
+    total_project_cost = costs.get("total_project_cost", 0)
+    total_capex = costs.get("total_capex", 0)
+    total_investment = total_project_cost or total_capex
+
+    # Investment component breakdown for the ROI panel
+    _cont_rate = costs.get("contingency_breakdown", {}).get("total_rate", 0.12)
+    investment_breakdown = {
+        "capex": {
+            "amount": total_capex,
+            "explanation": (
+                "Renovation, furnishing, infrastructure, compliance, "
+                "labour, and commissioning costs combined"
+            ),
+        },
+        "design_fees": {
+            "amount": costs.get("design_fees", 0),
+            "explanation": (
+                "6% of capital expenditure for architectural design, "
+                "engineering drawings, and professional consultancy"
+            ),
+        },
+        "contingency": {
+            "amount": costs.get("contingency", 0),
+            "explanation": (
+                f"{_cont_rate * 100:.1f}% risk reserve covering construction "
+                f"complexity, regulatory delays, and supply chain volatility"
+            ),
+        },
+        "disruption": {
+            "amount": costs.get("disruption_total", 0),
+            "explanation": (
+                "Temporary relocation, staff retraining, adjacent space "
+                "mitigation, IT reconfiguration, and scheduling losses"
+            ),
+        },
+        "commune_permits": {
+            "amount": (costs.get("commune_permits", {}).get("subtotal", 0)
+                if isinstance(costs.get("commune_permits"), dict) else 0),
+            "explanation": (
+                "Building permit, change-of-use, fire inspection, health "
+                "authority approval, and occupation certificate"
+            ),
+        },
+        "vendor_concessions": {
+            "amount": (costs.get("vendor_concessions", {}).get("subtotal", 0)
+                if isinstance(costs.get("vendor_concessions"), dict) else 0),
+            "explanation": (
+                "Framework agreement discounts, trade-in credits, bulk "
+                "procurement savings, warranty transfers, and asset reuse"
+            ),
+        },
+        "total": total_investment,
+    }
+
     payback_months = None
     roi_5yr_pct = None
 
     if net_annual_delta > 0:
         monthly_gain = net_annual_delta / 12
         if monthly_gain > 0:
-            payback_months = round((total_capex + downtime_cost) / monthly_gain)
+            payback_months = round(total_investment / monthly_gain)
         roi_5yr_pct = round(
-            ((net_annual_delta * 5) - total_capex - downtime_cost)
-            / max(1, total_capex + downtime_cost) * 100
+            ((net_annual_delta * 5) - total_investment)
+            / max(1, total_investment) * 100
         )
     else:
         roi_5yr_pct = round(
-            (net_annual_delta * 5 - total_capex - downtime_cost)
-            / max(1, total_capex + downtime_cost) * 100
+            (net_annual_delta * 5 - total_investment)
+            / max(1, total_investment) * 100
         )
 
-    # Build narrative
+    # Build narrative using full investment figure
     if net_annual_delta > 0:
         narrative = (
-            f"Net annual gain of €{net_annual_delta:,.0f}/year after conversion. "
+            f"Net annual gain of EUR {net_annual_delta:,.0f}/year after conversion. "
         )
         if payback_months and payback_months <= 60:
             narrative += (
-                f"Investment of €{total_capex:,.0f} pays back in approximately "
-                f"{payback_months} months with a 5-year ROI of {roi_5yr_pct}%."
+                f"Full project investment of EUR {total_investment:,.0f} "
+                f"(including labour, permits, contingency, and disruption costs) "
+                f"pays back in approximately {payback_months} months "
+                f"with a 5-year ROI of {roi_5yr_pct}%."
             )
         else:
             narrative += (
-                f"Total investment of €{total_capex:,.0f}. "
+                f"Total project investment of EUR {total_investment:,.0f}. "
                 f"5-year projected return: {roi_5yr_pct}%."
             )
     elif net_annual_delta == 0:
         narrative = (
-            f"Revenue-neutral conversion. Total investment: €{total_capex:,.0f}. "
+            f"Revenue-neutral conversion. Total project investment: "
+            f"EUR {total_investment:,.0f}. "
             f"Operational benefit is non-financial."
         )
     else:
@@ -1279,11 +2264,73 @@ def _compute_roi(
         )
         narrative = (
             f"This is a service-quality investment, not a revenue generator. "
-            f"The €{total_capex:,.0f} conversion cost "
+            f"The EUR {total_investment:,.0f} project cost "
         )
         if abs(net_annual_delta) > 100:
-            narrative += f"plus €{abs(net_annual_delta):,.0f}/year operating cost "
+            narrative += f"plus EUR {abs(net_annual_delta):,.0f}/year operating cost "
         narrative += f"is offset by: {reason}"
+
+    # Build per-field explanations for tooltip hover
+    current_rev_rate = current_profile.get("revenue_per_m2_year", 0)
+    target_rev_rate = profile["revenue_per_m2_year"]
+    current_opex_rate = current_profile.get("operating_cost_m2_year", 60)
+    target_opex_rate = profile["operating_cost_m2_year"]
+
+    revenue_current_expl = (
+        f"{area_m2:.0f} m2 x EUR {current_rev_rate:,.0f}/m2/yr "
+        f"({current_fn} benchmark rate)"
+    )
+    revenue_target_expl = (
+        f"{area_m2:.0f} m2 x EUR {target_rev_rate:,.0f}/m2/yr "
+        f"({target_fn} benchmark rate)"
+    )
+    revenue_delta_expl = (
+        f"Projected EUR {round(target_revenue):,} - current EUR {round(current_revenue):,} "
+        f"= {'gain' if revenue_delta >= 0 else 'loss'} of EUR {abs(round(revenue_delta)):,}/yr"
+    )
+
+    opex_current_expl = (
+        f"{area_m2:.0f} m2 x EUR {current_opex_rate:,.0f}/m2/yr "
+        f"({current_fn} operating cost benchmark)"
+    )
+    opex_target_expl = (
+        f"{area_m2:.0f} m2 x EUR {target_opex_rate:,.0f}/m2/yr "
+        f"({target_fn} operating cost benchmark including staffing, utilities, consumables)"
+    )
+    opex_delta_expl = (
+        f"Projected EUR {round(target_opex):,} - current EUR {round(current_opex):,} "
+        f"= {'increase' if opex_delta >= 0 else 'decrease'} of EUR {abs(round(opex_delta)):,}/yr"
+    )
+
+    net_delta_expl = (
+        f"Revenue delta EUR {round(revenue_delta):,} minus OPEX delta EUR {round(opex_delta):,} "
+        f"= net {'gain' if net_annual_delta >= 0 else 'cost'} of EUR {abs(round(net_annual_delta)):,}/yr"
+    )
+
+    investment_expl = (
+        f"Sum of CAPEX (EUR {total_capex:,}), design fees, contingency, "
+        f"disruption costs, permits, and vendor concession offsets"
+    )
+
+    payback_expl = (
+        f"EUR {total_investment:,} total investment / EUR {round(net_annual_delta / 12):,} monthly net gain "
+        f"= {payback_months} months to full recovery"
+        if payback_months else
+        "No payback period — conversion does not generate net positive revenue"
+    )
+
+    downtime_expl = (
+        f"Current daily revenue EUR {daily_revenue_loss:,.0f} x "
+        f"{avg_days:.0f} avg construction days "
+        f"({weeks_min}-{weeks_max} weeks) = EUR {downtime_cost:,} lost"
+    )
+
+    roi_5yr_expl = (
+        f"(EUR {round(net_annual_delta):,}/yr x 5 years - EUR {total_investment:,} investment) "
+        f"/ EUR {total_investment:,} x 100 = {roi_5yr_pct}%"
+        if roi_5yr_pct is not None else
+        "Cannot compute — zero investment base"
+    )
 
     return {
         "annual_revenue_current": round(current_revenue),
@@ -1297,6 +2344,22 @@ def _compute_roi(
         "payback_months": payback_months,
         "roi_5yr_pct": roi_5yr_pct,
         "roi_narrative": narrative,
+        "total_investment": total_investment,
+        "investment_breakdown": investment_breakdown,
+        # Per-field explanations for frontend tooltip hover
+        "explanations": {
+            "revenue_current": revenue_current_expl,
+            "revenue_target": revenue_target_expl,
+            "revenue_delta": revenue_delta_expl,
+            "opex_current": opex_current_expl,
+            "opex_target": opex_target_expl,
+            "opex_delta": opex_delta_expl,
+            "net_annual_delta": net_delta_expl,
+            "total_investment": investment_expl,
+            "payback": payback_expl,
+            "downtime_cost": downtime_expl,
+            "roi_5yr": roi_5yr_expl,
+        },
     }
 
 
@@ -1903,7 +2966,10 @@ def _build_option(
     target_occ = _estimate_occupancy(target_fn, area)
 
     # Costs
-    costs = _compute_costs(area, current_fn, target_fn, profile, furnishing_delta)
+    costs = _compute_costs(
+        area, current_fn, target_fn, profile, furnishing_delta,
+        floor_fn_counts=floor_fn_counts,
+    )
 
     _raw_scores = {
         "area_fit": _score_area_fit(area, profile),
@@ -1933,11 +2999,11 @@ def _build_option(
 
     overall = int(sum(scores[k] * SCORE_WEIGHTS[k] for k in SCORE_WEIGHTS))
 
-    # ROI
+    # ROI — uses full costs dict for total_project_cost-based calculations
     reno = RENOVATION_COSTS[profile.get("renovation_class", "moderate")]
     roi = _compute_roi(
         area, current_fn, target_fn, profile,
-        costs["total_capex"], reno["weeks_min"], reno["weeks_max"],
+        costs, reno["weeks_min"], reno["weeks_max"],
     )
 
     # Timeline
@@ -1967,18 +3033,36 @@ def _build_option(
     else:
         care_assessment = "No change to patient bed capacity."
 
+    _staffing_ratio_current = current_profile.get("staffing_ratio", 0)
+    _staffing_ratio_target = profile["staffing_ratio"]
+    _staff_delta_fte = round(target_fte - current_fte, 1)
+    _staff_cost_delta = round((target_fte - current_fte) * AVG_FTE_SALARY)
+
     operational_impact = {
         "care_capacity": {
             "current_beds": current_patient_cap,
             "projected_beds": target_patient_cap,
             "delta": target_patient_cap - current_patient_cap,
             "assessment": care_assessment,
+            "explanation": (
+                f"Current {current_fn} has {current_patient_cap} bed(s); "
+                f"{target_fn} would support {target_patient_cap} bed(s) "
+                f"based on {area:.0f} m2 and furnishing layout"
+            ),
         },
         "staffing": {
             "current_fte": round(current_fte, 1),
             "projected_fte": round(target_fte, 1),
-            "delta_fte": round(target_fte - current_fte, 1),
-            "annual_cost_delta": round((target_fte - current_fte) * AVG_FTE_SALARY),
+            "delta_fte": _staff_delta_fte,
+            "annual_cost_delta": _staff_cost_delta,
+            "explanation": (
+                f"Current: {area:.0f} m2 x {_staffing_ratio_current} FTE/10m2 = "
+                f"{round(current_fte, 1)} FTE. "
+                f"Target: {area:.0f} m2 x {_staffing_ratio_target} FTE/10m2 = "
+                f"{round(target_fte, 1)} FTE. "
+                f"Delta: {'+' if _staff_delta_fte >= 0 else ''}{_staff_delta_fte} FTE "
+                f"x EUR {AVG_FTE_SALARY:,}/yr = EUR {_staff_cost_delta:,}/yr"
+            ),
         },
         "occupancy": {
             "current": current_occ,
@@ -1986,6 +3070,13 @@ def _build_option(
             "delta": target_occ - current_occ,
             "current_density": round(current_occ / max(1, area), 2),
             "projected_density": round(target_occ / max(1, area), 2),
+            "explanation": (
+                f"Current occupancy {current_occ} persons "
+                f"({current_occ / max(1, area):.2f}/m2). "
+                f"Projected occupancy {target_occ} persons "
+                f"({target_occ / max(1, area):.2f}/m2) "
+                f"based on {target_fn} space programming standards"
+            ),
         },
         "service_continuity": service_risk,
     }
