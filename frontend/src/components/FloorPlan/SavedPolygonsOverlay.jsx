@@ -34,6 +34,7 @@ export default function SavedPolygonsOverlay({ floorId, onTooltipChange }) {
   const activeRoute = useStore((s) => s.activeRoute);
   const highlightedGuids = useStore((s) => s.highlightedGuids);
   const repurposeGuids = useStore((s) => s.repurposeGuids);
+  const expansionGuids = useStore((s) => s.expansionGuids);
   const editingGeometry = useStore((s) => s.editingGeometry);
   const setHoveredPolygonGuid = useStore((s) => s.setHoveredPolygonGuid);
   const selectSpace = useStore((s) => s.selectSpace);
@@ -127,6 +128,11 @@ export default function SavedPolygonsOverlay({ floorId, onTooltipChange }) {
     return new Set(repurposeGuids);
   }, [repurposeGuids]);
 
+  const expansionSet = useMemo(() => {
+    if (!expansionGuids || expansionGuids.length === 0) return null;
+    return new Set(expansionGuids);
+  }, [expansionGuids]);
+
   const routeStartGuid = activeRoute?.path?.[0]?.ifc_guid || null;
   const hasRoute = !!routePathMap;
 
@@ -206,7 +212,12 @@ export default function SavedPolygonsOverlay({ floorId, onTooltipChange }) {
           fill = 'rgba(59, 130, 246, 0.35)';
           stroke = '#3B82F6';
           sw = '0.5';
-        } else if (highlightSet || repurposeSet) {
+        } else if (expansionSet && expansionSet.has(poly.ifc_guid)) {
+          // Expansion candidate - teal glow
+          fill = 'rgba(13, 148, 136, 0.35)';
+          stroke = '#0d9488';
+          sw = '0.5';
+        } else if (highlightSet || repurposeSet || expansionSet) {
           // Non-highlighted room when highlights active - dim
           fill = 'rgba(0, 0, 0, 0.05)';
           stroke = 'rgba(0, 0, 0, 0.08)';

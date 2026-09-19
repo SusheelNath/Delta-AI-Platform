@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
+import ReactDOM from 'react-dom';
 import ReactMarkdown from 'react-markdown';
 import useStore from '../../store/useStore';
 import { streamChat, fetchIntents, transcribeAudio, speakText, fetchSpaceFurnishings } from '../../api/client';
@@ -704,6 +705,11 @@ export default function ChatPanel() {
   const guideBookletOpen = useStore((s) => s.guideBookletOpen);
   const setGuideBookletOpen = useStore((s) => s.setGuideBookletOpen);
 
+  const [headerTip, setHeaderTip] = useState(null);
+  const showTip = (text, e) => setHeaderTip({ text, x: e.clientX, y: e.clientY + 45 });
+  const moveTip = (text, e) => setHeaderTip({ text, x: e.clientX, y: e.clientY + 45 });
+  const hideTip = () => setHeaderTip(null);
+
   return (
     <div className="chat-panel">
       {/* Header */}
@@ -716,7 +722,9 @@ export default function ChatPanel() {
           <button
             className={`chat-panel__brain-btn ${learningsPanelOpen ? 'chat-panel__brain-btn--active' : ''}`}
             onClick={() => setLearningsPanelOpen(!learningsPanelOpen)}
-            title="AI learnings"
+            onMouseEnter={(e) => showTip('AI Learnings', e)}
+            onMouseMove={(e) => moveTip('AI Learnings', e)}
+            onMouseLeave={hideTip}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 2a7 7 0 0 1 7 7c0 2.5-1.3 4.7-3.2 6H8.2C6.3 13.7 5 11.5 5 9a7 7 0 0 1 7-7z" />
@@ -726,7 +734,9 @@ export default function ChatPanel() {
           <button
             className={`chat-panel__guide-btn ${guideBookletOpen ? 'chat-panel__guide-btn--active' : ''}`}
             onClick={() => setGuideBookletOpen(!guideBookletOpen)}
-            title="What can I do?"
+            onMouseEnter={(e) => showTip('What can I do?', e)}
+            onMouseMove={(e) => moveTip('What can I do?', e)}
+            onMouseLeave={hideTip}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
@@ -738,7 +748,9 @@ export default function ChatPanel() {
           <button
             className={`chat-panel__history-btn ${sessionHistoryOpen ? 'chat-panel__history-btn--active' : ''}`}
             onClick={() => setSessionHistoryOpen(!sessionHistoryOpen)}
-            title="Session history"
+            onMouseEnter={(e) => showTip('Session History', e)}
+            onMouseMove={(e) => moveTip('Session History', e)}
+            onMouseLeave={hideTip}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10" />
@@ -748,6 +760,14 @@ export default function ChatPanel() {
           <span className="chat-panel__header-sub">AI Assistant</span>
         </div>
       </div>
+
+      {/* Header tooltip (portal) */}
+      {headerTip && ReactDOM.createPortal(
+        <div className="chat-panel__tip" style={{ top: headerTip.y, left: headerTip.x }}>
+          {headerTip.text}
+        </div>,
+        document.body
+      )}
 
       {/* Session history panel */}
       {sessionHistoryOpen && <SessionHistory />}
@@ -759,8 +779,6 @@ export default function ChatPanel() {
       {guideBookletOpen && (
         <div className="guide-booklet">
           <GuideBooklet onChipClick={(text) => {
-            setGuideBookletOpen(false);
-
             // ── Special: "Edit furnishings" opens the editor + injects baseline snapshot ──
             if (text === 'Edit furnishings') {
               const state = useStore.getState();
@@ -863,7 +881,174 @@ export default function ChatPanel() {
               return;
             }
 
-            // Default: set input text for normal chips
+            // ── Special: "Expand this space" opens the expansion panel ──
+            if (text === 'Expand this space') {
+              const state = useStore.getState();
+              const space = state.selectedSpace;
+              if (!space || !state.selectedSpaceId) {
+                const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                addMessage({ role: 'delta', text: 'Please select a commercial room first so I can analyse expansion options.', time: now });
+                return;
+              }
+              const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              const spaceName = space.space_name || state.selectedSpaceId;
+              const fn = (space.primary_function || '').toLowerCase();
+              const nm = (space.space_name || '').toLowerCase();
+
+              // Check if commercial
+              const COMMERCIAL_KW = ['commercial', 'restaurant', 'coffee', 'cafe', 'cafeteria',
+                'gift', 'shop', 'pharmacy', 'kiosk', 'retail', 'florist', 'bar', 'canteen', 'bistro'];
+              const isCommercial = COMMERCIAL_KW.some(kw => fn.includes(kw) || nm.includes(kw));
+              const expansionOpts = (state.expansionOptions || {})[state.selectedSpaceId] || [];
+
+              if (!isCommercial && expansionOpts.length === 0) {
+                addMessage({
+                  role: 'delta',
+                  text: `**${spaceName}** is not a commercial space. Expansion analysis is available for commercial rooms (restaurants, pharmacies, gift shops, cafeterias, etc.).\n\nSelect a commercial room to explore expansion options.`,
+                  time: now,
+                });
+                return;
+              }
+
+              state.setDrawerOpen(true);
+              window.dispatchEvent(new CustomEvent('delta-open-expansion-panel'));
+              addMessage({ role: 'delta', text: `Opening expansion analysis for **${spaceName}**. Check the Space Toolkit panel for adjacent room candidates.`, time: now });
+              return;
+            }
+
+            // ── Special: "Default view" resets to fresh-load state ──
+            if (text === 'Default view') {
+              const state = useStore.getState();
+              state.clearAll();
+              state.showAllFloors();
+              const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              addMessage({ role: 'delta', text: 'Reset to default view — all floors visible, selections and highlights cleared.', time: now });
+              return;
+            }
+
+            // ── Instant actions for all remaining chips ──
+            const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const state = useStore.getState();
+            const FLOOR_ORDER = ['H003', 'H002', 'H001', 'H000', 'H010', 'H020', 'H030', 'H040', 'H050'];
+
+            // Nav
+            if (text === 'Go to floor 1') {
+              state.setActiveFloor('H000');
+              addMessage({ role: 'delta', text: 'Navigated to Floor 1.', time: now });
+              return;
+            }
+            if (text === 'Next floor') {
+              resolveAction({ type: 'set_floor_relative', direction: 'up' });
+              addMessage({ role: 'delta', text: 'Moved to next floor.', time: now });
+              return;
+            }
+            if (text === 'Previous floor') {
+              resolveAction({ type: 'set_floor_relative', direction: 'down' });
+              addMessage({ role: 'delta', text: 'Moved to previous floor.', time: now });
+              return;
+            }
+            if (text === 'Show all floors') {
+              state.showAllFloors();
+              addMessage({ role: 'delta', text: 'All floors now visible.', time: now });
+              return;
+            }
+
+            // Search — highlight by function
+            if (text === 'Show elevators' || text === 'Show staircases' || text === 'Highlight all toilets') {
+              const fnMap = { 'Show elevators': 'elevator', 'Show staircases': 'staircase', 'Highlight all toilets': 'toilet' };
+              const fn = fnMap[text];
+              const fp = state.floorPolygons || {};
+              const floorId = state.activeFloorId;
+              const floors = floorId ? [floorId] : Object.keys(fp);
+              const guids = [];
+              for (const fid of floors) {
+                for (const p of (fp[fid] || [])) {
+                  if ((p.primary_function || '').toLowerCase().includes(fn)) guids.push(p.ifc_guid);
+                }
+              }
+              state.setHighlightedGuids(guids);
+              addMessage({ role: 'delta', text: `Highlighted ${guids.length} ${fn} spaces${floorId ? ' on this floor' : ''}.`, time: now });
+              return;
+            }
+            if (text === 'Largest rooms on this floor') {
+              const floorId = state.activeFloorId;
+              if (!floorId) {
+                addMessage({ role: 'delta', text: 'Please select a floor first.', time: now });
+                return;
+              }
+              const polys = (state.floorPolygons || {})[floorId] || [];
+              const sorted = [...polys].filter(p => p.area_m2 > 0).sort((a, b) => b.area_m2 - a.area_m2);
+              const top = sorted.slice(0, 5);
+              state.setHighlightedGuids(top.map(p => p.ifc_guid));
+              const list = top.map((p, i) => `${i + 1}. **${p.space_name || p.ifc_guid}** — ${Number(p.area_m2).toFixed(1)} m²`).join('\n');
+              addMessage({ role: 'delta', text: `Top 5 largest rooms on this floor:\n\n${list}`, time: now });
+              return;
+            }
+
+            // Route
+            if (text === 'Nearest elevator' || text === 'Nearest staircase') {
+              if (!state.selectedSpaceId) {
+                addMessage({ role: 'delta', text: 'Please select a room first so I can calculate the route.', time: now });
+                return;
+              }
+              const routeType = text === 'Nearest elevator' ? 'route_to_elevator' : 'route_to_staircase';
+              resolveAction({ type: routeType, space_id: state.selectedSpaceId });
+              addMessage({ role: 'delta', text: `Routing to nearest ${text === 'Nearest elevator' ? 'elevator' : 'staircase'}.`, time: now });
+              return;
+            }
+            if (text === 'Clear route') {
+              state.clearActiveRoute();
+              addMessage({ role: 'delta', text: 'Route cleared.', time: now });
+              return;
+            }
+
+            // Plan
+            if (text === 'Best assembly points') {
+              const fp = state.floorPolygons || {};
+              const INFRA = new Set(['no access', 'ventilation shaft', 'elevator', 'corridor', 'corridor access',
+                'toilet', 'staircase', 'shaft', 'void', 'riser', 'circulation', 'vestibule', 'ramp', 'technical', 'waste']);
+              const ASSEMBLY_KW = { conference: 10, meeting: 10, lecture: 10, seminar: 10, training: 10,
+                assembly: 10, auditorium: 10, 'multi-purpose': 9, multipurpose: 9, waiting: 8,
+                reception: 8, cafeteria: 8, canteen: 8, restaurant: 7, lounge: 7, atrium: 7, lobby: 7 };
+              const FLOOR_ACC = { H000: 10, H010: 8, H020: 8, H030: 7, H040: 6, H050: 6, H001: 5, H002: 4, H003: 3 };
+              const candidates = [];
+              for (const fid of Object.keys(fp)) {
+                for (const p of (fp[fid] || [])) {
+                  const fn = (p.primary_function || '').toLowerCase();
+                  if (INFRA.has(fn)) continue;
+                  const area = p.area_m2 || 0;
+                  if (area < 15) continue;
+                  let fnScore = 3;
+                  for (const [kw, sc] of Object.entries(ASSEMBLY_KW)) {
+                    if (fn.includes(kw)) { fnScore = sc; break; }
+                  }
+                  const areaScore = Math.min(10, area / 10);
+                  const floorScore = FLOOR_ACC[fid] || 5;
+                  const total = fnScore * 0.5 + areaScore * 0.3 + floorScore * 0.2;
+                  candidates.push({ guid: p.ifc_guid, name: p.space_name || p.ifc_guid, fn: p.primary_function, area, score: total, fid });
+                }
+              }
+              candidates.sort((a, b) => b.score - a.score);
+              const top = candidates.slice(0, 10);
+              state.setHighlightedGuids(top.map(c => c.guid));
+              const list = top.map((c, i) => `${i + 1}. **${c.name}** (${c.fn}) — ${Number(c.area).toFixed(1)} m²`).join('\n');
+              addMessage({ role: 'delta', text: `Top 10 assembly points:\n\n${list}`, time: now });
+              return;
+            }
+
+            // Clear
+            if (text === 'Clear') {
+              state.clearAll();
+              addMessage({ role: 'delta', text: 'All selections, highlights, and filters cleared.', time: now });
+              return;
+            }
+            if (text === 'Clear highlights') {
+              state.clearHighlights();
+              addMessage({ role: 'delta', text: 'Highlights cleared.', time: now });
+              return;
+            }
+
+            // Fallback: set input text (for "Find a room for..." which needs user input)
             setInput(text);
             inputRef.current?.focus();
           }} />
@@ -1016,77 +1201,36 @@ export default function ChatPanel() {
 
 const GUIDE_TABS = [
   { label: 'Nav',       chips: ['Go to floor 1', 'Next floor', 'Previous floor', 'Show all floors'] },
-  { label: 'Search',    chips: ['Largest rooms on this floor', 'Show elevators', 'Show staircases', 'Highlight all toilets', "What's adjacent to Nursing Station", 'How many clinical spaces'] },
+  { label: 'Search',    chips: ['Largest rooms on this floor', 'Show elevators', 'Show staircases', 'Highlight all toilets'] },
   { label: 'Route',     chips: ['Nearest elevator', 'Nearest staircase', 'Clear route'] },
   { label: 'Plan',      chips: ['Best assembly points', 'Find a room for...', 'Edit furnishings'] },
-  { label: 'Scenario',  chips: ['Repurpose this room'] },
-  { label: 'Clear',     chips: ['Clear', 'Normal view', 'Clear highlights'] },
+  { label: 'Scenario',  chips: ['Repurpose this room', 'Expand this space'] },
+  { label: 'Clear',     chips: ['Clear', 'Clear highlights', 'Default view'] },
 ];
 
 function GuideBooklet({ onChipClick }) {
   const [activeIdx, setActiveIdx] = useState(null);
-  const tabsRef = useRef(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
-
-  const checkScroll = useCallback(() => {
-    const el = tabsRef.current;
-    if (!el) return;
-    setCanScrollLeft(el.scrollLeft > 2);
-    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 2);
-  }, []);
-
-  useEffect(() => {
-    checkScroll();
-    const el = tabsRef.current;
-    if (!el) return;
-    el.addEventListener('scroll', checkScroll, { passive: true });
-    const ro = new ResizeObserver(checkScroll);
-    ro.observe(el);
-    return () => { el.removeEventListener('scroll', checkScroll); ro.disconnect(); };
-  }, [checkScroll]);
-
-  const scroll = (dir) => {
-    const el = tabsRef.current;
-    if (!el) return;
-    el.scrollBy({ left: dir * 120, behavior: 'smooth' });
-  };
 
   return (
-    <div className="guide-booklet__strip">
-      <div className="guide-booklet__tabs-wrapper">
-        {canScrollLeft && (
-          <button className="guide-booklet__arrow guide-booklet__arrow--left" onClick={() => scroll(-1)}>
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6.5 1.5 3.5 5 6.5 8.5" /></svg>
+    <div className="guide-grid">
+      <div className="guide-grid__buttons">
+        {GUIDE_TABS.map((tab, i) => (
+          <button
+            key={tab.label}
+            className={`guide-grid__btn ${activeIdx === i ? 'guide-grid__btn--active' : ''}`}
+            onClick={() => setActiveIdx(activeIdx === i ? null : i)}
+          >
+            {tab.label}
           </button>
-        )}
-        <div className="guide-booklet__tabs" ref={tabsRef}>
-          {GUIDE_TABS.map((tab, i) => (
-            <button
-              key={tab.label}
-              className={`guide-booklet__tab ${activeIdx === i ? 'guide-booklet__tab--active' : ''}`}
-              onClick={() => setActiveIdx(activeIdx === i ? null : i)}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-        {canScrollRight && (
-          <button className="guide-booklet__arrow guide-booklet__arrow--right" onClick={() => scroll(1)}>
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3.5 1.5 6.5 5 3.5 8.5" /></svg>
-          </button>
-        )}
+        ))}
       </div>
-      <div
-        className="guide-booklet__reveal"
-        style={{ maxHeight: activeIdx !== null ? '50px' : '0px' }}
-      >
+      <div className="guide-grid__reveal" style={{ maxHeight: activeIdx !== null ? '80px' : '0px' }}>
         {activeIdx !== null && (
-          <div className="guide-booklet__chips" key={activeIdx}>
+          <div className="guide-grid__chips" key={activeIdx}>
             {GUIDE_TABS[activeIdx].chips.map((chip) => (
               <button
                 key={chip}
-                className="guide-booklet__chip"
+                className="guide-grid__chip"
                 onClick={() => onChipClick(chip)}
               >
                 {chip}

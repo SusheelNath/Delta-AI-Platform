@@ -1299,6 +1299,7 @@ export default function XeokitViewer() {
   const expandedGroups = useStore((s) => s.expandedGroups);
   const highlightedGuids = useStore((s) => s.highlightedGuids);
   const repurposeGuids = useStore((s) => s.repurposeGuids);
+  const expansionGuids = useStore((s) => s.expansionGuids);
 
   // Derive a stable key from snapshot matrices so mesh effect only re-runs when matrices change,
   // not when the image URL updates (Tier 2 hi-res capture)
@@ -1622,7 +1623,7 @@ export default function XeokitViewer() {
   useEffect(() => {
     const viewer = viewerRef.current;
     const hasRoute = !!activeRoute?.path;
-    const hasHighlights = (highlightedGuids && highlightedGuids.length > 0) || (repurposeGuids && repurposeGuids.length > 0);
+    const hasHighlights = (highlightedGuids && highlightedGuids.length > 0) || (repurposeGuids && repurposeGuids.length > 0) || (expansionGuids && expansionGuids.length > 0);
     const isEvacMode = heatmapMode === 'evacuation';
     const needDarken = hasRoute || hasHighlights || isEvacMode;
 
@@ -1678,6 +1679,8 @@ export default function XeokitViewer() {
       ? new Set(highlightedGuids) : null;
     const rpSet = repurposeGuids && repurposeGuids.length > 0
       ? new Set(repurposeGuids) : null;
+    const expSet = expansionGuids && expansionGuids.length > 0
+      ? new Set(expansionGuids) : null;
 
     // ── Heatmap value lookup (occupancy modes) ──
     const isHeatmap = heatmapMode && heatmapMode !== 'function';
@@ -1736,7 +1739,8 @@ export default function XeokitViewer() {
 
       const isHighlighted = hlSet && hlSet.has(guid);
       const isRepurpose = rpSet && rpSet.has(guid);
-      const isDimmedByHighlight = (hlSet || rpSet) && !isHighlighted && !isRepurpose;
+      const isExpansion = expSet && expSet.has(guid);
+      const isDimmedByHighlight = (hlSet || rpSet || expSet) && !isHighlighted && !isRepurpose && !isExpansion;
 
       const newState = isRouteStart ? 'start'
         : isRouteTarget ? 'target'
@@ -1744,6 +1748,7 @@ export default function XeokitViewer() {
         : isHoverOrSelect ? 'hover'
         : isHighlighted ? 'highlight'
         : isRepurpose ? 'repurpose'
+        : isExpansion ? 'expansion'
         : isGroupMember ? 'group'
         : isDimmedByHighlight ? 'highlight-dim'
         : 'default';
@@ -1776,6 +1781,10 @@ export default function XeokitViewer() {
           lerpMeshAlpha(guid, mesh, 0.60);
           mesh.material.diffuse = [0.23, 0.51, 0.96]; // #3B82F6
           mesh.material.emissive = [0.10, 0.25, 0.55];
+        } else if (newState === 'expansion') {
+          lerpMeshAlpha(guid, mesh, 0.60);
+          mesh.material.diffuse = [0.05, 0.58, 0.53]; // #0D9488 teal
+          mesh.material.emissive = [0.02, 0.30, 0.27];
         } else if (newState === 'group') {
           lerpMeshAlpha(guid, mesh, 0.50);
           mesh.material.diffuse = [1.0, 0.55, 0.2];
@@ -2104,7 +2113,7 @@ export default function XeokitViewer() {
         }));
       } catch {}
     }
-  }, [hoveredPolygonGuid, selectedSpaceId, activeRoute, activeFloorId, expandedGroups, floorPolygons, heatmapMode, highlightedGuids, repurposeGuids, meshGeneration]);
+  }, [hoveredPolygonGuid, selectedSpaceId, activeRoute, activeFloorId, expandedGroups, floorPolygons, heatmapMode, highlightedGuids, repurposeGuids, expansionGuids, meshGeneration]);
 
   // ── Find Room legend ──
   const findRoomResults = useStore((s) => s.findRoomResults);

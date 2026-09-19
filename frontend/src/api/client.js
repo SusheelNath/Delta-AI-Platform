@@ -368,6 +368,15 @@ export async function fetchFloorRepurposeOptions(floorId) {
   return request(`${BASE}/floors/${encodeURIComponent(floorId)}/repurpose-options`);
 }
 
+/**
+ * Fetch all pre-computed expansion options for commercial spaces on a floor.
+ * GET /api/floors/{floorId}/expansion-options
+ * Returns { [guid]: [candidateObj, ...] }
+ */
+export async function fetchFloorExpansionOptions(floorId) {
+  return request(`${BASE}/floors/${encodeURIComponent(floorId)}/expansion-options`);
+}
+
 // ── Voice (STT / TTS) ───────────────────────────────────────────
 
 /**

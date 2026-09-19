@@ -6,6 +6,7 @@ import { fetchSpaceFurnishings } from '../../api/client';
 import { buildBeforeAfterComparison, buildFacilitiesText, buildRepurposeResponse } from '../../utils/actionTemplates';
 import FurnishingEditor from './FurnishingEditor';
 import RepurposePanel from './RepurposePanel';
+import ExpansionPanel from './ExpansionPanel';
 import './SpaceToolkit.css';
 
 export default function SpaceToolkit() {
@@ -30,6 +31,8 @@ export default function SpaceToolkit() {
   const [furnishings, setFurnishings] = useState([]);
   const [editorOpen, setEditorOpen] = useState(false);
   const [repurposeOpen, setRepurposeOpen] = useState(false);
+  const [expansionOpen, setExpansionOpen] = useState(false);
+  const expansionOptions = useStore((s) => s.expansionOptions);
 
   // Collapse dropdowns when selection changes
   useEffect(() => {
@@ -40,6 +43,7 @@ export default function SpaceToolkit() {
     setFurnishings([]);
     setEditorOpen(false);
     setRepurposeOpen(false);
+    setExpansionOpen(false);
   }, [selectedSpace]);
 
   // Load furnishings from preloaded store, fallback to API fetch
@@ -122,6 +126,13 @@ export default function SpaceToolkit() {
     const handler = () => setRepurposeOpen(true);
     window.addEventListener('delta-open-repurpose-panel', handler);
     return () => window.removeEventListener('delta-open-repurpose-panel', handler);
+  }, []);
+
+  // AI-driven: open expansion panel when Scenario tab chip dispatches event
+  useEffect(() => {
+    const handler = () => setExpansionOpen(true);
+    window.addEventListener('delta-open-expansion-panel', handler);
+    return () => window.removeEventListener('delta-open-expansion-panel', handler);
   }, []);
 
   // Clear route when dropdown closes
@@ -418,6 +429,31 @@ export default function SpaceToolkit() {
             }}
           />
         </div>
+
+        {/* Expansion Analysis dropdown - only for commercial spaces */}
+        {(() => {
+          const expansionOpts = (expansionOptions || {})[selectedSpaceId] || [];
+          const fn = (s.primary_function || '').toLowerCase();
+          const nm = (s.space_name || '').toLowerCase();
+          const isCommercial = ['commercial', 'restaurant', 'coffee', 'cafe', 'cafeteria',
+            'gift', 'shop', 'pharmacy', 'kiosk', 'retail', 'florist', 'bar', 'canteen', 'bistro']
+            .some(kw => fn.includes(kw) || nm.includes(kw));
+          if (!isCommercial && expansionOpts.length === 0) return null;
+          return (
+            <>
+              <button
+                className={`space-toolkit__dropdown-toggle ${expansionOpen ? 'space-toolkit__dropdown-toggle--active' : ''}`}
+                onClick={() => setExpansionOpen((v) => !v)}
+              >
+                <span className={`space-toolkit__dropdown-arrow ${expansionOpen ? 'space-toolkit__dropdown-arrow--open' : ''}`}>&#9656;</span>
+                Expansion Analysis
+              </button>
+              <div className={`space-toolkit__dropdown-body space-toolkit__dropdown-body--large ${expansionOpen ? '' : 'space-toolkit__dropdown-body--collapsed'}`}>
+                {expansionOpen && <ExpansionPanel />}
+              </div>
+            </>
+          );
+        })()}
 
         {/* Components Library - hidden (kept for future use) */}
       </div>

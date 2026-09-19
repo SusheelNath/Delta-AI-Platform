@@ -18,7 +18,10 @@ from app.services.polygon_intelligence import (
 )
 from app.services.classifier import classify_function
 from app.services.geometry import compute_floor_spatial
-from app.services.intelligence_cache import get_floor_intelligence, get_repurpose_options, get_floor_repurpose_options
+from app.services.intelligence_cache import (
+    get_floor_intelligence, get_repurpose_options, get_floor_repurpose_options,
+    get_expansion_options, get_floor_expansion_options,
+)
 
 router = APIRouter(tags=["spaces"])
 
@@ -157,6 +160,21 @@ def floor_repurpose_options(floor_id: str):
 def repurpose_options(space_id: str):
     """Return pre-computed repurpose options for a space. O(1) cache lookup."""
     options = get_repurpose_options(space_id)
+    if options is None:
+        return []
+    return options
+
+
+@router.get("/floors/{floor_id}/expansion-options")
+def floor_expansion_options(floor_id: str):
+    """Return all pre-computed expansion options for commercial spaces on a floor."""
+    return get_floor_expansion_options(floor_id)
+
+
+@router.get("/spaces/{space_id}/expansion-options")
+def expansion_options(space_id: str):
+    """Return pre-computed expansion options for a commercial space. O(1) cache lookup."""
+    options = get_expansion_options(space_id)
     if options is None:
         return []
     return options

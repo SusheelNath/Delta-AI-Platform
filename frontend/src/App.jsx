@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import useStore from './store/useStore';
-import { fetchFloors, fetchFloorPolygons, fetchFloorIntelligence, fetchFloorFurnishings, fetchFloorRepurposeOptions } from './api/client';
+import { fetchFloors, fetchFloorPolygons, fetchFloorIntelligence, fetchFloorFurnishings, fetchFloorRepurposeOptions, fetchFloorExpansionOptions } from './api/client';
 import XeokitViewer from './components/Viewer/XeokitViewer';
 import FloorPlanPanel from './components/FloorPlan/FloorPlanPanel';
 import ChatPanel from './components/Chat/ChatPanel';
@@ -20,7 +20,7 @@ export default function App() {
   // Preload all data (floors + polygons for every floor)
   useEffect(() => {
     async function preload() {
-      const { setLoadProgress, setLoadStage, setFloors, setFloorPolygons, setFloorIntelligence, mergeSpaceFurnishings, mergeRepurposeOptions, setDataReady } = useStore.getState();
+      const { setLoadProgress, setLoadStage, setFloors, setFloorPolygons, setFloorIntelligence, mergeSpaceFurnishings, mergeRepurposeOptions, mergeExpansionOptions, setDataReady } = useStore.getState();
 
       // 1. Fetch floor list
       setLoadStage('Loading floor data...');
@@ -107,6 +107,21 @@ export default function App() {
             const opts = await fetchFloorRepurposeOptions(floor.id);
             if (opts && typeof opts === 'object') {
               mergeRepurposeOptions(opts);
+            }
+          } catch {
+            // Non-critical - panel will show empty state
+          }
+        }));
+      }
+
+      // 6. Preload expansion options for commercial spaces (parallel)
+      if (floorList.length > 0) {
+        setLoadStage('Loading expansion analysis...');
+        await Promise.all(floorList.map(async (floor) => {
+          try {
+            const opts = await fetchFloorExpansionOptions(floor.id);
+            if (opts && typeof opts === 'object') {
+              mergeExpansionOptions(opts);
             }
           } catch {
             // Non-critical - panel will show empty state

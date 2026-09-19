@@ -110,6 +110,9 @@ const useStore = create((set, get) => ({
   // Preloaded repurpose options keyed by ifc_guid (loaded at boot from backend)
   repurposeOptions: {},  // { [ifc_guid]: [optionObj, ...] }
 
+  // Preloaded expansion options for commercial spaces
+  expansionOptions: {},  // { [ifc_guid]: [candidateObj, ...] }
+
   // Polygon mapping mode
   mappingMode: false,
   floorPolygons: loadPolygonsFromStorage(),  // persisted to localStorage
@@ -145,6 +148,7 @@ const useStore = create((set, get) => ({
   // Highlights (persistent glow on rooms until cleared)
   highlightedGuids: [],   // ifc_guid list to highlight on the floor plan
   repurposeGuids: [],     // ifc_guid list for repurpose candidates (blue)
+  expansionGuids: [],     // ifc_guid list for expansion candidates (teal)
   findRoomResults: null,  // Map<guid, { type, score, reason, capacity, ... }> for find_room
 
   // AI Learnings
@@ -281,6 +285,10 @@ const useStore = create((set, get) => ({
 
   mergeRepurposeOptions: (optionsByGuid) => {
     set({ repurposeOptions: { ...get().repurposeOptions, ...optionsByGuid } });
+  },
+
+  mergeExpansionOptions: (optionsByGuid) => {
+    set({ expansionOptions: { ...get().expansionOptions, ...optionsByGuid } });
   },
 
   /** Look up intelligence for a space by guid. Checks active floor first, then all. */
@@ -484,8 +492,9 @@ const useStore = create((set, get) => ({
   // Highlight actions
   setHighlightedGuids: (guids) => set({ highlightedGuids: guids }),
   setRepurposeGuids: (guids) => set({ repurposeGuids: guids }),
+  setExpansionGuids: (guids) => set({ expansionGuids: guids }),
   setFindRoomResults: (results) => set({ findRoomResults: results }),
-  clearHighlights: () => set({ highlightedGuids: [], repurposeGuids: [], findRoomResults: null }),
+  clearHighlights: () => set({ highlightedGuids: [], repurposeGuids: [], expansionGuids: [], findRoomResults: null }),
 
   // Universal clear - resets UI state to default (preserves chat history)
   clearAll: () => set({
@@ -496,6 +505,7 @@ const useStore = create((set, get) => ({
     activeRoute: null,
     highlightedGuids: [],
     repurposeGuids: [],
+    expansionGuids: [],
     findRoomResults: null,
     expandedGroups: [],
     searchQuery: '',

@@ -77,6 +77,22 @@
   transition: all 0.2s ease;
 }
 
+/* Header tooltip (portal) */
+.chat-panel__tip {
+  position: fixed;
+  transform: translateX(-50%);
+  background: #E77133;
+  color: white;
+  font-family: var(--font-ui, 'Inter', system-ui, sans-serif);
+  font-size: 10px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 99999;
+}
+
 .chat-panel__brain-btn:hover,
 .chat-panel__guide-btn:hover,
 .chat-panel__history-btn:hover {
@@ -244,97 +260,54 @@
   overflow: hidden;
 }
 
-.guide-booklet__strip {
-  padding: 6px 10px 4px;
+/* ── Guide Grid ── */
+
+.guide-grid {
+  padding: 8px 10px 6px;
 }
 
-.guide-booklet__tabs-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
+.guide-grid__buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 5px;
 }
 
-.guide-booklet__tabs {
-  display: flex;
-  gap: 2px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  scroll-behavior: smooth;
-  padding: 0 2px;
-  flex: 1;
-  mask-image: linear-gradient(to right, transparent 0px, black 18px, black calc(100% - 18px), transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, transparent 0px, black 18px, black calc(100% - 18px), transparent 100%);
-}
-
-.guide-booklet__tabs::-webkit-scrollbar {
-  display: none;
-}
-
-.guide-booklet__arrow {
-  flex-shrink: 0;
-  background: none;
+.guide-grid__btn {
+  background: var(--c-bg-subtle, #f8f6f3);
   border: 1px solid #e5e2de;
-  border-radius: 4px;
-  color: #9ca3af;
-  width: 18px;
-  height: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border-radius: 6px;
+  font-family: var(--font-ui, 'Inter', system-ui, sans-serif);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--c-text-secondary, #6b7280);
+  padding: 6px 4px;
   cursor: pointer;
-  transition: all 0.15s ease;
-  padding: 0;
+  transition: all 0.15s;
+  text-align: center;
 }
 
-.guide-booklet__arrow:hover {
+.guide-grid__btn:hover {
   color: #E77133;
   border-color: rgba(231, 113, 51, 0.3);
   background: rgba(231, 113, 51, 0.04);
 }
 
-.guide-booklet__arrow--left {
-  margin-right: 3px;
-}
-
-.guide-booklet__arrow--right {
-  margin-left: 3px;
-}
-
-.guide-booklet__tab {
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  color: var(--c-text-faint);
-  font-size: 10.5px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 5px 8px 4px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: color 0.15s ease, border-color 0.25s ease;
-  flex-shrink: 0;
-}
-
-.guide-booklet__tab:hover {
-  color: #6b7280;
-}
-
-.guide-booklet__tab--active {
+.guide-grid__btn--active {
   color: #E77133;
-  border-bottom-color: #E77133;
+  border-color: #E77133;
+  background: rgba(231, 113, 51, 0.06);
 }
 
-.guide-booklet__reveal {
+.guide-grid__reveal {
   overflow: hidden;
   transition: max-height 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.guide-booklet__chips {
+.guide-grid__chips {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
-  padding: 5px 2px 4px;
+  padding: 8px 2px 2px;
   animation: guide-chips-in 0.2s ease-out;
 }
 
@@ -343,23 +316,23 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.guide-booklet__chip {
+.guide-grid__chip {
   background: rgba(231, 113, 51, 0.04);
   border: 1px solid rgba(231, 113, 51, 0.18);
   border-radius: 10px;
-  color: #6b7280;
+  font-family: var(--font-ui, 'Inter', system-ui, sans-serif);
   font-size: 11px;
-  padding: 2px 9px;
+  color: #6b7280;
+  padding: 3px 10px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.15s;
   white-space: nowrap;
 }
 
-.guide-booklet__chip:hover {
+.guide-grid__chip:hover {
   color: #E77133;
   border-color: rgba(231, 113, 51, 0.5);
   background: rgba(231, 113, 51, 0.08);
-  box-shadow: 0 0 8px rgba(231, 113, 51, 0.08);
 }
 
 /* ── Learnings Panel ── */

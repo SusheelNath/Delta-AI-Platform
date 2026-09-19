@@ -54,6 +54,7 @@ export default function FloorPlanCanvas({ floorIdOverride }) {
   const mepVisible = useStore((s) => s.mepVisible);
   const highlightedGuids = useStore((s) => s.highlightedGuids);
   const repurposeGuids = useStore((s) => s.repurposeGuids);
+  const expansionGuids = useStore((s) => s.expansionGuids);
 
   const floorId = floorIdOverride || activeFloorId;
 
@@ -229,6 +230,11 @@ export default function FloorPlanCanvas({ floorIdOverride }) {
     return new Set(repurposeGuids);
   }, [repurposeGuids]);
 
+  const expansionSet = useMemo(() => {
+    if (!expansionGuids || expansionGuids.length === 0) return null;
+    return new Set(expansionGuids);
+  }, [expansionGuids]);
+
   // Heatmap stats
   const heatmapStats = useMemo(() => {
     if (heatmapMode === 'function') return null;
@@ -335,8 +341,8 @@ export default function FloorPlanCanvas({ floorIdOverride }) {
       if (isSearching) {
         alpha = searchMatches.has(room.id) ? 1 : 0.1;
         if (!searchMatches.has(room.id)) color = '#d5d0c8';
-      } else if (highlightSet || repurposeSet) {
-        if (!highlightSet?.has(room.id) && !repurposeSet?.has(room.id)) {
+      } else if (highlightSet || repurposeSet || expansionSet) {
+        if (!highlightSet?.has(room.id) && !repurposeSet?.has(room.id) && !expansionSet?.has(room.id)) {
           alpha = 0.12;
           color = '#d5d0c8';
         }
@@ -432,12 +438,27 @@ export default function FloorPlanCanvas({ floorIdOverride }) {
         ctx.stroke();
       }
 
+      // Expansion highlight glow (teal overlay + thicker border)
+      if (expansionSet && expansionSet.has(room.id)) {
+        ctx.globalAlpha = 0.25;
+        ctx.fillStyle = '#0d9488';
+        ctx.beginPath();
+        ctx.roundRect(rx, rz, rw, rh, Math.min(3, rw * 0.05));
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = '#0d9488';
+        ctx.lineWidth = 2 / transform.scale;
+        ctx.beginPath();
+        ctx.roundRect(rx, rz, rw, rh, Math.min(3, rw * 0.05));
+        ctx.stroke();
+      }
+
     }
 
     ctx.globalAlpha = 1;
 
     ctx.restore();
-  }, [rooms, transform, hovered, selectedSpaceId, searchMatches, highlightSet, repurposeSet, getRoomColor, heatmapMode, getLayout]);
+  }, [rooms, transform, hovered, selectedSpaceId, searchMatches, highlightSet, repurposeSet, expansionSet, getRoomColor, heatmapMode, getLayout]);
 
   // ── Hit testing - returns all rooms at point (for disambiguation) ──
   const hitTestAll = useCallback((clientX, clientY) => {

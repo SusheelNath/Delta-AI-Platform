@@ -46,6 +46,7 @@ _intelligence: dict[str, dict] = {}
 _search_blobs: dict[str, str] = {}
 _floor_summaries: str = ""
 _repurpose_cache: dict[str, list[dict]] = {}
+_expansion_cache: dict[str, list[dict]] = {}
 _ready: bool = False
 
 
@@ -58,7 +59,7 @@ def build_cache(db: Session) -> None:
     global _polygons, _polygon_map, _floor_groups
     global _furnishing_type_map, _metrics_map, _furnishings_map
     global _floor_spatials, _intelligence, _search_blobs
-    global _floor_summaries, _repurpose_cache, _ready
+    global _floor_summaries, _repurpose_cache, _expansion_cache, _ready
 
     _ready = False
     log.info("Building intelligence cache...")
@@ -108,12 +109,15 @@ def build_cache(db: Session) -> None:
     # ── Step 6: Repurpose analysis cache ──
     _repurpose_cache = _build_repurpose_cache()
 
+    # ── Step 7: Expansion analysis cache ──
+    _expansion_cache = _build_expansion_cache()
+
     _ready = True
     log.info(
         "Intelligence cache ready: %d spaces, %d floors, %d furnishing types, "
-        "%d repurpose analyses",
+        "%d repurpose analyses, %d expansion analyses",
         len(_intelligence), len(_floor_groups), len(_furnishing_type_map),
-        len(_repurpose_cache),
+        len(_repurpose_cache), len(_expansion_cache),
     )
 
 
@@ -585,6 +589,94 @@ def get_floor_repurpose_options(floor_id: str) -> dict[str, list[dict]]:
     }
 
 
+def get_expansion_options(ifc_guid: str) -> list[dict] | None:
+    """Look up pre-computed expansion options for a commercial space. O(1)."""
+    return _expansion_cache.get(ifc_guid)
+
+
+def get_floor_expansion_options(floor_id: str) -> dict[str, list[dict]]:
+    """Return all pre-computed expansion options for commercial spaces on a floor.
+
+    Returns {ifc_guid: [candidates]} for every commercial space that has
+    expansion options. Used by the frontend to preload at boot.
+    """
+    guids = {p.get("ifc_guid") for p in _floor_groups.get(floor_id, [])}
+    return {
+        guid: opts
+        for guid in guids
+        if guid and (opts := _expansion_cache.get(guid))
+    }
+
+
 def is_ready() -> bool:
     """Check if cache has been built."""
     return _ready
+
+
+# ══════════════════════════════════════════════════════════════════════
+# Expansion analysis cache builder
+# ══════════════════════════════════════════════════════════════════════
+
+def _build_expansion_cache() -> dict[str, list[dict]]:
+    """Pre-compute expansion options for all commercial spaces."""
+    from app.services.expansion import is_commercial_space, compute_expansion_options
+
+    # Pre-compute floor function counts
+    floor_fn_counts_cache: dict[str, dict[str, int]] = {}
+    floor_totals_cache: dict[str, int] = {}
+    for fid, polys in _floor_groups.items():
+        counts: dict[str, int] = defaultdict(int)
+        total = 0
+        for p in polys:
+            fn = p.get("primary_function") or ""
+            if fn:
+                counts[fn] += 1
+                total += 1
+        floor_fn_counts_cache[fid] = dict(counts)
+        floor_totals_cache[fid] = total
+
+    cache = {}
+    computed = 0
+
+    for guid, intel in _intelligence.items():
+        fn = intel.get("primary_function") or ""
+        name = intel.get("space_name") or ""
+
+        if not is_commercial_space(fn, name):
+            continue
+
+        area = intel.get("area_m2") or 0
+        if area < 3:
+            continue
+
+        fid = intel.get("floor_id", "")
+        floor_spatial = _floor_spatials.get(fid)
+        if not floor_spatial:
+            continue
+
+        # Build floor-level maps
+        floor_polygon_map = {
+            p["ifc_guid"]: p
+            for p in _floor_groups.get(fid, [])
+            if p.get("ifc_guid")
+        }
+        floor_intel_map = {
+            g: i for g, i in _intelligence.items()
+            if i.get("floor_id") == fid
+        }
+
+        options = compute_expansion_options(
+            commercial_space=intel,
+            floor_spatial=floor_spatial,
+            polygon_map=floor_polygon_map,
+            intelligence_map=floor_intel_map,
+            floor_fn_counts=floor_fn_counts_cache.get(fid, {}),
+            floor_total=floor_totals_cache.get(fid, 0),
+        )
+
+        if options:
+            cache[guid] = options
+            computed += 1
+
+    log.info("Expansion cache: %d commercial spaces with options", computed)
+    return cache
