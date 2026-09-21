@@ -1,15 +1,25 @@
 """
-Ollama integration service for Delta Intelligence Platform.
-Handles prompt construction and streaming chat with the local LLM.
+LLM integration service for Delta Intelligence Platform.
+Supports Groq API (cloud, default) and Ollama (local) for chat streaming.
 Actions are handled deterministically in chat.py - the LLM only produces text narration.
 """
 
+import os
 import httpx
 import json
 from typing import AsyncGenerator
 
-OLLAMA_BASE = "http://localhost:11434"
-MODEL = "qwen3:14b"
+from dotenv import load_dotenv
+from pathlib import Path
+
+load_dotenv(Path(__file__).resolve().parent.parent.parent / ".env")
+
+# ── Provider config ─────────────────────────────────────────────
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "ollama")       # "groq" or "ollama"
+OLLAMA_BASE  = os.getenv("OLLAMA_BASE", "http://localhost:11434")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:14b")
+GROQ_MODEL   = os.getenv("GROQ_CHAT_MODEL", "qwen/qwen3.8-27b")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 
 
 SYSTEM_PROMPT = """You are Delta AI, the intelligent assistant for the CHIREC Delta Hospital in Brussels, Belgium.
@@ -353,32 +363,28 @@ Would you like to explore a specific area or see details for a function group?""
     return messages
 
 
-async def stream_chat(
-    conversation: list[dict],
-    selected_space: dict | None = None,
-    search_results: list[dict] | None = None,
-    floor_summaries: str | None = None,
-    learnings: list[dict] | None = None,
-    disambiguation_hint: str | None = None,
-    evacuation_context: str | None = None,
-    capacity_plan_context: str | None = None,
-    action_context: str | None = None,
-    active_floor_id: str | None = None,
-) -> AsyncGenerator[str, None]:
-    """Stream tokens from Ollama's chat API.
+async def _stream_groq(messages: list[dict]) -> AsyncGenerator[str, None]:
+    """Stream tokens from Groq's chat completions API."""
+    from groq import AsyncGroq
 
-    Yields plain text tokens for display. Actions are handled
-    deterministically in chat.py - the LLM only produces text narration.
-    """
-    messages = build_messages(
-        conversation, selected_space, search_results,
-        floor_summaries, learnings, disambiguation_hint,
-        evacuation_context, capacity_plan_context,
-        action_context, active_floor_id,
+    client = AsyncGroq(api_key=GROQ_API_KEY)
+    stream = await client.chat.completions.create(
+        model=GROQ_MODEL,
+        messages=messages,
+        stream=True,
+        temperature=0.4,
+        max_tokens=4096,
     )
+    async for chunk in stream:
+        token = chunk.choices[0].delta.content
+        if token:
+            yield token
 
+
+async def _stream_ollama(messages: list[dict]) -> AsyncGenerator[str, None]:
+    """Stream tokens from Ollama's local chat API."""
     request_body = {
-        "model": MODEL,
+        "model": OLLAMA_MODEL,
         "messages": messages,
         "stream": True,
         "options": {
@@ -405,9 +411,6 @@ async def stream_chat(
                 if done:
                     break
                 buffer += raw_bytes
-                # Ollama sends one JSON object per line (0x0A delimited).
-                # Content newlines are JSON-escaped as \n (0x5C 0x6E),
-                # so splitting on raw 0x0A is safe.
                 while b"\n" in buffer:
                     line_bytes, buffer = buffer.split(b"\n", 1)
                     line_bytes = line_bytes.strip()
@@ -418,11 +421,9 @@ async def stream_chat(
 
                     token = msg.get("content", "")
                     if token:
-                        # Filter out <think>...</think> reasoning blocks
                         if in_think:
                             think_buf += token
                             if "</think>" in think_buf:
-                                # End of thinking - extract any content after </think>
                                 after = think_buf.split("</think>", 1)[1]
                                 in_think = False
                                 think_buf = ""
@@ -445,3 +446,32 @@ async def stream_chat(
                     if chunk.get("done"):
                         done = True
                         break
+
+
+async def stream_chat(
+    conversation: list[dict],
+    selected_space: dict | None = None,
+    search_results: list[dict] | None = None,
+    floor_summaries: str | None = None,
+    learnings: list[dict] | None = None,
+    disambiguation_hint: str | None = None,
+    evacuation_context: str | None = None,
+    capacity_plan_context: str | None = None,
+    action_context: str | None = None,
+    active_floor_id: str | None = None,
+) -> AsyncGenerator[str, None]:
+    """Stream tokens from the configured LLM provider (Groq or Ollama).
+
+    Yields plain text tokens for display. Actions are handled
+    deterministically in chat.py - the LLM only produces text narration.
+    """
+    messages = build_messages(
+        conversation, selected_space, search_results,
+        floor_summaries, learnings, disambiguation_hint,
+        evacuation_context, capacity_plan_context,
+        action_context, active_floor_id,
+    )
+
+    provider = _stream_groq if LLM_PROVIDER == "groq" else _stream_ollama
+    async for token in provider(messages):
+        yield token
