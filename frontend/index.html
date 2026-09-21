@@ -7,6 +7,12 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <title>Delta Intelligence Platform</title>
+    <!-- Pre-cache voice audio so mic click is instant -->
+    <link rel="preload" href="/audio/greeting.mp3" as="fetch" crossorigin />
+    <link rel="preload" href="/audio/acknowledging.mp3" as="fetch" crossorigin />
+    <link rel="preload" href="/audio/announcing.mp3" as="fetch" crossorigin />
+    <link rel="preload" href="/audio/announcing_space.mp3" as="fetch" crossorigin />
+    <link rel="preload" href="/audio/goodbye.mp3" as="fetch" crossorigin />
   </head>
   <body>
     <div id="root"></div>

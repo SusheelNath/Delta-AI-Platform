@@ -2,13 +2,17 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import ReactMarkdown from 'react-markdown';
 import useStore from '../../store/useStore';
-import { streamChat, fetchIntents, transcribeAudio, speakText, fetchSpaceFurnishings } from '../../api/client';
+import { streamChat, fetchIntents, fetchSpaceFurnishings } from '../../api/client';
 import {
   createVoiceManager,
   playAudio,
   stripSubmitPhrase,
+  warmAudioCache,
+  getCachedAudio,
+  unlockAudio,
 } from '../../utils/voiceManager';
 import { resolveAction } from '../../utils/actionResolver';
+import { selectSpaceFromPolygon } from '../../utils/polygonOverrides';
 import { getActionTemplate, wrapConfirmation } from '../../utils/actionTemplates';
 import './ChatPanel.css';
 
@@ -96,6 +100,7 @@ export default function ChatPanel() {
   useEffect(() => {
     loadSessionList();
     fetchLearnings();
+    warmAudioCache(); // pre-fetch MP3s so mic click is instant
   }, []);
 
   // ── Welcome message (re-fires when messages cleared by New Chat) ──
@@ -173,7 +178,21 @@ export default function ChatPanel() {
         if (!voiceActiveRef.current) activateVoice();
       },
       onStop: () => {
+        // "Thank you Delta" → close mic
         if (voiceActiveRef.current) deactivateVoice();
+      },
+      onCancel: () => {
+        // "Stop Delta" → abort current prompt, stay listening
+        if (abortRef.current) {
+          abortRef.current.abort();
+          abortRef.current = null;
+        }
+        useStore.getState().setGenerating(false);
+        setInput('');
+        if (voiceActiveRef.current) {
+          setVoiceState('listening');
+          voiceManagerRef.current?.setMode('listening');
+        }
       },
       onInterim: (text) => {
         setInput(text);
@@ -215,22 +234,18 @@ export default function ChatPanel() {
   // ── Voice activation / deactivation ──
 
   const activateVoice = useCallback(async () => {
+    // Called by onWake ("Hello Delta") — recognition is already running
     setVoiceActive(true);
     setVoiceState('greeting');
+    voiceManagerRef.current?.mute();
 
+    await warmAudioCache();
     try {
-      voiceManagerRef.current?.mute();
-      const audio = await speakText('', 'greeting');
-      await playAudio(audio);
-      // Grace period - mic still picks up speaker residue after audio ends
-      await new Promise((r) => setTimeout(r, 700));
-    } catch (err) {
-      console.warn('[Voice] Greeting TTS failed:', err);
-    } finally {
-      voiceManagerRef.current?.unmute();
-    }
+      const cached = getCachedAudio('greeting');
+      if (cached) await playAudio(cached);
+    } catch (_) {}
 
-    // After greeting, switch to listening mode and clear any leaked text
+    voiceManagerRef.current?.unmute();
     if (voiceActiveRef.current) {
       setInput('');
       setVoiceState('listening');
@@ -240,15 +255,14 @@ export default function ChatPanel() {
 
   const deactivateVoice = useCallback(async () => {
     voiceManagerRef.current?.setMode('idle');
+    // Don't stopCapture — recognition stays alive in idle mode
+    // so "Hello Delta" wake phrase still works
     voiceManagerRef.current?.mute();
     try {
-      const audio = await speakText('', 'goodbye');
-      await playAudio(audio);
-    } catch (_) {
-      /* non-critical */
-    } finally {
-      voiceManagerRef.current?.unmute();
-    }
+      const cached = getCachedAudio('goodbye');
+      if (cached) await playAudio(cached);
+    } catch (_) {}
+    voiceManagerRef.current?.unmute();
     setVoiceActive(false);
     setVoiceState('idle');
     setInput('');
@@ -302,6 +316,145 @@ export default function ChatPanel() {
     }
 
     const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    // ── Instant regex intercepts (before intent detection / LLM) ──
+
+    const lower = text.toLowerCase();
+
+    // Close checks FIRST — "close repurpose analysis" must beat "repurpose analysis"
+    const CLOSE_REPURPOSE_RE = /\b(?:close|hide|dismiss|cancel|stop)\b.*\b(?:repurpose|re-purpose)\b|\b(?:repurpose|re-purpose)\b.*\b(?:close|hide|dismiss|cancel)\b|\b(?:done|finished|never\s*mind)\b.*\b(?:repurpose|re-purpose)\b/i;
+    const CLOSE_EXPAND_RE = /\b(?:close|hide|dismiss|cancel|stop)\b.*\b(?:expan(?:d|sion))\b|\b(?:expan(?:d|sion))\b.*\b(?:close|hide|dismiss|cancel)\b|\b(?:done|finished|never\s*mind)\b.*\b(?:expan(?:d|sion))\b/i;
+    const CLOSE_DRAWER_RE = /\b(?:close|hide|dismiss)\b.*\b(?:toolkit|side\s*panel|drawer|panel)\b/i;
+
+    if (CLOSE_REPURPOSE_RE.test(text) || CLOSE_EXPAND_RE.test(text) || CLOSE_DRAWER_RE.test(text)) {
+      const userMsg = { role: 'user', text, time: now };
+      addMessage(userMsg);
+      setInput('');
+
+      let label;
+      if (CLOSE_REPURPOSE_RE.test(text)) {
+        window.dispatchEvent(new CustomEvent('delta-close-repurpose-panel'));
+        label = 'repurpose analysis';
+      } else if (CLOSE_EXPAND_RE.test(text)) {
+        window.dispatchEvent(new CustomEvent('delta-close-expansion-panel'));
+        label = 'expansion analysis';
+      } else {
+        useStore.getState().setDrawerOpen(false);
+        label = 'panel';
+      }
+      addMessage({ role: 'delta', text: `Closed ${label}.`, time: now });
+      if (voiceActiveRef.current) {
+        setInput('');
+        setVoiceState('listening');
+        voiceManagerRef.current?.setMode('listening');
+      }
+      return;
+    }
+
+    // Repurpose patterns — action requests only, not analytical questions
+    const REPURPOSE_RE = /\b(?:repurpose|re-purpose)\b.*\b(?:room|space|this)\b|\b(?:room|space|this)\b.*\b(?:repurpose|re-purpose)\b|\b(?:repurpose|re-purpose)\s+(?:analysis|options|panel)\b|\b(?:open|show|run|start)\b.*\b(?:repurpose|re-purpose)\b|\b(?:convert|transform|change)\b.*\b(?:function|use)\b.*\b(?:this|room|space)\b|\b(?:alternative|other)\s+(?:uses?|functions?)\b.*\b(?:this|room|space)\b|\bwhat\s+(?:else\s+)?(?:can|could)\s+this\s+(?:room|space)\s+be\b/i;
+
+    // Expand patterns — only for commercial spaces
+    const EXPAND_RE = /\b(?:expand|expansion)\b.*\b(?:room|space|this)\b|\b(?:room|space|this)\b.*\b(?:expand|expansion)\b|\b(?:expand|expansion)\s+(?:analysis|options|panel)\b|\b(?:open|show|run|start)\b.*\b(?:expand|expansion)\b|\b(?:make|grow|enlarge)\b.*\b(?:this|room|space)\b.*\b(?:bigger|larger)\b|\bcan\s+this\s+(?:room|space)\s+be\s+(?:expanded|enlarged|grown)\b/i;
+
+    if (REPURPOSE_RE.test(text)) {
+      const userMsg = { role: 'user', text, time: now };
+      addMessage(userMsg);
+      setInput('');
+
+      const state = useStore.getState();
+      const space = state.selectedSpace;
+      if (!space || !state.selectedSpaceId) {
+        addMessage({ role: 'delta', text: 'Please select a room first so I can analyse repurpose options.', time: now });
+        if (voiceActiveRef.current) {
+          setInput('');
+          setVoiceState('listening');
+          voiceManagerRef.current?.setMode('listening');
+        }
+        return;
+      }
+      const spaceName = space.space_name || state.selectedSpaceId;
+      const fn = space.primary_function || '';
+      const NON_REPURPOSABLE = new Set([
+        'corridor', 'corridor access', 'elevator', 'staircase', 'staircasse',
+        'ramp', 'no access', 'no acccess', 'no infrastructure',
+        'ventilation shaft', 'vent', 'technical', 'main hall',
+        'ambulance', 'atrium', 'basement', 'waste',
+      ]);
+      if (NON_REPURPOSABLE.has(fn.toLowerCase())) {
+        addMessage({
+          role: 'delta',
+          text: `**${spaceName}** is classified as **${fn}** — this is structural or circulation infrastructure and **cannot be repurposed**.\n\nSelect a functional room (e.g. storage, office, waiting room) to explore repurpose options.`,
+          time: now,
+        });
+        if (voiceActiveRef.current) {
+          setInput('');
+          setVoiceState('listening');
+          voiceManagerRef.current?.setMode('listening');
+        }
+        return;
+      }
+      state.setDrawerOpen(true);
+      window.dispatchEvent(new CustomEvent('delta-open-repurpose-panel'));
+      addMessage({ role: 'delta', text: `Opening repurpose analysis for **${spaceName}**. Check the Space Toolkit panel for ranked options.`, time: now });
+      if (voiceActiveRef.current) {
+        setInput('');
+        setVoiceState('listening');
+        voiceManagerRef.current?.setMode('listening');
+      }
+      return;
+    }
+
+    if (EXPAND_RE.test(text)) {
+      const userMsg = { role: 'user', text, time: now };
+      addMessage(userMsg);
+      setInput('');
+
+      const state = useStore.getState();
+      const space = state.selectedSpace;
+      if (!space || !state.selectedSpaceId) {
+        addMessage({ role: 'delta', text: 'Please select a commercial room first so I can analyse expansion options.', time: now });
+        if (voiceActiveRef.current) {
+          setInput('');
+          setVoiceState('listening');
+          voiceManagerRef.current?.setMode('listening');
+        }
+        return;
+      }
+      const spaceName = space.space_name || state.selectedSpaceId;
+      const fn = (space.primary_function || '').toLowerCase();
+      const nm = (space.space_name || '').toLowerCase();
+      const COMMERCIAL_KW = ['commercial', 'restaurant', 'coffee', 'cafe', 'cafeteria',
+        'gift', 'shop', 'pharmacy', 'kiosk', 'retail', 'florist', 'bar', 'canteen', 'bistro'];
+      const isCommercial = COMMERCIAL_KW.some(kw => fn.includes(kw) || nm.includes(kw));
+      const expansionOpts = (state.expansionOptions || {})[state.selectedSpaceId] || [];
+
+      if (!isCommercial && expansionOpts.length === 0) {
+        addMessage({
+          role: 'delta',
+          text: `**${spaceName}** is not a commercial space. Expansion analysis is available for commercial rooms (restaurants, pharmacies, gift shops, cafeterias, etc.).\n\nSelect a commercial room to explore expansion options.`,
+          time: now,
+        });
+        if (voiceActiveRef.current) {
+          setInput('');
+          setVoiceState('listening');
+          voiceManagerRef.current?.setMode('listening');
+        }
+        return;
+      }
+      state.setDrawerOpen(true);
+      window.dispatchEvent(new CustomEvent('delta-open-expansion-panel'));
+      addMessage({ role: 'delta', text: `Opening expansion analysis for **${spaceName}**. Check the Space Toolkit panel for adjacent room candidates.`, time: now });
+      if (voiceActiveRef.current) {
+        setInput('');
+        setVoiceState('listening');
+        voiceManagerRef.current?.setMode('listening');
+      }
+      return;
+    }
+
+    // ── End instant regex intercepts ──
+
     const userMsg = { role: 'user', text, time: now };
     addMessage(userMsg);
     setInput('');
@@ -345,7 +498,12 @@ export default function ChatPanel() {
     let phase1Content = null;
     let phase1Actions = [];
     try {
-      const { actions, confirmations, content } = await fetchIntents(text, effectiveSpace, effectiveFloor, effectiveGroup, effectiveSpaceData);
+      // 6-second timeout on intent detection — bail early if backend is slow
+      const intentResult = await Promise.race([
+        fetchIntents(text, effectiveSpace, effectiveFloor, effectiveGroup, effectiveSpaceData),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('__timeout__')), 6000)),
+      ]);
+      const { actions, confirmations, content } = intentResult;
       phase1Actions = actions;
       if (actions.length > 0) {
         // Batch multiple modify_furnishing actions into a single API call
@@ -439,6 +597,25 @@ export default function ChatPanel() {
         phase1Content = content;
       }
     } catch (e) {
+      if (e?.message === '__timeout__') {
+        console.warn('[Chat] Intent detection timed out (6s)');
+        // Show "didn't understand" and bail — don't fall through to LLM
+        const timeoutNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        addMessage({
+          role: 'delta',
+          text: "I didn't quite understand that. Could you rephrase your request?",
+          time: timeoutNow,
+        });
+        setPendingPhase('idle');
+        setCompletedActions([]);
+        if (voiceOn) {
+          setInput('');
+          setVoiceState('listening');
+          voiceManagerRef.current?.setMode('listening');
+        }
+        useStore.getState().saveCurrentSession();
+        return;
+      }
       console.warn('[Chat] Intent detection failed, falling back to stream:', e);
     }
 
@@ -466,9 +643,11 @@ export default function ChatPanel() {
               voiceManagerRef.current?.mute();
               setVoiceState('announcing');
               const annPhrase = selectedSpaceId ? 'announcing_space' : 'announcing';
-              const annAudio = await speakText('', annPhrase);
-              await playAudio(annAudio);
-              await new Promise((r) => setTimeout(r, 700));
+              const cached = getCachedAudio(annPhrase);
+              if (cached) {
+                await playAudio(cached);
+                await new Promise((r) => setTimeout(r, 700));
+              }
             } catch (_) {
               /* non-critical */
             } finally {
@@ -536,9 +715,11 @@ export default function ChatPanel() {
         const ackTimer = setTimeout(() => { voiceManagerRef.current?.unmute(); }, 8000);
         try {
           setVoiceState('acknowledging');
-          const ackAudio = await speakText('', 'acknowledging');
-          await playAudio(ackAudio);
-          await new Promise((r) => setTimeout(r, 400));
+          const cached = getCachedAudio('acknowledging');
+          if (cached) {
+            await playAudio(cached);
+            await new Promise((r) => setTimeout(r, 400));
+          }
         } catch (_) {
           /* non-critical */
         } finally {
@@ -575,9 +756,11 @@ export default function ChatPanel() {
             voiceManagerRef.current?.mute();
             setVoiceState('announcing');
             const annPhrase = selectedSpaceId ? 'announcing_space' : 'announcing';
-            const annAudio = await speakText('', annPhrase);
-            await playAudio(annAudio);
-            await new Promise((r) => setTimeout(r, 700));
+            const cached = getCachedAudio(annPhrase);
+            if (cached) {
+              await playAudio(cached);
+              await new Promise((r) => setTimeout(r, 700));
+            }
           } catch (_) {
             /* non-critical */
           } finally {
@@ -678,13 +861,35 @@ export default function ChatPanel() {
 
   // ── Mic button click ──
 
-  const handleMicToggle = useCallback(() => {
+  const handleMicToggle = useCallback(async () => {
     if (voiceActive) {
       deactivateVoice();
-    } else {
-      activateVoice();
+      return;
     }
-  }, [voiceActive, activateVoice, deactivateVoice]);
+
+    // 1. Show UI + start recognition NOW (must be in click gesture)
+    setVoiceActive(true);
+    setVoiceState('greeting');
+    voiceManagerRef.current?.startCapture();
+    voiceManagerRef.current?.mute(); // mute during greeting
+    console.info('[Voice] Mic clicked — recognition started');
+
+    // 2. Load + play greeting (recognition runs muted in background)
+    await warmAudioCache();
+    try {
+      const cached = getCachedAudio('greeting');
+      if (cached) await playAudio(cached);
+    } catch (_) {}
+
+    // 3. Unmute and switch to listening
+    voiceManagerRef.current?.unmute();
+    if (voiceActiveRef.current) {
+      setInput('');
+      setVoiceState('listening');
+      voiceManagerRef.current?.setMode('listening');
+      console.info('[Voice] Now listening');
+    }
+  }, [voiceActive, deactivateVoice, setVoiceActive, setVoiceState]);
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -932,9 +1137,9 @@ export default function ChatPanel() {
             const FLOOR_ORDER = ['H003', 'H002', 'H001', 'H000', 'H010', 'H020', 'H030', 'H040', 'H050'];
 
             // Nav
-            if (text === 'Go to floor 1') {
+            if (text === 'Go to Ground Floor') {
               state.setActiveFloor('H000');
-              addMessage({ role: 'delta', text: 'Navigated to Floor 1.', time: now });
+              addMessage({ role: 'delta', text: 'Navigated to Ground Floor.', time: now });
               return;
             }
             if (text === 'Next floor') {
@@ -977,7 +1182,12 @@ export default function ChatPanel() {
                 return;
               }
               const polys = (state.floorPolygons || {})[floorId] || [];
-              const sorted = [...polys].filter(p => p.area_m2 > 0).sort((a, b) => b.area_m2 - a.area_m2);
+              const _infra = new Set([
+                'no access', 'no acccess', 'ventilation shaft', 'elevator', 'corridor',
+                'toilet', 'staircase', 'shaft', 'void', 'riser',
+                'circulation', 'lobby', 'entrance', 'vestibule',
+              ]);
+              const sorted = [...polys].filter(p => p.area_m2 > 0 && !_infra.has((p.primary_function || '').toLowerCase()) && !_infra.has((p.space_name || '').toLowerCase())).sort((a, b) => b.area_m2 - a.area_m2);
               const top = sorted.slice(0, 5);
               state.setHighlightedGuids(top.map(p => p.ifc_guid));
               const list = top.map((p, i) => `${i + 1}. **${p.space_name || p.ifc_guid}** — ${Number(p.area_m2).toFixed(1)} m²`).join('\n');
@@ -1031,8 +1241,13 @@ export default function ChatPanel() {
               candidates.sort((a, b) => b.score - a.score);
               const top = candidates.slice(0, 10);
               state.setHighlightedGuids(top.map(c => c.guid));
-              const list = top.map((c, i) => `${i + 1}. **${c.name}** (${c.fn}) — ${Number(c.area).toFixed(1)} m²`).join('\n');
-              addMessage({ role: 'delta', text: `Top 10 assembly points:\n\n${list}`, time: now });
+              const floorMap = Object.fromEntries((state.floors || []).map(f => [f.id, f.name]));
+              const spaceLinks = top.map(c => ({
+                guid: c.guid,
+                floorId: c.fid,
+                label: `${c.name} (${c.fn}) — ${Number(c.area).toFixed(1)} m² · ${floorMap[c.fid] || c.fid}`,
+              }));
+              addMessage({ role: 'delta', text: 'Top 10 assembly points:', spaceLinks, time: now });
               return;
             }
 
@@ -1105,6 +1320,24 @@ export default function ChatPanel() {
                           ),
                         }}
                       >{msg.text}</ReactMarkdown>
+                      {msg.spaceLinks && (
+                        <ol className="chat-panel__space-links">
+                          {msg.spaceLinks.map((sl, j) => (
+                            <li key={j}>
+                              <button
+                                className="chat-panel__space-link"
+                                onClick={() => {
+                                  const st = useStore.getState();
+                                  st.setActiveFloor(sl.floorId);
+                                  const polys = (st.floorPolygons || {})[sl.floorId] || [];
+                                  const poly = polys.find(p => p.ifc_guid === sl.guid);
+                                  if (poly) selectSpaceFromPolygon(poly, sl.floorId);
+                                }}
+                              >{sl.label}</button>
+                            </li>
+                          ))}
+                        </ol>
+                      )}
                     </div>
                   ) : (
                     <p className="chat-panel__bubble-text">{msg.text}</p>
@@ -1200,7 +1433,7 @@ export default function ChatPanel() {
 }
 
 const GUIDE_TABS = [
-  { label: 'Nav',       chips: ['Go to floor 1', 'Next floor', 'Previous floor', 'Show all floors'] },
+  { label: 'Nav',       chips: ['Go to Ground Floor', 'Next floor', 'Previous floor', 'Show all floors'] },
   { label: 'Search',    chips: ['Largest rooms on this floor', 'Show elevators', 'Show staircases', 'Highlight all toilets'] },
   { label: 'Route',     chips: ['Nearest elevator', 'Nearest staircase', 'Clear route'] },
   { label: 'Plan',      chips: ['Best assembly points', 'Find a room for...', 'Edit furnishings'] },

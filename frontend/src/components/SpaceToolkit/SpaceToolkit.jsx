@@ -121,18 +121,28 @@ export default function SpaceToolkit() {
     return () => window.removeEventListener('delta-open-furnishing-editor', handler);
   }, []);
 
-  // AI-driven: open repurpose panel when chat chip or action dispatches event
+  // AI-driven: open/close repurpose panel
   useEffect(() => {
-    const handler = () => setRepurposeOpen(true);
-    window.addEventListener('delta-open-repurpose-panel', handler);
-    return () => window.removeEventListener('delta-open-repurpose-panel', handler);
+    const open = () => setRepurposeOpen(true);
+    const close = () => setRepurposeOpen(false);
+    window.addEventListener('delta-open-repurpose-panel', open);
+    window.addEventListener('delta-close-repurpose-panel', close);
+    return () => {
+      window.removeEventListener('delta-open-repurpose-panel', open);
+      window.removeEventListener('delta-close-repurpose-panel', close);
+    };
   }, []);
 
-  // AI-driven: open expansion panel when Scenario tab chip dispatches event
+  // AI-driven: open/close expansion panel
   useEffect(() => {
-    const handler = () => setExpansionOpen(true);
-    window.addEventListener('delta-open-expansion-panel', handler);
-    return () => window.removeEventListener('delta-open-expansion-panel', handler);
+    const open = () => setExpansionOpen(true);
+    const close = () => setExpansionOpen(false);
+    window.addEventListener('delta-open-expansion-panel', open);
+    window.addEventListener('delta-close-expansion-panel', close);
+    return () => {
+      window.removeEventListener('delta-open-expansion-panel', open);
+      window.removeEventListener('delta-close-expansion-panel', close);
+    };
   }, []);
 
   // Clear route when dropdown closes

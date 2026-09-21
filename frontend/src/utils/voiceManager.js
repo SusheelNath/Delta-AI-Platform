@@ -1,15 +1,17 @@
 /**
- * Voice manager for Delta AI - Web Speech API edition.
+ * Voice manager for Delta AI — Chrome Web Speech API + static MP3 TTS.
  *
- * Uses the browser's Web Speech API for:
- *   - Real-time interim transcription display
- *   - Keyword detection (wake / stop / submit / clear)
- *   - Final text sent directly to the LLM on submit
+ * Architecture:
+ *   - Chrome SpeechRecognition (continuous, interimResults) for STT
+ *   - HTML5 Audio elements for TTS playback (static MP3 files)
+ *   - Keyword detection via regex on transcription results
  *
- * No backend audio pipeline - instant response, zero latency on submit.
+ * Zero AudioContext. Zero backend STT. Zero dependencies.
+ * Recognition auto-restarts on end so "Hello Delta" wake works
+ * after the first mic activation.
  */
 
-// ── Phonetic / fuzzy matching (keyword detection) ─────────────
+// ── Keyword detection (phonetic / fuzzy matching) ────────────────
 
 const DELTA_VARIANTS = /del(?:ta|t\s*a|la|ts|lt\s*a|lta|da)|dealt\s*a|delt\s*a|dell\s*ta|del\b/i;
 const WAKE_PREFIXES  = /\b(?:hi|hey|hello|hay|hallo|hola)\b/i;
@@ -21,20 +23,13 @@ const CLEAR_PREFIX   = /\b(?:clear|clean|claire|cancel|cancelled|stop|stopped)\b
 
 function hasDelta(text)        { return DELTA_VARIANTS.test(text); }
 function hasWakePhrase(text)   { return WAKE_PREFIXES.test(text) && hasDelta(text); }
-function hasStopPhrase(text)   { return (STOP_PREFIX.test(text) || THANKS_PREFIX.test(text)) && hasDelta(text); }
+function hasCancelPhrase(text)  { return STOP_PREFIX.test(text) && hasDelta(text); }
+function hasGoodbyePhrase(text) { return THANKS_PREFIX.test(text) && hasDelta(text); }
 function hasSubmitPhrase(text) { return SUBMIT_SOLO.test(text) || SUBMIT_DELTA.test(text); }
 function hasClearPhrase(text)  { return CLEAR_PREFIX.test(text) && hasDelta(text); }
 
-const MAX_ALTERNATIVES = 5;
+// ── Self-phrase filter (Delta's TTS picked up by mic) ────────────
 
-function checkAlternatives(result, testFn) {
-  for (let a = 0; a < result.length; a++) {
-    if (testFn(result[a].transcript.toLowerCase().trim())) return true;
-  }
-  return false;
-}
-
-// ── Canned phrases to filter out (Delta's own TTS picked up by mic) ──
 const SELF_PHRASES = [
   /hello[,!]?\s*how\s+can\s+I\s+help\s+you\??/gi,
   /one\s+moment[,.]?\s*please\.?/gi,
@@ -60,203 +55,273 @@ export function stripSubmitPhrase(text) {
   return result.trim();
 }
 
-// ── Voice Manager ──────────────────────────────────────────────
+// ── No AudioContext needed ──────────────────────────────────────
+
+/** No-op — kept for API compatibility. */
+export function unlockAudio() {}
+
+// ── Static audio cache ──────────────────────────────────────────
+
+const _audioCache = {};
+let _cacheLoaded = false;
+let _cachePromise = null;
+
+const CANNED_KEYS = ['greeting', 'acknowledging', 'announcing', 'announcing_space', 'goodbye'];
+
+/** Pre-fetch all canned MP3 files. Browser preload tags make these instant cache hits. */
+export function warmAudioCache() {
+  if (_cacheLoaded) return Promise.resolve();
+  if (_cachePromise) return _cachePromise;
+  _cachePromise = Promise.all(CANNED_KEYS.map(async (key) => {
+    try {
+      const res = await fetch(`/audio/${key}.mp3`);
+      if (res.ok) _audioCache[key] = await res.arrayBuffer();
+    } catch (_) {}
+  })).then(() => {
+    _cacheLoaded = true;
+    console.info('[Voice] Audio cache ready');
+  });
+  return _cachePromise;
+}
+
+/** Get cached audio ArrayBuffer, or null. */
+export function getCachedAudio(key) {
+  return _audioCache[key] || null;
+}
+
+/** Play audio via HTML5 Audio element — no AudioContext. */
+export function playAudio(audioData) {
+  return new Promise((resolve) => {
+    try {
+      const blob = audioData instanceof Blob
+        ? audioData
+        : new Blob([audioData], { type: 'audio/mpeg' });
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      const cleanup = () => URL.revokeObjectURL(url);
+      const timer = setTimeout(() => { cleanup(); resolve(); }, 6000);
+      audio.onended = () => { clearTimeout(timer); cleanup(); resolve(); };
+      audio.onerror = () => { clearTimeout(timer); cleanup(); resolve(); };
+      audio.play().catch(() => { clearTimeout(timer); cleanup(); resolve(); });
+    } catch (_) {
+      resolve();
+    }
+  });
+}
+
+// ── Voice Manager ───────────────────────────────────────────────
+
+const SpeechRecognition = typeof window !== 'undefined'
+  ? (window.SpeechRecognition || window.webkitSpeechRecognition)
+  : null;
 
 /**
- * Create the voice manager.
- *
  * @param {Object} callbacks
  * @param {() => void}                        callbacks.onWake
- * @param {() => void}                        callbacks.onStop
+ * @param {() => void}                        callbacks.onStop     - "Thank you Delta" → close mic
+ * @param {() => void}                        callbacks.onCancel   - "Stop Delta" → abort current prompt
  * @param {(text: string) => void}            callbacks.onInterim
  * @param {(blob: Blob, text: string) => void} callbacks.onSubmit
  * @param {() => void}                        callbacks.onClear
  * @param {(err: Error) => void}              callbacks.onError
  */
 export function createVoiceManager({
-  onWake,
-  onStop,
-  onInterim,
-  onSubmit,
-  onClear,
-  onError,
+  onWake, onStop, onCancel, onInterim, onSubmit, onClear, onError,
 }) {
-  const SpeechRecognition =
-    window.SpeechRecognition || window.webkitSpeechRecognition;
-
-  // ── State ──
-  let mode = 'idle';            // 'idle' | 'listening'
+  let mode = 'idle';
   let destroyed = false;
   let muted = false;
-  let accumulatedText = '';     // Web Speech committed finals
-  let lastInterim = '';         // last interim text (promoted on recognition restart)
+  let accumulatedText = '';
+  let currentInterim = '';
   let wakeFired = false;
 
-  // ── Web Speech API ───────────────────────────────────────────
-
   let recognition = null;
+  let running = false;
+  let shouldRun = false; // true once user clicks mic — keeps auto-restart alive
+
+  // ── SpeechRecognition setup ──
 
   function createRecognition() {
-    if (!SpeechRecognition) return;
-    if (recognition) { try { recognition.abort(); } catch (_) {} }
+    if (!SpeechRecognition) {
+      console.error('[Voice] SpeechRecognition not available in this browser');
+      onError?.(new Error('SpeechRecognition not supported'));
+      return null;
+    }
 
-    recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.maxAlternatives = MAX_ALTERNATIVES;
-    recognition.lang = 'en-US';
+    const rec = new SpeechRecognition();
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.lang = 'en-US';
+    rec.maxAlternatives = 1;
 
-    recognition.onresult = handleSpeechResult;
+    rec.onresult = (event) => {
+      if (muted) return;
 
-    recognition.onerror = (e) => {
-      if (e.error !== 'no-speech' && e.error !== 'aborted') {
-        console.warn('[Voice] Error:', e.error);
+      let newFinal = '';
+      let interim = '';
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          newFinal += event.results[i][0].transcript;
+        } else {
+          interim += event.results[i][0].transcript;
+        }
+      }
+
+      if (newFinal) handleTranscription(newFinal.trim(), true);
+      else if (interim) handleTranscription(interim.trim(), false);
+    };
+
+    rec.onend = () => {
+      running = false;
+      if (destroyed || !shouldRun) return;
+      // Auto-restart — keeps recognition alive after Chrome's periodic stops
+      try {
+        rec.start();
+        running = true;
+      } catch (err) {
+        console.warn('[Voice] Auto-restart failed:', err.message);
       }
     };
 
-    recognition.onend = () => {
-      // Promote any in-flight interim text to accumulatedText so it
-      // survives the session restart instead of silently vanishing.
-      if (lastInterim && mode === 'listening') {
-        accumulatedText += (accumulatedText ? ' ' : '') + lastInterim;
-        lastInterim = '';
-        onInterim?.(accumulatedText);
-      }
-      if (!destroyed) {
-        try { recognition.start(); } catch (_) {}
+    rec.onerror = (event) => {
+      if (event.error === 'no-speech') return;
+      if (event.error === 'aborted') return;
+      console.warn('[Voice] Recognition error:', event.error);
+      if (event.error === 'not-allowed') {
+        onError?.(new Error('Microphone access denied'));
       }
     };
 
-    try { recognition.start(); } catch (_) {}
+    return rec;
   }
 
-  function handleSpeechResult(event) {
-    if (muted) return;
+  // ── Transcription handler ──
 
-    for (let i = event.resultIndex; i < event.results.length; i++) {
-      const result = event.results[i];
-      const isFinal = result.isFinal;
-      const currentTranscript = result[0].transcript.trim();
-      const combinedText = (accumulatedText + ' ' + currentTranscript).toLowerCase().trim();
+  function handleTranscription(text, isFinal) {
+    if (muted || !text) return;
 
-      // ── Stop Delta (both modes) ──
-      if (checkAlternatives(result, hasStopPhrase) || hasStopPhrase(combinedText)) {
-        accumulatedText = '';
-        lastInterim = '';
-        onStop?.();
-        continue;
+    const lower = text.toLowerCase().trim();
+    const combined = (accumulatedText + ' ' + lower).trim();
+
+    // "Thank you Delta" → close mic entirely
+    if (hasGoodbyePhrase(lower) || hasGoodbyePhrase(combined)) {
+      accumulatedText = '';
+      currentInterim = '';
+      onStop?.();
+      return;
+    }
+
+    // "Stop Delta" → abort current prompt, stay listening
+    if (hasCancelPhrase(lower) || hasCancelPhrase(combined)) {
+      accumulatedText = '';
+      currentInterim = '';
+      onCancel?.();
+      return;
+    }
+
+    // Clear (any mode)
+    if (hasClearPhrase(lower) || hasClearPhrase(combined)) {
+      accumulatedText = '';
+      currentInterim = '';
+      onClear?.();
+      return;
+    }
+
+    if (mode === 'idle') {
+      // Wake phrase detection
+      if (!wakeFired && (hasWakePhrase(lower) || hasWakePhrase(combined))) {
+        wakeFired = true;
+        onWake?.();
       }
+      if (isFinal) wakeFired = false;
 
-      // ── Clear/Cancel (both modes - requires "delta" guard) ──
-      if (checkAlternatives(result, hasClearPhrase) || hasClearPhrase(combinedText)) {
+    } else if (mode === 'listening') {
+      // Submit phrase
+      if (hasSubmitPhrase(lower) || hasSubmitPhrase(combined)) {
+        const full = accumulatedText + (accumulatedText ? ' ' : '') + text;
+        const cleaned = stripSubmitPhrase(full);
+        mode = 'idle';
         accumulatedText = '';
-        lastInterim = '';
-        onClear?.();
-        // Abort + restart recognition to flush the browser's result buffer
-        // so stale finals from the same utterance don't re-accumulate.
-        if (recognition) { try { recognition.abort(); } catch (_) {} }
+        currentInterim = '';
+        onSubmit?.(new Blob([], { type: 'audio/webm' }), cleaned);
         return;
       }
 
-      if (mode === 'idle') {
-        // ── Wake phrase ──
-        if (!wakeFired && (checkAlternatives(result, hasWakePhrase) || hasWakePhrase(combinedText))) {
-          wakeFired = true;
-          onWake?.();
-        }
-        if (isFinal) wakeFired = false;
-
-      } else if (mode === 'listening') {
-        // ── Submit detection ──
-        if (checkAlternatives(result, hasSubmitPhrase) || hasSubmitPhrase(combinedText)) {
-          const fullText = accumulatedText +
-            (accumulatedText ? ' ' : '') + currentTranscript;
-          const cleaned = stripSubmitPhrase(fullText);
-
-          mode = 'idle';
-          accumulatedText = '';
-          lastInterim = '';
-
-          // Send empty blob - no audio pipeline, just text
-          onSubmit?.(new Blob([], { type: 'audio/webm' }), cleaned);
-          return;
-        }
-
-        // ── Live interim display ──
-        let interim = '';
-        let finalText = '';
-
-        if (isFinal) {
-          finalText = stripSelfPhrases(currentTranscript);
-          lastInterim = '';
-        } else {
-          interim = stripSelfPhrases(currentTranscript);
-          lastInterim = interim;
-        }
-
-        if (finalText) {
-          accumulatedText += (accumulatedText ? ' ' : '') + finalText;
-        }
-
-        const displayText = stripSelfPhrases(
-          accumulatedText + (interim ? ' ' + interim : '')
-        );
-        onInterim?.(displayText);
+      // Live display — finals accumulate, interims update in place
+      if (isFinal) {
+        const clean = stripSelfPhrases(text);
+        if (clean) accumulatedText += (accumulatedText ? ' ' : '') + clean;
+        currentInterim = '';
+      } else {
+        currentInterim = stripSelfPhrases(text);
       }
+
+      onInterim?.(stripSelfPhrases(
+        accumulatedText + (currentInterim ? ' ' + currentInterim : ''),
+      ));
     }
   }
 
-  // ── Public API ────────────────────────────────────────────────
+  // ── Public API ──
 
   return {
-    async start() {
-      createRecognition();
+    async start() {},
+    async ensureStarted() {},
+
+    /** Start Chrome Speech Recognition. Call from a user gesture (click). */
+    startCapture() {
+      if (destroyed) return;
+      if (running) return; // already running
+      if (!recognition) recognition = createRecognition();
+      if (!recognition) return;
+      try {
+        recognition.start();
+        running = true;
+        shouldRun = true;
+        console.info('[Voice] Chrome Speech Recognition started');
+      } catch (err) {
+        console.error('[Voice] Recognition start failed:', err);
+        onError?.(err);
+      }
+    },
+
+    /** Fully stop recognition (no auto-restart). */
+    stopCapture() {
+      shouldRun = false;
+      if (recognition && running) {
+        try { recognition.abort(); } catch (_) {}
+        running = false;
+      }
     },
 
     async setMode(newMode) {
       mode = newMode;
-      // Only clear accumulated text when going idle (submit/stop).
-      // When switching to 'listening', preserve any text the user already
-      // spoke so it isn't silently swallowed during mode transitions.
       if (newMode !== 'listening') {
         accumulatedText = '';
-        lastInterim = '';
+        currentInterim = '';
       }
       wakeFired = false;
     },
 
     getMode() { return mode; },
 
-    /** Sync internal accumulated text with the visible input field.
-     *  Call this when the user manually edits (types/backspaces) the input. */
     syncText(text) {
       accumulatedText = text;
-      lastInterim = '';
+      currentInterim = '';
     },
 
     mute() { muted = true; },
-
     unmute() { muted = false; },
 
     destroy() {
       destroyed = true;
-      if (recognition) { try { recognition.abort(); } catch (_) {} recognition = null; }
+      shouldRun = false;
+      if (recognition) {
+        try { recognition.abort(); } catch (_) {}
+        recognition = null;
+      }
+      running = false;
     },
   };
-}
-
-// ── Audio playback ──────────────────────────────────────────────
-
-export function playAudio(audioData) {
-  return new Promise((resolve, reject) => {
-    const blob =
-      audioData instanceof Blob
-        ? audioData
-        : new Blob([audioData], { type: 'audio/mpeg' });
-    const url = URL.createObjectURL(blob);
-    const audio = new Audio(url);
-    audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
-    audio.onerror = (e) => { URL.revokeObjectURL(url); reject(e); };
-    audio.play().catch(reject);
-  });
 }

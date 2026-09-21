@@ -1,15 +1,11 @@
 """
-Voice service - STT (Groq Whisper API → local distil-large-v3 fallback) and Edge TTS.
+Voice service - STT only (Groq Whisper API → local distil-large-v3 fallback).
 
-STT pipeline:
-  1. Groq Whisper API  - primary, ~1s for 1 min audio (cloud, free tier)
-  2. distil-large-v3   - fallback, local GPU via faster-whisper
-
-TTS: edge-tts (Microsoft Edge neural voices)
+TTS is handled by static MP3 files served from the frontend.
+No runtime TTS synthesis on the backend.
 """
 
 import asyncio
-import io
 import logging
 import os
 import tempfile
@@ -25,23 +21,6 @@ logger = logging.getLogger("delta.voice")
 # ── Lazy-loaded singletons ────────────────────────────────────────
 _whisper_model = None
 _groq_client = None
-
-# Pre-rendered canned audio  {key: mp3_bytes}
-_audio_cache: dict[str, bytes] = {}
-_cache_ready = False
-
-CANNED_PHRASES = {
-    "greeting": "Hello! How can I help you?",
-    "acknowledging": "One moment, please.",
-    "announcing": "Here is what I found.",
-    "announcing_space": "Here is what I have on this room.",
-    "goodbye": "Thank you.",
-}
-
-# Edge TTS voice + prosody
-EDGE_VOICE = "en-US-AvaNeural"
-EDGE_RATE = "+15%"
-EDGE_VOLUME = "-25%"
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 
@@ -125,7 +104,6 @@ def _transcribe_local_sync(audio_bytes: bytes, language: str = "en") -> str:
 
 def _transcribe_sync(audio_bytes: bytes, language: str = "en") -> str:
     """Try Groq first, fall back to local distil-large-v3."""
-    # Primary: Groq
     if GROQ_API_KEY:
         try:
             text = _transcribe_groq_sync(audio_bytes, language)
@@ -134,7 +112,6 @@ def _transcribe_sync(audio_bytes: bytes, language: str = "en") -> str:
         except Exception as exc:
             logger.warning(f"Groq STT failed ({exc}), falling back to local ...")
 
-    # Fallback: local
     text = _transcribe_local_sync(audio_bytes, language)
     logger.info(f"Local STT: {len(text)} chars")
     return text
@@ -146,51 +123,3 @@ async def transcribe(audio_bytes: bytes, language: str = "en") -> str:
     return await loop.run_in_executor(
         None, partial(_transcribe_sync, audio_bytes, language),
     )
-
-
-# ── Edge TTS ─────────────────────────────────────────────────────
-
-async def _edge_synthesize(text: str) -> bytes:
-    """Generate speech via edge-tts. Returns MP3 bytes."""
-    import edge_tts  # noqa: delayed
-
-    communicate = edge_tts.Communicate(text, EDGE_VOICE, rate=EDGE_RATE, volume=EDGE_VOLUME)
-    buf = io.BytesIO()
-    async for chunk in communicate.stream():
-        if chunk["type"] == "audio":
-            buf.write(chunk["data"])
-    return buf.getvalue()
-
-
-async def _warm_cache():
-    """Pre-render canned phrases so playback is instant."""
-    global _cache_ready
-    if _cache_ready:
-        return
-    for key, text in CANNED_PHRASES.items():
-        try:
-            _audio_cache[key] = await _edge_synthesize(text)
-            logger.info(f"Cached TTS: {key}")
-        except Exception as exc:
-            logger.warning(f"Failed to cache '{key}': {exc}")
-    _cache_ready = True
-
-
-async def synthesize(text: str) -> bytes:
-    """Synthesize speech. Returns MP3 audio bytes."""
-    if not _cache_ready:
-        await _warm_cache()
-    return await _edge_synthesize(text)
-
-
-def get_cached_audio(key: str) -> bytes | None:
-    """Return pre-rendered audio for a canned phrase key, or None."""
-    return _audio_cache.get(key)
-
-
-async def ensure_models_loaded():
-    """Pre-load models + warm TTS cache (optional, call at startup)."""
-    loop = asyncio.get_running_loop()
-    if GROQ_API_KEY:
-        loop.run_in_executor(None, _get_groq_client)
-    await _warm_cache()

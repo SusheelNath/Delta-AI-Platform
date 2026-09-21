@@ -6,8 +6,8 @@ pandas==2.3.0
 openpyxl==3.1.5
 python-multipart==0.0.20
 httpx==0.28.1
-# Voice (STT / TTS)
+# Voice (STT)
 faster-whisper>=1.1.0
-edge-tts>=7.0.0
 groq>=1.0.0
+vosk>=0.3.45
 python-dotenv>=1.0.0

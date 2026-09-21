@@ -258,6 +258,23 @@ export default function XeokitViewer() {
 
       if (destroyed || !canvasRef.current) return;
 
+      // Wait until the canvas has non-zero dimensions before creating the
+      // Viewer.  xeokit's render loop logs an error on every frame when the
+      // canvas is 0×0, which floods the console and freezes the browser.
+      const el = canvasRef.current;
+      if (el.clientWidth === 0 || el.clientHeight === 0) {
+        await new Promise((resolve) => {
+          const ro = new ResizeObserver(() => {
+            if (el.clientWidth > 0 && el.clientHeight > 0) {
+              ro.disconnect();
+              resolve();
+            }
+          });
+          ro.observe(el);
+        });
+        if (destroyed) return;
+      }
+
       const viewer = new Viewer({
         canvasElement: canvasRef.current,
         transparent: false,
