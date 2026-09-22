@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import useStore from './store/useStore';
 import { fetchFloors, fetchFloorPolygons, fetchFloorIntelligence, fetchFloorFurnishings, fetchFloorRepurposeOptions, fetchFloorExpansionOptions } from './api/client';
 import XeokitViewer from './components/Viewer/XeokitViewer';
@@ -6,6 +6,7 @@ import FloorPlanPanel from './components/FloorPlan/FloorPlanPanel';
 import ChatPanel from './components/Chat/ChatPanel';
 import SpaceToolkit from './components/SpaceToolkit/SpaceToolkit';
 import LoadingScreen from './components/LoadingScreen/LoadingScreen';
+import HelpGuide from './components/HelpGuide/HelpGuide';
 import './App.css';
 
 const METRIC_KEYS = ['normal_occupancy', 'max_occupancy', 'absolute_occupancy',
@@ -16,6 +17,7 @@ export default function App() {
   const appReady = useStore((s) => s.appReady);
   const viewerReady = useStore((s) => s.viewerReady);
   const dataReady = useStore((s) => s.dataReady);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   // Preload all data (floors + polygons for every floor)
   useEffect(() => {
@@ -144,6 +146,7 @@ export default function App() {
   return (
     <div className="app">
       <LoadingScreen />
+      <HelpGuide open={guideOpen} onClose={() => setGuideOpen(false)} />
 
       <header className="app-header">
         <div className="app-header__brand">
@@ -151,6 +154,14 @@ export default function App() {
           <span className="app-header__title">Delta Intelligence Platform</span>
         </div>
         <div className="app-header__meta">
+          <button className="app-header__help-btn" onClick={() => setGuideOpen(true)} title="How to use Delta">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <circle cx="9" cy="9" r="8" stroke="currentColor" strokeWidth="1.4"/>
+              <path d="M6.5 6.8a2.5 2.5 0 0 1 4.85.8c0 1.2-1.6 1.6-1.85 2.7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+              <circle cx="9" cy="13" r="0.8" fill="currentColor"/>
+            </svg>
+            <span>Guide</span>
+          </button>
         </div>
       </header>
 
