@@ -25,7 +25,7 @@ const PROJECT_ROOT = join(__dirname, "..");
 const useFiltered = process.argv.includes("--filtered");
 
 const IFC_ORIGINAL = join(
-  "C:\\Users\\sushe\\Downloads",
+  PROJECT_ROOT,
   "A10004_Chirec_Light_IFC (1).ifc"
 );
 const IFC_FILTERED = join(__dirname, "hospital_filtered.ifc");

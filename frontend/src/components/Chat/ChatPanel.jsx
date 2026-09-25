@@ -81,6 +81,9 @@ export default function ChatPanel() {
   const voiceManagerRef = useRef(null);
   const voiceActiveRef = useRef(false);
   const prevGeneratingRef = useRef(false);
+  const handleVoiceSubmitRef = useRef(null);
+  const handleSendRef = useRef(null);
+  const voiceSendingRef = useRef(false); // guard: prevent duplicate voice sends
 
   // Track current input value in a ref so voice submit can read it synchronously
   const inputValueRef = useRef('');
@@ -198,7 +201,7 @@ export default function ChatPanel() {
         setInput(text);
       },
       onSubmit: (audioBlob, webSpeechText) => {
-        handleVoiceSubmit(audioBlob, webSpeechText);
+        handleVoiceSubmitRef.current?.(audioBlob, webSpeechText);
       },
       onClear: () => {
         setInput('');
@@ -272,26 +275,29 @@ export default function ChatPanel() {
 
   const handleVoiceSubmit = useCallback(async (_audioBlob, webSpeechText) => {
     if (!voiceActiveRef.current) return;
+    if (voiceSendingRef.current) return; // already submitting
+    voiceSendingRef.current = true;
 
     setVoiceState('processing');
 
-    // Use the text currently displayed in the input field (what the user sees)
-    // as the authoritative source - it's kept in sync by onInterim callbacks.
-    // Fall back to the voice manager's internal text only if the field is empty.
-    const displayedText = inputValueRef.current.trim();
-    const finalText = stripSubmitPhrase(displayedText || webSpeechText);
+    // Voice manager's cleaned text is authoritative — it processes the full
+    // utterance including the submit phrase. The input field (via onInterim)
+    // can lag behind (e.g. showing "sub" when user said "submit").
+    const finalText = webSpeechText?.trim() || stripSubmitPhrase(inputValueRef.current.trim());
 
     if (finalText) {
       setInput(finalText);
-      handleSend(finalText);
+      handleSendRef.current?.(finalText);
     } else {
       // Empty - go back to listening
+      voiceSendingRef.current = false;
       if (voiceActiveRef.current) {
         setVoiceState('listening');
         voiceManagerRef.current?.setMode('listening');
       }
     }
   }, [setVoiceState]);
+  handleVoiceSubmitRef.current = handleVoiceSubmit;
 
   // ── Stop generation ──
 
@@ -308,6 +314,7 @@ export default function ChatPanel() {
   const handleSend = useCallback(async (overrideText) => {
     const text = (overrideText || input).trim();
     if (!text || isGenerating) return;
+    voiceSendingRef.current = false; // guard served its purpose — reset for next voice turn
 
     // Bare "clear" - just clear the input, don't send anything
     if (/^clear\.?$/i.test(text)) {
@@ -858,6 +865,7 @@ export default function ChatPanel() {
       }
     }
   }, [input, isGenerating, addMessage, appendToLastMessage, setGenerating, selectedSpaceId, activeFloorId, currentExpandedGroup, setVoiceState]);
+  handleSendRef.current = handleSend;
 
   // ── Mic button click ──
 

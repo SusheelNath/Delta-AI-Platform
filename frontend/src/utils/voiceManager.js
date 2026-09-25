@@ -134,6 +134,7 @@ export function createVoiceManager({
   let accumulatedText = '';
   let currentInterim = '';
   let wakeFired = false;
+  let submitFired = false; // guard: prevent duplicate onSubmit from rapid onresult events
 
   let recognition = null;
   let running = false;
@@ -237,8 +238,9 @@ export function createVoiceManager({
       if (isFinal) wakeFired = false;
 
     } else if (mode === 'listening') {
-      // Submit phrase
-      if (hasSubmitPhrase(lower) || hasSubmitPhrase(combined)) {
+      // Submit phrase — guard against duplicate onresult events
+      if (!submitFired && (hasSubmitPhrase(lower) || hasSubmitPhrase(combined))) {
+        submitFired = true;
         const full = accumulatedText + (accumulatedText ? ' ' : '') + text;
         const cleaned = stripSubmitPhrase(full);
         mode = 'idle';
@@ -246,6 +248,16 @@ export function createVoiceManager({
         currentInterim = '';
         onSubmit?.(new Blob([], { type: 'audio/webm' }), cleaned);
         return;
+      }
+
+      // Stale result from already-submitted utterance — ignore entirely
+      if (submitFired && (hasSubmitPhrase(lower) || hasSubmitPhrase(combined))) {
+        return;
+      }
+
+      // Fresh non-submit speech — safe to accept submits again
+      if (submitFired) {
+        submitFired = false;
       }
 
       // Live display — finals accumulate, interims update in place
@@ -301,6 +313,8 @@ export function createVoiceManager({
         accumulatedText = '';
         currentInterim = '';
       }
+      // submitFired stays true until fresh non-submit speech arrives —
+      // reset happens in handleTranscription, not here
       wakeFired = false;
     },
 

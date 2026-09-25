@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import UserLearning
-from app.services.ollama import OLLAMA_BASE, MODEL
+from app.services.ollama import OLLAMA_BASE, OLLAMA_MODEL
 
 router = APIRouter(tags=["learnings"])
 
@@ -105,7 +105,7 @@ async def generate_learnings(body: GenerateRequest, db: Session = Depends(get_db
 
     # Call Ollama (non-streaming)
     request_body = {
-        "model": MODEL,
+        "model": OLLAMA_MODEL,
         "messages": [
             {"role": "system", "content": EXTRACTION_PROMPT + conv_text},
             {"role": "user", "content": "Extract the user preferences as JSON."},
