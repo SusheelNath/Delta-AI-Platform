@@ -152,6 +152,14 @@ for (const { key, types } of LAYER_CONFIG) {
 // MEP model ID — proxies from this model are classified as MEP equipment
 const MEP_MODEL_ID = 'usquare_mep';
 
+// Default camera position — hardcoded so every user starts here.
+// To update: navigate to the desired view, press Ctrl+Shift+C, copy the JSON from the console, paste here.
+const DEFAULT_CAMERA = {
+  eye: [151350.43, 125.69, -167858.77],
+  look: [151307.91, 99.69, -167919.27],
+  up: [-0.191, 0.943, -0.271],
+};
+
 const cachedXKTs = new Map(); // modelId → ArrayBuffer
 
 let cachedExclusions = null;
@@ -169,6 +177,7 @@ async function fetchExclusions() {
 export default function XeokitViewer() {
   const canvasRef = useRef(null);
   const navCubeCanvasRef = useRef(null);
+  const navCubeRef = useRef(null);
   const viewerRef = useRef(null);
   const modelRef = useRef(null);
   const highlightedRef = useRef(null);
@@ -194,8 +203,10 @@ export default function XeokitViewer() {
   const floorTransitioning = useStore((s) => s.floorTransitioning);
   const setFloorTransitioning = useStore((s) => s.setFloorTransitioning);
   const heatmapMode = useStore((s) => s.heatmapMode);
-  const activeBuilding = useStore((s) => s.activeBuilding);
+  const buildingVisibility = useStore((s) => s.buildingVisibility);
   const buildingAssignments = useStore((s) => s.buildingAssignments);
+  const flyThroughMode = useStore((s) => s.flyThroughMode);
+  const setFlyThroughMode = useStore((s) => s.setFlyThroughMode);
 
   const [modelError, setModelError] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -306,7 +317,11 @@ export default function XeokitViewer() {
         antialias: true,
         gammaOutput: true,
         pbrEnabled: false,
+        saoEnabled: true,  // SAO support compiled in; starts disabled, enabled in fly-through
       });
+
+      // SAO off by default — enabled when entering fly-through mode
+      viewer.scene.sao.enabled = false;
 
       viewer.scene.canvas.canvas.style.background = 'transparent';
       viewer.scene.canvas.backgroundColor = [235/255, 235/255, 240/255];
@@ -344,7 +359,10 @@ export default function XeokitViewer() {
           shadowVisible: false,
           cameraFlyDuration: 0.4,
           fitVisible: false,
+          isProjectNorth: true,
+          projectNorthOffsetAngle: 35,
         });
+        navCubeRef.current = navCube;
         // Hack internal scene - config edgeColor & resolutionScale are not wired up
         try {
           const ncScene = navCube._navCubeScene;
@@ -495,9 +513,33 @@ export default function XeokitViewer() {
           console.warn('[Delta] SectionPlanesPlugin init failed:', err);
         }
 
-        viewer.cameraFlight.flyTo({ aabb, duration: 0.5 }, () => {
-          console.log('[Delta] Camera positioned at model');
-        });
+        // Set camera to hardcoded default or fly to model AABB
+        if (DEFAULT_CAMERA) {
+          viewer.camera.eye = DEFAULT_CAMERA.eye;
+          viewer.camera.look = DEFAULT_CAMERA.look;
+          viewer.camera.up = DEFAULT_CAMERA.up;
+          // Calibrate NavCube zoom to match default camera distance from scene center
+          if (navCubeRef.current) {
+            const cx = (aabb[0] + aabb[3]) / 2;
+            const cy = (aabb[1] + aabb[4]) / 2;
+            const cz = (aabb[2] + aabb[5]) / 2;
+            const dx = DEFAULT_CAMERA.eye[0] - cx;
+            const dy = DEFAULT_CAMERA.eye[1] - cy;
+            const dz = DEFAULT_CAMERA.eye[2] - cz;
+            const defaultDist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            const diag = Math.sqrt(
+              (aabb[3] - aabb[0]) ** 2 + (aabb[4] - aabb[1]) ** 2 + (aabb[5] - aabb[2]) ** 2
+            );
+            const fitFOV = Math.atan(diag / defaultDist) * (180 / Math.PI);
+            navCubeRef.current._cameraFitFOV = fitFOV;
+            console.log(`[Delta] NavCube cameraFitFOV calibrated to ${fitFOV.toFixed(1)}° (dist ${defaultDist.toFixed(0)}m, diag ${diag.toFixed(0)}m)`);
+          }
+          console.log('[Delta] Camera set to default position');
+        } else {
+          viewer.cameraFlight.flyTo({ aabb, duration: 0.5 }, () => {
+            console.log('[Delta] Camera positioned at model');
+          });
+        }
 
         // Expose metaScene extraction for rename registry export
         window.__deltaExportMetaScene = async () => {
@@ -683,6 +725,7 @@ export default function XeokitViewer() {
       }
     };
   }, []);
+
 
   // ── Build layer groups: categorise every scene object by IFC type ──
   function buildLayerGroups(viewer) {
@@ -1162,7 +1205,7 @@ export default function XeokitViewer() {
     });
   }, []);
 
-  // ── Watch activeBuilding → x-ray non-building objects, highlight the selected building ──
+  // ── Watch buildingVisibility → x-ray objects in toggled-off buildings ──
   const xrayedByBuildingRef = useRef([]);
   useEffect(() => {
     const viewer = viewerRef.current;
@@ -1175,73 +1218,233 @@ export default function XeokitViewer() {
     }
     xrayedByBuildingRef.current = [];
 
-    if (activeBuilding) {
-      try { viewer.cameraFlight.cancel(); } catch {}
+    // Check if any building is toggled off
+    const anyOff = BUILDING_GROUPS.some((g) => buildingVisibility[g.id] === false);
+    if (!anyOff) return; // All on (default) — nothing to x-ray
 
-      // Configure X-ray material: blue AutoCAD-style wireframe
-      viewer.scene.xrayMaterial.fill = true;
-      viewer.scene.xrayMaterial.fillColor = [0.15, 0.25, 0.55];
-      viewer.scene.xrayMaterial.fillAlpha = 0.08;
-      viewer.scene.xrayMaterial.edgeColor = [0.25, 0.45, 0.75];
-      viewer.scene.xrayMaterial.edgeAlpha = 0.3;
-      viewer.scene.xrayMaterial.edges = true;
+    // Configure X-ray material: blue AutoCAD-style wireframe
+    viewer.scene.xrayMaterial.fill = true;
+    viewer.scene.xrayMaterial.fillColor = [0.15, 0.25, 0.55];
+    viewer.scene.xrayMaterial.fillAlpha = 0.08;
+    viewer.scene.xrayMaterial.edgeColor = [0.25, 0.45, 0.75];
+    viewer.scene.xrayMaterial.edgeAlpha = 0.3;
+    viewer.scene.xrayMaterial.edges = true;
 
-      // Find the building group and collect all its floor object IDs
-      const group = BUILDING_GROUPS.find((g) => g.id === activeBuilding);
-      if (!group) return;
-
-      const mapping = storeyObjectsRef.current;
-      const buildingObjectIds = new Set();
-      // Add storey-mapped objects
+    // Collect object IDs for all VISIBLE buildings
+    const mapping = storeyObjectsRef.current;
+    const visibleObjectIds = new Set();
+    for (const group of BUILDING_GROUPS) {
+      if (buildingVisibility[group.id] === false) continue; // toggled off
       for (const floorId of group.floors) {
         const objectIds = mapping[floorId] || [];
-        for (const oid of objectIds) buildingObjectIds.add(oid);
+        for (const oid of objectIds) visibleObjectIds.add(oid);
       }
-      // Add manually assigned objects for this building
-      for (const [oid, bId] of Object.entries(buildingAssignments)) {
-        if (bId === activeBuilding) buildingObjectIds.add(oid);
-      }
-      // Remove objects storey-mapped here but manually assigned to a different building
-      for (const [oid, bId] of Object.entries(buildingAssignments)) {
-        if (bId !== activeBuilding) buildingObjectIds.delete(oid);
-      }
-
-      // X-ray everything NOT in this building
-      const xrayed = [];
-      for (const [oid, entity] of Object.entries(viewer.scene.objects)) {
-        if (!buildingObjectIds.has(oid)) {
-          entity.xrayed = true;
-          xrayed.push(oid);
-        }
-      }
-      xrayedByBuildingRef.current = xrayed;
-
-      // Fly camera to building AABB
-      let aabb = [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity];
-      let hasAABB = false;
-      for (const oid of buildingObjectIds) {
-        const entity = viewer.scene.objects[oid];
-        if (!entity) continue;
-        const b = entity.aabb;
-        if (b[0] < aabb[0]) aabb[0] = b[0];
-        if (b[1] < aabb[1]) aabb[1] = b[1];
-        if (b[2] < aabb[2]) aabb[2] = b[2];
-        if (b[3] > aabb[3]) aabb[3] = b[3];
-        if (b[4] > aabb[4]) aabb[4] = b[4];
-        if (b[5] > aabb[5]) aabb[5] = b[5];
-        hasAABB = true;
-      }
-      if (hasAABB) {
-        viewer.cameraFlight.flyTo({ aabb, duration: 1.0 });
-      }
-
-      console.log(`[Delta] Building ${activeBuilding}: ${buildingObjectIds.size} solid, ${xrayed.length} x-rayed`);
-    } else {
-      // All buildings — fly back to full model
-      const aabb = modelAABBRef.current || viewer.scene.aabb;
-      viewer.cameraFlight.flyTo({ aabb, duration: 1.0 });
     }
-  }, [activeBuilding, buildingAssignments, loading]);
+    // Apply manual building assignments
+    for (const [oid, bId] of Object.entries(buildingAssignments)) {
+      if (buildingVisibility[bId] !== false) {
+        visibleObjectIds.add(oid);
+      } else {
+        visibleObjectIds.delete(oid);
+      }
+    }
+
+    // X-ray everything NOT in a visible building
+    const xrayed = [];
+    for (const [oid, entity] of Object.entries(viewer.scene.objects)) {
+      if (!visibleObjectIds.has(oid)) {
+        entity.xrayed = true;
+        xrayed.push(oid);
+      }
+    }
+    xrayedByBuildingRef.current = xrayed;
+
+    const onCount = BUILDING_GROUPS.filter((g) => buildingVisibility[g.id] !== false).length;
+    console.log(`[Delta] Buildings: ${onCount}/${BUILDING_GROUPS.length} on, ${visibleObjectIds.size} solid, ${xrayed.length} x-rayed`);
+  }, [buildingVisibility, buildingAssignments, loading]);
+
+  // ── Fly-through mode: first-person camera with momentum physics ──
+  const flyStateRef = useRef(null); // persists camera state between toggles
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer || loading) return;
+    if (!flyThroughMode) {
+      // Exiting fly-through — restore orbit controls + disable SAO
+      if (flyStateRef.current?.active) {
+        viewer.cameraControl.navMode = 'orbit';
+        viewer.cameraControl.followPointer = true;
+        viewer.scene.sao.enabled = false;
+        flyStateRef.current.active = false;
+      }
+      return;
+    }
+
+    // ── Enter fly-through ──
+    viewer.cameraControl.navMode = 'firstPerson';
+    viewer.cameraControl.followPointer = false;
+
+    // Enable SAO (Scalable Ambient Obscurance) for realistic contact shadows
+    viewer.scene.sao.enabled = true;
+    viewer.scene.sao.intensity = 0.2;
+    viewer.scene.sao.bias = 0.5;
+    viewer.scene.sao.scale = 800;
+    viewer.scene.sao.minResolution = 0;
+    viewer.scene.sao.blur = true;
+    viewer.scene.sao.kernelRadius = 100;
+    // Disable xeokit's built-in keyboard so we drive WASD ourselves
+    viewer.cameraControl.keyboardDollyRate = 0;
+    viewer.cameraControl.keyboardPanRate = 0;
+
+    const canvas = viewer.scene.canvas.canvas;
+    const keys = new Set();
+    const BASE_SPEED = 8;    // m/s at 1x
+    let speedMultiplier = 1;
+    let velocityX = 0, velocityY = 0, velocityZ = 0; // world-space velocity
+    const ACCEL = 25;        // acceleration (m/s²)
+    const FRICTION = 6;      // drag factor (higher = quicker stop)
+    let yaw = 0, pitch = 0;
+    let pointerLocked = false;
+
+    // Initialize yaw/pitch from current camera
+    const eye = viewer.camera.eye;
+    const look = viewer.camera.look;
+    const dx = look[0] - eye[0];
+    const dy = look[1] - eye[1];
+    const dz = look[2] - eye[2];
+    yaw = Math.atan2(dx, dz);
+    pitch = Math.asin(Math.max(-1, Math.min(1, dy / Math.sqrt(dx*dx + dy*dy + dz*dz))));
+
+    flyStateRef.current = { active: true, speedMultiplier };
+
+    // Pointer lock for mouse look
+    const requestLock = () => {
+      if (!pointerLocked) canvas.requestPointerLock();
+    };
+    const onLockChange = () => {
+      pointerLocked = document.pointerLockElement === canvas;
+    };
+    const onMouseMove = (e) => {
+      if (!pointerLocked) return;
+      const sensitivity = 0.002;
+      yaw += e.movementX * sensitivity;
+      pitch -= e.movementY * sensitivity;
+      pitch = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, pitch));
+    };
+
+    // Keyboard
+    const onKeyDown = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+      keys.add(e.code);
+      if (e.code === 'Escape') {
+        if (pointerLocked) document.exitPointerLock();
+        useStore.getState().setFlyThroughMode(false);
+        return;
+      }
+      // Prevent default for movement keys so the page doesn't scroll
+      if (['KeyW','KeyA','KeyS','KeyD','KeyQ','KeyE','Space','ShiftLeft','ShiftRight'].includes(e.code)) {
+        e.preventDefault();
+      }
+    };
+    const onKeyUp = (e) => { keys.delete(e.code); };
+
+    // Scroll wheel for speed
+    const onWheel = (e) => {
+      e.preventDefault();
+      if (e.deltaY < 0) speedMultiplier = Math.min(10, speedMultiplier * 1.2);
+      else speedMultiplier = Math.max(0.2, speedMultiplier / 1.2);
+      flyStateRef.current.speedMultiplier = speedMultiplier;
+    };
+
+    // Animation loop
+    let lastTime = performance.now();
+    let animFrame;
+    const tick = (now) => {
+      const dt = Math.min((now - lastTime) / 1000, 0.05); // cap at 50ms
+      lastTime = now;
+
+      // Direction vectors from yaw
+      const fwdX = Math.sin(yaw);
+      const fwdZ = Math.cos(yaw);
+      const rightX = Math.cos(yaw);
+      const rightZ = -Math.sin(yaw);
+
+      // Input → target acceleration
+      let inputX = 0, inputY = 0, inputZ = 0;
+      const speed = BASE_SPEED * speedMultiplier;
+      if (keys.has('KeyW')) { inputX += fwdX * speed; inputZ += fwdZ * speed; }
+      if (keys.has('KeyS')) { inputX -= fwdX * speed; inputZ -= fwdZ * speed; }
+      if (keys.has('KeyD')) { inputX += rightX * speed; inputZ += rightZ * speed; }
+      if (keys.has('KeyA')) { inputX -= rightX * speed; inputZ -= rightZ * speed; }
+      if (keys.has('Space') || keys.has('KeyE')) { inputY += speed; }
+      if (keys.has('ShiftLeft') || keys.has('ShiftRight') || keys.has('KeyQ')) { inputY -= speed; }
+
+      // Apply acceleration + friction
+      velocityX += (inputX - velocityX) * Math.min(1, ACCEL * dt);
+      velocityY += (inputY - velocityY) * Math.min(1, ACCEL * dt);
+      velocityZ += (inputZ - velocityZ) * Math.min(1, ACCEL * dt);
+      if (inputX === 0 && inputZ === 0 && inputY === 0) {
+        const decay = Math.exp(-FRICTION * dt);
+        velocityX *= decay;
+        velocityY *= decay;
+        velocityZ *= decay;
+      }
+
+      // Update camera position
+      const eye = viewer.camera.eye;
+      const newEye = [
+        eye[0] + velocityX * dt,
+        eye[1] + velocityY * dt,
+        eye[2] + velocityZ * dt,
+      ];
+
+      // Look direction from yaw+pitch
+      const lookDist = 10;
+      const lookY = Math.sin(pitch);
+      const lookH = Math.cos(pitch);
+      const newLook = [
+        newEye[0] + lookH * Math.sin(yaw) * lookDist,
+        newEye[1] + lookY * lookDist,
+        newEye[2] + lookH * Math.cos(yaw) * lookDist,
+      ];
+
+      viewer.camera.eye = newEye;
+      viewer.camera.look = newLook;
+      viewer.camera.up = [0, 1, 0];
+
+      // Update fly state for HUD
+      const spd = Math.sqrt(velocityX*velocityX + velocityY*velocityY + velocityZ*velocityZ);
+      flyStateRef.current.speed = spd;
+      flyStateRef.current.altitude = newEye[1];
+      flyStateRef.current.position = newEye;
+      flyStateRef.current.yaw = yaw;
+
+      animFrame = requestAnimationFrame(tick);
+    };
+
+    // Start
+    canvas.addEventListener('click', requestLock);
+    document.addEventListener('pointerlockchange', onLockChange);
+    document.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    canvas.addEventListener('wheel', onWheel, { passive: false });
+    animFrame = requestAnimationFrame(tick);
+
+    return () => {
+      cancelAnimationFrame(animFrame);
+      canvas.removeEventListener('click', requestLock);
+      document.removeEventListener('pointerlockchange', onLockChange);
+      document.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      canvas.removeEventListener('wheel', onWheel);
+      if (document.pointerLockElement === canvas) document.exitPointerLock();
+      // Restore xeokit keyboard rates + disable SAO
+      viewer.cameraControl.keyboardDollyRate = 5;
+      viewer.cameraControl.keyboardPanRate = 1;
+      viewer.scene.sao.enabled = false;
+    };
+  }, [flyThroughMode, loading]);
 
   // ── Watch floor visibility ──
   useEffect(() => {
@@ -2242,8 +2445,28 @@ export default function XeokitViewer() {
     <div className="xeokit-viewer">
       <canvas ref={canvasRef} className="xeokit-viewer__canvas" />
       <canvas ref={navCubeCanvasRef} className="xeokit-viewer__navcube" />
+      <button
+        className="xeokit-viewer__reset-view"
+        onClick={() => {
+          const v = viewerRef.current;
+          if (!v) return;
+          v.cameraFlight.flyTo({
+            eye: DEFAULT_CAMERA.eye,
+            look: DEFAULT_CAMERA.look,
+            up: DEFAULT_CAMERA.up,
+            duration: 0.6,
+          });
+        }}
+      >
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4.5 2v4h4"/>
+          <path d="M4.5 6C5.7 3.8 7.8 2.5 10 2.5a5.5 5.5 0 1 1-5.2 7.3"/>
+        </svg>
+        Reset
+      </button>
 
       {!loading && <LayerPanel />}
+      {!loading && <ViewerToolbar />}
 
       {loading && (
         <div className="xeokit-viewer__overlay">
@@ -2383,6 +2606,155 @@ export default function XeokitViewer() {
         </div>
       )}
 
+      {/* Fly-through HUD */}
+      {flyThroughMode && !loading && (
+        <FlyThroughHUD flyStateRef={flyStateRef} modelAABB={modelAABBRef.current} />
+      )}
+
+
+    </div>
+  );
+}
+
+/* ── Fly-through HUD overlay ── */
+function FlyThroughHUD({ flyStateRef, modelAABB }) {
+  const [hud, setHud] = useState({ speed: 0, altitude: 0, multiplier: 1, position: [0,0,0], yaw: 0 });
+  const [hintsVisible, setHintsVisible] = useState(true);
+
+  // Update HUD from flyStateRef at ~15 fps
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const s = flyStateRef.current;
+      if (!s) return;
+      setHud({
+        speed: s.speed || 0,
+        altitude: s.altitude || 0,
+        multiplier: s.speedMultiplier || 1,
+        position: s.position || [0,0,0],
+        yaw: s.yaw || 0,
+      });
+    }, 66);
+    // Fade hints after 5 seconds
+    const hintTimer = setTimeout(() => setHintsVisible(false), 5000);
+    return () => { clearInterval(interval); clearTimeout(hintTimer); };
+  }, [flyStateRef]);
+
+  // Mini-map: project camera position onto the building footprint
+  const mapSize = 120;
+  let dotX = mapSize / 2, dotY = mapSize / 2;
+  let headingDeg = 0;
+  if (modelAABB) {
+    const [xMin,,zMin, xMax,,zMax] = modelAABB;
+    const w = xMax - xMin || 1;
+    const d = zMax - zMin || 1;
+    dotX = ((hud.position[0] - xMin) / w) * mapSize;
+    dotY = ((hud.position[2] - zMin) / d) * mapSize;
+    dotX = Math.max(4, Math.min(mapSize - 4, dotX));
+    dotY = Math.max(4, Math.min(mapSize - 4, dotY));
+    headingDeg = (-hud.yaw * 180 / Math.PI) + 180;
+  }
+
+  return (
+    <div className="fly-hud">
+      {/* Center reticle */}
+      <div className="fly-hud__reticle">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(231,113,51,0.6)" strokeWidth="1.5">
+          <circle cx="12" cy="12" r="4"/>
+          <line x1="12" y1="2" x2="12" y2="7"/><line x1="12" y1="17" x2="12" y2="22"/>
+          <line x1="2" y1="12" x2="7" y2="12"/><line x1="17" y1="12" x2="22" y2="12"/>
+        </svg>
+      </div>
+
+      {/* Minimap */}
+      <div className="fly-hud__minimap" style={{ width: mapSize, height: mapSize }}>
+        <div className="fly-hud__minimap-border" />
+        <div
+          className="fly-hud__minimap-dot"
+          style={{ left: dotX, top: dotY, transform: `translate(-50%, -50%) rotate(${headingDeg}deg)` }}
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="#E77133">
+            <polygon points="6,1 10,10 6,8 2,10"/>
+          </svg>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="fly-hud__stats">
+        <div className="fly-hud__stat">
+          <span className="fly-hud__stat-label">Speed</span>
+          <span className="fly-hud__stat-value">{hud.speed.toFixed(1)} m/s</span>
+        </div>
+        <div className="fly-hud__stat">
+          <span className="fly-hud__stat-label">Alt</span>
+          <span className="fly-hud__stat-value">{hud.altitude.toFixed(1)} m</span>
+        </div>
+        <div className="fly-hud__stat">
+          <span className="fly-hud__stat-label">Multiplier</span>
+          <span className="fly-hud__stat-value">{hud.multiplier.toFixed(1)}x</span>
+        </div>
+      </div>
+
+      {/* Control hints */}
+      {hintsVisible && (
+        <div className="fly-hud__hints">
+          <span>WASD</span> Move &nbsp; <span>Mouse</span> Look &nbsp; <span>Q/E</span> Up/Down &nbsp; <span>Scroll</span> Speed &nbsp; <span>ESC</span> Exit
+        </div>
+      )}
+
+      {/* Click to lock prompt */}
+      <div className="fly-hud__lock-hint">Click to enable mouse look</div>
+    </div>
+  );
+}
+
+/* ── Viewer floating toolbar (Plan / AI / Fly-through) ── */
+function ViewerToolbar() {
+  const leftPanelOpen = useStore((s) => s.leftPanelOpen);
+  const rightPanelOpen = useStore((s) => s.rightPanelOpen);
+  const flyThroughMode = useStore((s) => s.flyThroughMode);
+  const toggleLeftPanel = useStore((s) => s.toggleLeftPanel);
+  const toggleRightPanel = useStore((s) => s.toggleRightPanel);
+  const setFlyThroughMode = useStore((s) => s.setFlyThroughMode);
+
+  return (
+    <div className="viewer-toolbar">
+      {/* Plan — floor plan icon */}
+      <button
+        className={`viewer-toolbar__btn ${leftPanelOpen ? 'viewer-toolbar__btn--active' : ''}`}
+        onClick={toggleLeftPanel}
+      >
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="2" width="18" height="18" rx="2"/>
+          <line x1="2" y1="9" x2="14" y2="9"/>
+          <line x1="9" y1="9" x2="9" y2="20"/>
+          <line x1="14" y1="2" x2="14" y2="13"/>
+          <line x1="14" y1="13" x2="20" y2="13"/>
+        </svg>
+        <span className="viewer-toolbar__tip">Plan</span>
+      </button>
+      {/* AI — refined 4-point sparkle */}
+      <button
+        className={`viewer-toolbar__btn ${rightPanelOpen ? 'viewer-toolbar__btn--active' : ''}`}
+        onClick={toggleRightPanel}
+      >
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M11 2C11 7.5 7.5 11 2 11c5.5 0 9 3.5 9 9 0-5.5 3.5-9 9-9-5.5 0-9-3.5-9-9z"/>
+          <path d="M17 3c0 2-.8 3-3 3 2.2 0 3 1 3 3 0-2 .8-3 3-3-2.2 0-3-1-3-3z"/>
+        </svg>
+        <span className="viewer-toolbar__tip">AI</span>
+      </button>
+      {/* Fly-through — eye/viewfinder icon */}
+      <button
+        className={`viewer-toolbar__btn ${flyThroughMode ? 'viewer-toolbar__btn--active' : ''}`}
+        onClick={() => setFlyThroughMode(!flyThroughMode)}
+      >
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M2 11s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/>
+          <circle cx="11" cy="11" r="3"/>
+          <circle cx="11" cy="11" r="1"/>
+        </svg>
+        <span className="viewer-toolbar__tip">Fly-through</span>
+      </button>
     </div>
   );
 }

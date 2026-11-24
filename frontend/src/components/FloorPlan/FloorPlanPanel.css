@@ -6,55 +6,148 @@
 }
 
 /* ══════════════════════════════════════
-   Hero floor selector
+   Building Layers button
    ══════════════════════════════════════ */
-.floorplan-panel__hero {
-  padding: var(--sp-4) var(--sp-4) var(--sp-3);
-  background: var(--c-surface);
-  border-radius: 12px;
-  box-shadow: var(--shadow-md);
-  margin: var(--sp-2) var(--sp-2) 0 var(--sp-2);
+.floorplan-panel__layers {
+  padding: var(--sp-2) var(--sp-2) 0 var(--sp-2);
   position: relative;
 }
 
-.floorplan-panel__hero-select {
+.floorplan-panel__layers-btn {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 12px;
   width: 100%;
-  height: 36px;
-  padding: 0 var(--sp-3);
-  border: 1px solid #e0ddd8;
-  border-radius: var(--sp-2);
+  padding: 14px 14px;
+  border: 1.5px solid #e5e2de;
+  border-radius: 10px;
   background: #ffffff;
-  color: var(--c-text);
-  font-size: var(--text-md);
-  font-weight: 600;
   cursor: pointer;
   outline: none;
   transition: all 0.15s ease;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+  position: relative;
   text-align: left;
-  letter-spacing: -0.2px;
 }
 
-.floorplan-panel__hero-select:hover {
-  border-color: #d0cdc8;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04), 0 0 0 3px rgba(231, 113, 51, 0.04);
-}
-
-.floorplan-panel__hero-select--open {
+.floorplan-panel__layers-btn:hover {
   border-color: #E77133;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04), 0 0 0 3px rgba(231, 113, 51, 0.08);
+  background: #fffaf6;
+  box-shadow: 0 2px 10px rgba(231, 113, 51, 0.1);
 }
 
-.floorplan-panel__hero-chevron {
+.floorplan-panel__layers-btn--open {
+  border-color: #E77133;
+  background: #fffaf6;
+  box-shadow: 0 2px 10px rgba(231, 113, 51, 0.1);
+}
+
+.floorplan-panel__layers-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: rgba(231, 113, 51, 0.08);
+  color: #E77133;
   flex-shrink: 0;
-  transition: transform 0.2s ease;
+  transition: all 0.15s ease;
 }
 
-.floorplan-panel__hero-chevron--open {
+.floorplan-panel__layers-btn:hover .floorplan-panel__layers-icon,
+.floorplan-panel__layers-btn--open .floorplan-panel__layers-icon {
+  background: rgba(231, 113, 51, 0.14);
+}
+
+.floorplan-panel__layers-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  gap: 1px;
+}
+
+.floorplan-panel__layers-title {
+  font-size: 14px;
+  font-weight: 650;
+  color: #1a1a2e;
+  letter-spacing: -0.2px;
+  line-height: 1.3;
+}
+
+.floorplan-panel__layers-sub {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #9ca3af;
+  line-height: 1.3;
+  margin-top: 1px;
+}
+
+.floorplan-panel__layers-chevron {
+  flex-shrink: 0;
+  color: #9ca3af;
+  transition: transform 0.2s ease, color 0.15s ease;
+}
+
+.floorplan-panel__layers-btn:hover .floorplan-panel__layers-chevron,
+.floorplan-panel__layers-btn--open .floorplan-panel__layers-chevron {
+  color: #E77133;
+}
+
+.floorplan-panel__layers-chevron--open {
   transform: rotate(180deg);
+}
+
+/* Hover tooltip — platform frosted-glass style, right-aligned */
+.floorplan-panel__layers-tooltip {
+  position: absolute;
+  right: -4px;
+  top: calc(100% + 10px);
+  padding: 8px 14px;
+  background: var(--tooltip-bg);
+  border: 1px solid var(--tooltip-border);
+  border-radius: var(--tooltip-radius);
+  box-shadow: var(--tooltip-shadow);
+  backdrop-filter: blur(8px);
+  color: #374151;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  transform: translateY(-4px);
+  z-index: 30;
+  letter-spacing: 0.1px;
+}
+
+.floorplan-panel__layers-tooltip::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  right: 20px;
+  border: 6px solid transparent;
+  border-bottom-color: rgba(231, 113, 51, 0.35);
+}
+
+.floorplan-panel__layers-tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  right: 21px;
+  border: 5px solid transparent;
+  border-bottom-color: rgba(255, 255, 255, 0.97);
+}
+
+.floorplan-panel__layers-btn:hover .floorplan-panel__layers-tooltip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Hide tooltip when dropdown is open */
+.floorplan-panel__layers-btn--open .floorplan-panel__layers-tooltip {
+  display: none;
 }
 
 /* ── Custom dropdown list ── */
@@ -111,19 +204,31 @@
   margin: 2px 12px;
 }
 
-.floorplan-panel__hero-stats {
+/* ── Checkbox inside dropdown items ── */
+.floorplan-panel__dropdown-item--check {
   display: flex;
   align-items: center;
-  gap: var(--sp-2);
-  margin-top: var(--sp-2);
-  font-size: var(--text-sm);
-  color: var(--c-text-muted);
-  font-variant-numeric: tabular-nums;
+  gap: 8px;
 }
 
-.floorplan-panel__hero-dot {
-  color: var(--c-text-faint);
+.floorplan-panel__checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid #d1cdc6;
+  border-radius: 4px;
+  flex-shrink: 0;
+  transition: all 0.12s ease;
+  background: #fff;
 }
+
+.floorplan-panel__checkbox--checked {
+  background: #E77133;
+  border-color: #E77133;
+}
+
 
 /* ══════════════════════════════════════
    Search bar

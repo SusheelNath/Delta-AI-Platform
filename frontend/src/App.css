@@ -11,8 +11,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 48px;
-  min-height: 48px;
+  height: 44px;
+  min-height: 44px;
   padding: 0 var(--sp-4);
   background: #ffffff;
   border-bottom: none;
@@ -33,71 +33,89 @@
 }
 
 .app-header__title {
-  font-size: var(--text-xl);
+  font-size: var(--text-lg);
   font-weight: 700;
   color: var(--c-text);
   letter-spacing: -0.3px;
 }
 
-.app-header__meta {
+/* ── Header actions (right side) ── */
+.app-header__actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 4px;
 }
 
-.app-header__version {
-  font-size: var(--text-xs);
-  color: var(--c-text-muted);
-  font-variant-numeric: tabular-nums;
-}
 
 .app-header__help-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
-  border: 1px solid var(--c-border);
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid transparent;
   border-radius: 7px;
-  background: var(--c-surface);
-  color: var(--c-text-secondary);
-  font-size: var(--text-sm);
-  font-weight: 500;
+  background: transparent;
+  color: #9ca3af;
   cursor: pointer;
   transition: all 0.15s;
   font-family: var(--font-ui);
 }
 .app-header__help-btn:hover {
-  background: var(--c-bg);
-  color: var(--c-accent);
-  border-color: var(--c-accent);
+  background: #f7f6f4;
+  color: #E77133;
 }
 
-/* ── Body (three-panel split) ── */
+/* ── Body ── */
 .app-body {
   display: flex;
   flex: 1;
   min-height: 0;
 }
 
-.app-floorplan-panel {
+/* ── Side panels (Plan / AI) ── */
+.app-panel {
+  width: 0;
+  min-width: 0;
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  background: #ffffff;
+  transition: width 0.25s ease, min-width 0.25s ease, max-width 0.25s ease, opacity 0.25s ease;
+}
+
+.app-panel--open {
+  width: 340px;
+  min-width: 340px;
+  max-width: 340px;
+  opacity: 1;
+}
+
+.app-panel__inner {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-width: 240px;
+  width: 340px;
+  height: 100%;
+}
+
+.app-panel--left {
   border-right: 1px solid #e5e2de;
 }
 
+.app-panel--right {
+  border-left: 1px solid #e5e2de;
+}
 
+/* ── Viewer (always fills remaining space) ── */
 .app-viewer-panel {
   position: relative;
   display: flex;
   flex-direction: column;
-  flex: 2;
+  flex: 1;
   min-width: 0;
-  border-right: 1px solid #e5e2de;
   overflow: hidden;
 }
-
 
 .app-viewer-container {
   position: relative;
@@ -105,19 +123,9 @@
   min-height: 0;
 }
 
-.app-chat-panel {
-  flex: 0.95;
-  min-width: 240px;
-  display: flex;
-  flex-direction: column;
-}
-
-/* ── Expanded panel mode ── */
-.app-body--panel-expanded .app-floorplan-panel {
-  flex: 1;
-  max-width: none;
-}
-
-.app-body--panel-expanded .app-viewer-panel {
-  display: none;
+/* ── Legacy ── */
+.app-header__version {
+  font-size: var(--text-xs);
+  color: var(--c-text-muted);
+  font-variant-numeric: tabular-nums;
 }

@@ -13,10 +13,11 @@ const METRIC_KEYS = ['normal_occupancy', 'max_occupancy', 'absolute_occupancy',
   'occupiable', 'used_area_m2', 'free_area_m2', 'area_m2'];
 
 export default function App() {
-  const panelExpanded = useStore((s) => s.panelExpanded);
   const appReady = useStore((s) => s.appReady);
   const viewerReady = useStore((s) => s.viewerReady);
   const dataReady = useStore((s) => s.dataReady);
+  const leftPanelOpen = useStore((s) => s.leftPanelOpen);
+  const rightPanelOpen = useStore((s) => s.rightPanelOpen);
   const [guideOpen, setGuideOpen] = useState(false);
 
   // Preload all data (floors + polygons for every floor)
@@ -87,7 +88,6 @@ export default function App() {
         await Promise.all(floorList.map(async (floor) => {
           try {
             const furnishings = await fetchFloorFurnishings(floor.id);
-            // Group by ifc_guid
             const byGuid = {};
             for (const f of furnishings) {
               const guid = f.ifc_guid;
@@ -153,21 +153,22 @@ export default function App() {
           <span className="app-header__icon">&#9651;</span>
           <span className="app-header__title">Delta Intelligence Platform</span>
         </div>
-        <div className="app-header__meta">
+        <div className="app-header__actions">
           <button className="app-header__help-btn" onClick={() => setGuideOpen(true)} title="How to use Delta">
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
               <circle cx="9" cy="9" r="8" stroke="currentColor" strokeWidth="1.4"/>
               <path d="M6.5 6.8a2.5 2.5 0 0 1 4.85.8c0 1.2-1.6 1.6-1.85 2.7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
               <circle cx="9" cy="13" r="0.8" fill="currentColor"/>
             </svg>
-            <span>Guide</span>
           </button>
         </div>
       </header>
 
-      <div className={`app-body ${panelExpanded ? 'app-body--panel-expanded' : ''}`}>
-        <div className="app-floorplan-panel">
-          <FloorPlanPanel />
+      <div className="app-body">
+        <div className={`app-panel app-panel--left ${leftPanelOpen ? 'app-panel--open' : ''}`}>
+          <div className="app-panel__inner">
+            <FloorPlanPanel />
+          </div>
         </div>
 
         <div className="app-viewer-panel">
@@ -177,10 +178,13 @@ export default function App() {
           <SpaceToolkit />
         </div>
 
-        <div className="app-chat-panel">
-          <ChatPanel />
+        <div className={`app-panel app-panel--right ${rightPanelOpen ? 'app-panel--open' : ''}`}>
+          <div className="app-panel__inner">
+            <ChatPanel />
+          </div>
         </div>
       </div>
     </div>
   );
 }
+

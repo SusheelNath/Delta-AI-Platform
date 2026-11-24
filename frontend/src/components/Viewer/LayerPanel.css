@@ -7,21 +7,84 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  background: rgba(255, 255, 255, 0.92);
-  color: #6b7280;
-  border: 1px solid #e5e2de;
-  border-radius: 8px;
+  width: 46px;
+  height: 46px;
+  background: linear-gradient(135deg, #ffffff 0%, #faf9f7 100%);
+  color: #E77133;
+  border: 1.5px solid rgba(231, 113, 51, 0.2);
+  border-radius: 12px;
   cursor: pointer;
-  transition: all 0.15s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.06),
+    0 4px 16px rgba(231, 113, 51, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
 }
 
 .layer-panel__toggle-btn:hover {
-  background: #ffffff;
-  color: #E77133;
-  border-color: #E77133;
+  background: linear-gradient(135deg, #fff7f2 0%, #fff0e8 100%);
+  color: #d45f22;
+  border-color: rgba(231, 113, 51, 0.5);
+  box-shadow:
+    0 3px 12px rgba(231, 113, 51, 0.12),
+    0 6px 24px rgba(231, 113, 51, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  transform: translateY(-1px);
+}
+
+.layer-panel__toggle-btn:active {
+  transform: translateY(0);
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.06),
+    0 2px 8px rgba(231, 113, 51, 0.06);
+}
+
+/* Platform-style hover tooltip */
+.layer-panel__toggle-btn::before {
+  content: 'Building Elements';
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%) translateX(-4px);
+  padding: 7px 12px;
+  background: var(--tooltip-bg);
+  border: 1px solid var(--tooltip-border);
+  border-radius: var(--tooltip-radius);
+  box-shadow: var(--tooltip-shadow);
+  backdrop-filter: blur(8px);
+  color: #374151;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 30;
+  letter-spacing: 0.1px;
+}
+
+.layer-panel__toggle-btn::after {
+  content: '';
+  position: absolute;
+  left: calc(100% + 4px);
+  top: 50%;
+  transform: translateY(-50%);
+  border: 5px solid transparent;
+  border-right-color: rgba(231, 113, 51, 0.35);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 30;
+}
+
+.layer-panel__toggle-btn:hover::before {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+.layer-panel__toggle-btn:hover::after {
+  opacity: 1;
 }
 
 /* ── Layer panel (expanded state) ── */
@@ -29,7 +92,7 @@
   position: absolute;
   top: 14px;
   left: 14px;
-  z-index: 10;
+  z-index: 50;
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid #e5e2de;
   border-radius: 10px;

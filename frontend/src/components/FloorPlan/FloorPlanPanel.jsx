@@ -197,7 +197,7 @@ export default function FloorPlanPanel() {
   return (
     <div ref={panelRef} className="floorplan-panel">
       {/* ── Hero building selector ── */}
-      <BuildingDropdown />
+      <BuildingToggles />
 
       {/* ── Search (only when floor selected) ── */}
       {activeFloorId && (
@@ -292,13 +292,17 @@ export default function FloorPlanPanel() {
   );
 }
 
-/* ── Building selector dropdown ── */
-function BuildingDropdown() {
+/* ── Building multi-toggle dropdown ── */
+function BuildingToggles() {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
-  const activeBuilding = useStore((s) => s.activeBuilding);
-  const setActiveBuilding = useStore((s) => s.setActiveBuilding);
-  const showAllFloors = useStore((s) => s.showAllFloors);
+  const buildingVisibility = useStore((s) => s.buildingVisibility);
+  const toggleBuilding = useStore((s) => s.toggleBuilding);
+  const setAllBuildingsVisible = useStore((s) => s.setAllBuildingsVisible);
+
+  const allOn = BUILDING_GROUPS.every((g) => buildingVisibility[g.id] !== false);
+  const onCount = BUILDING_GROUPS.filter((g) => buildingVisibility[g.id] !== false).length;
+  const subtitle = allOn ? 'All buildings visible' : onCount === 0 ? 'No buildings visible' : `${onCount} of ${BUILDING_GROUPS.length} visible`;
 
   // Close on outside click
   useEffect(() => {
@@ -310,41 +314,62 @@ function BuildingDropdown() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, [open]);
 
-  const activeGroup = activeBuilding
-    ? BUILDING_GROUPS.find((g) => g.id === activeBuilding)
-    : null;
-  const selectedLabel = activeGroup ? activeGroup.label : 'All Buildings';
+  const Checkbox = ({ checked }) => (
+    <span className={`floorplan-panel__checkbox ${checked ? 'floorplan-panel__checkbox--checked' : ''}`}>
+      {checked && (
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+          <path d="M2 5.2l2 2 4-4.4" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      )}
+    </span>
+  );
 
   return (
-    <div className="floorplan-panel__hero" ref={ref}>
+    <div className="floorplan-panel__layers" ref={ref}>
       <button
-        className={`floorplan-panel__hero-select ${open ? 'floorplan-panel__hero-select--open' : ''}`}
+        className={`floorplan-panel__layers-btn ${open ? 'floorplan-panel__layers-btn--open' : ''}`}
         onClick={() => setOpen((v) => !v)}
       >
-        <span>{selectedLabel}</span>
-        <svg className={`floorplan-panel__hero-chevron ${open ? 'floorplan-panel__hero-chevron--open' : ''}`} width="12" height="7" viewBox="0 0 12 7" fill="none">
-          <path d="M1 1l5 5 5-5" stroke="#E77133" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <div className="floorplan-panel__layers-icon">
+          <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M10 2L2 7l8 5 8-5-8-5z"/>
+            <path d="M2 10l8 5 8-5"/>
+            <path d="M2 13l8 5 8-5"/>
+          </svg>
+        </div>
+        <div className="floorplan-panel__layers-text">
+          <span className="floorplan-panel__layers-title">Building Layers</span>
+          <span className="floorplan-panel__layers-sub">{subtitle}</span>
+        </div>
+        <svg className={`floorplan-panel__layers-chevron ${open ? 'floorplan-panel__layers-chevron--open' : ''}`} width="12" height="7" viewBox="0 0 12 7" fill="none">
+          <path d="M1 1l5 5 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
+        <span className="floorplan-panel__layers-tooltip">Show or hide campus buildings in the 3D view</span>
       </button>
 
       {open && (
         <div className="floorplan-panel__dropdown">
           <button
-            className={`floorplan-panel__dropdown-item ${!activeBuilding ? 'floorplan-panel__dropdown-item--active' : ''}`}
-            onClick={() => { showAllFloors(); setOpen(false); }}
+            className="floorplan-panel__dropdown-item floorplan-panel__dropdown-item--check"
+            onClick={setAllBuildingsVisible}
           >
+            <Checkbox checked={allOn} />
             All Buildings
           </button>
           <div className="floorplan-panel__dropdown-divider" />
-          {BUILDING_GROUPS.map((group) => (
-            <button
-              key={group.id}
-              className={`floorplan-panel__dropdown-item ${activeBuilding === group.id ? 'floorplan-panel__dropdown-item--active' : ''}`}
-              onClick={() => { setActiveBuilding(group.id); setOpen(false); }}
-            >
-              {group.label}
-            </button>
-          ))}
+          {BUILDING_GROUPS.map((group) => {
+            const on = buildingVisibility[group.id] !== false;
+            return (
+              <button
+                key={group.id}
+                className={`floorplan-panel__dropdown-item floorplan-panel__dropdown-item--check ${on ? 'floorplan-panel__dropdown-item--active' : ''}`}
+                onClick={() => toggleBuilding(group.id)}
+              >
+                <Checkbox checked={on} />
+                {group.label}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

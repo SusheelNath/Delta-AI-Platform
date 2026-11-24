@@ -30,8 +30,8 @@ export default function LayerPanel() {
 
   if (!open) {
     return (
-      <button className="layer-panel__toggle-btn" onClick={togglePanel} title="Toggle layers">
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <button className="layer-panel__toggle-btn" onClick={togglePanel}>
+        <svg width="22" height="22" viewBox="0 0 18 18" fill="none">
           <path d="M9 2L2 6l7 4 7-4-7-4z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
           <path d="M2 9l7 4 7-4" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
           <path d="M2 12l7 4 7-4" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />

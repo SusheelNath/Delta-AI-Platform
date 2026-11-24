@@ -45,7 +45,7 @@ const useStore = create((set, get) => ({
   // Floor state
   floors: [],
   activeFloorId: null,
-  activeBuilding: null,   // building group ID (e.g. 'A', 'AB', 'Campus') or null for all
+  buildingVisibility: {},  // { buildingGroupId: boolean } — toggled layers, default all true
   floorVisibility: {},
 
   // Selection
@@ -71,6 +71,9 @@ const useStore = create((set, get) => ({
   activeFunctionFilters: { 0: true, 1: true, 2: true, 3: true, 4: true, 5: true, 6: true },
 
   // Panel state
+  leftPanelOpen: false,       // Plan panel (FloorPlan + RoomDirectory)
+  rightPanelOpen: false,      // AI panel (Chat + SpaceToolkit)
+  flyThroughMode: false,      // First-person fly-through camera
   panelExpanded: false,
   panelMode: 'list',          // 'list' | 'plan'
   searchQuery: '',
@@ -189,9 +192,15 @@ const useStore = create((set, get) => ({
     });
   },
 
-  setActiveBuilding: (buildingId) => {
-    // Building highlight mode: all floors stay visible, viewer handles X-ray
-    set({ activeBuilding: buildingId, activeFloorId: null });
+  toggleBuilding: (buildingId) => {
+    const { buildingVisibility } = get();
+    const current = buildingVisibility[buildingId] !== false; // default true
+    set({ buildingVisibility: { ...buildingVisibility, [buildingId]: !current } });
+  },
+
+  setAllBuildingsVisible: () => {
+    // Empty map = all on (default)
+    set({ buildingVisibility: {} });
   },
 
   showAllFloors: () => {
@@ -200,7 +209,7 @@ const useStore = create((set, get) => ({
     floors.forEach((f) => {
       visibility[f.id] = true;
     });
-    set({ activeFloorId: null, activeBuilding: null, floorVisibility: visibility });
+    set({ activeFloorId: null, buildingVisibility: {}, floorVisibility: visibility });
   },
 
 
@@ -262,6 +271,9 @@ const useStore = create((set, get) => ({
     set({ activeFunctionFilters: { 0: active, 1: active, 2: active, 3: active, 4: active, 5: active, 6: active } });
   },
 
+  toggleLeftPanel: () => set((s) => ({ leftPanelOpen: !s.leftPanelOpen })),
+  toggleRightPanel: () => set((s) => ({ rightPanelOpen: !s.rightPanelOpen })),
+  setFlyThroughMode: (on) => set({ flyThroughMode: on, ...(on ? { leftPanelOpen: false, rightPanelOpen: false } : {}) }),
   togglePanelExpanded: () => set((s) => ({ panelExpanded: !s.panelExpanded })),
   setPanelMode: (mode) => set({ panelMode: mode }),
   setSearchQuery: (query) => set({ searchQuery: query }),
