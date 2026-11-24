@@ -1,5 +1,5 @@
 """
-Deterministic room repurpose analysis engine for CHIREC Delta Hospital.
+Deterministic room repurpose analysis engine for Office Campus.
 
 All output is pre-computed from rules, profiles, and spatial data - no LLM
 involved.  Every sentence of justification is a template filled with real
@@ -358,17 +358,17 @@ AVG_FTE_SALARY = 55000  # €/year
 
 
 # ══════════════════════════════════════════════════════════════════════
-# Hospital benchmarks - avg % of spaces per function per floor
+# Campus benchmarks - avg % of spaces per function per floor
 # ══════════════════════════════════════════════════════════════════════
-# Derived from the hospital's own overall distribution.
+# Derived from the campus's own overall distribution.
 # These are computed at cache build time from actual data.
 
-_hospital_benchmarks: dict[str, float] = {}  # {function: avg_pct across floors}
+_campus_benchmarks: dict[str, float] = {}  # {function: avg_pct across floors}
 
 
-def _compute_hospital_benchmarks(floor_groups, intelligence):
-    """Compute hospital-wide average function distribution percentages."""
-    global _hospital_benchmarks
+def _compute_campus_benchmarks(floor_groups, intelligence):
+    """Compute campus-wide average function distribution percentages."""
+    global _campus_benchmarks
     fn_totals = defaultdict(int)
     total = 0
     for guid, intel in intelligence.items():
@@ -376,7 +376,7 @@ def _compute_hospital_benchmarks(floor_groups, intelligence):
         if fn and fn not in NON_REPURPOSABLE_FUNCTIONS:
             fn_totals[fn] += 1
             total += 1
-    _hospital_benchmarks = {
+    _campus_benchmarks = {
         fn: (count / max(1, total)) * 100
         for fn, count in fn_totals.items()
     }
@@ -467,23 +467,23 @@ def _score_area_fit(area_m2: float, profile: dict) -> tuple[int, str]:
 def _score_distribution_gap(target_fn: str, floor_fn_counts: dict, floor_total: int) -> tuple[int, str]:
     """Score how underrepresented this function is on the floor (0-100).
     Returns (score, reason)."""
-    avg_pct = _hospital_benchmarks.get(target_fn, 0)
+    avg_pct = _campus_benchmarks.get(target_fn, 0)
     current_count = floor_fn_counts.get(target_fn, 0)
     current_pct = (current_count / max(1, floor_total)) * 100
     gap = avg_pct - current_pct  # positive = underserved
 
     if current_count == 0 and avg_pct > 1:
         score = max(0, min(100, int(85 + gap * 3)))
-        reason = f"Floor has 0, hospital avg is {avg_pct:.1f}%, critical gap"
+        reason = f"Floor has 0, campus avg is {avg_pct:.1f}%, critical gap"
     elif gap > 2:
         score = max(0, min(100, int(65 + gap * 5)))
         reason = f"{current_count} on floor ({current_pct:.1f}%) vs {avg_pct:.1f}% avg, significant shortfall"
     elif gap > 0:
         score = max(0, min(100, int(50 + gap * 5)))
-        reason = f"{current_count} on floor, slightly below hospital average"
+        reason = f"{current_count} on floor, slightly below campus average"
     else:
         score = max(0, min(100, int(50 + gap * 5)))
-        reason = f"{current_count} on floor, at or above hospital average"
+        reason = f"{current_count} on floor, at or above campus average"
     return score, reason
 
 
@@ -785,38 +785,38 @@ def _score_revenue_impact(
 
 def _score_service_continuity(
     current_fn: str, floor_fn_counts: dict,
-    hospital_fn_counts: dict | None = None,
+    campus_fn_counts: dict | None = None,
 ) -> tuple[int, str]:
     """Score the risk of removing one instance of current function from the floor (0-100)."""
     current_count = floor_fn_counts.get(current_fn, 0)
     remaining = current_count - 1
 
-    # Hospital-wide context adjustment
-    hospital_adj = 0
-    hospital_total = (hospital_fn_counts or {}).get(current_fn, 0)
-    if hospital_total >= 50:
-        hospital_adj = 12
-    elif hospital_total >= 20:
-        hospital_adj = 8
-    elif hospital_total >= 10:
-        hospital_adj = 4
-    elif hospital_total > 0 and hospital_total < 5:
-        hospital_adj = -12
+    # Campus-wide context adjustment
+    campus_adj = 0
+    campus_total = (campus_fn_counts or {}).get(current_fn, 0)
+    if campus_total >= 50:
+        campus_adj = 12
+    elif campus_total >= 20:
+        campus_adj = 8
+    elif campus_total >= 10:
+        campus_adj = 4
+    elif campus_total > 0 and campus_total < 5:
+        campus_adj = -12
 
     if current_count <= 1:
-        score = max(0, min(100, 15 + hospital_adj))
-        suffix = f", {hospital_total} hospital-wide" if hospital_total else ""
+        score = max(0, min(100, 15 + campus_adj))
+        suffix = f", {campus_total} campus-wide" if campus_total else ""
         return score, f"Only {current_fn} on floor{suffix}, removal eliminates this function"
     if remaining <= 2:
         pct_loss = round(1 / current_count * 100)
         base = max(25, 60 - pct_loss)
-        score = max(0, min(100, base + hospital_adj))
-        suffix = f", {hospital_total} hospital-wide" if hospital_total else ""
+        score = max(0, min(100, base + campus_adj))
+        suffix = f", {campus_total} campus-wide" if campus_total else ""
         return score, f"{current_count} on floor{suffix}, {pct_loss}% reduction, moderate risk"
     if remaining <= 5:
-        score = max(0, min(100, 75 + hospital_adj))
+        score = max(0, min(100, 75 + campus_adj))
         return score, f"{current_count} on floor, manageable reduction"
-    score = max(0, min(100, 90 + hospital_adj))
+    score = max(0, min(100, 90 + campus_adj))
     return score, f"{current_count} on floor, minimal impact"
 
 
@@ -1092,7 +1092,7 @@ def _compute_costs(
     """Compute full cost breakdown for a repurpose option.
 
     Returns a comprehensive dict covering renovation, furnishing,
-    infrastructure, compliance, labour, commune permits, vendor
+    infrastructure, compliance, labour, municipal permits, vendor
     concessions, contingency breakdown, operational disruption,
     commissioning, financial structure, and updated totals.
     All amounts are rounded to integers (EUR).
@@ -1176,14 +1176,14 @@ def _compute_costs(
             "explanation": (
                 f"{removal_count} item(s) to remove at EUR 65/item{bulk_note}. "
                 f"Includes disconnection, safe removal, and disposal per "
-                f"hospital waste protocol."
+                f"campus waste protocol."
             ),
         },
         "new_purchase": {
             "amount": new_purchase,
             "explanation": (
                 f"{add_count} new item type(s) to procure for {target_fn}. "
-                f"Priced from CHIREC furnishing catalog with framework "
+                f"Priced from campus furnishing catalog with framework "
                 f"supplier rates where available."
             ),
         },
@@ -1310,8 +1310,8 @@ def _compute_costs(
         "fire_safety_review": {
             "amount": fire_safety,
             "explanation": (
-                "Belgian fire safety code review and certification for "
-                f"{'clinical space with patient occupancy' if target_cat == 'clinical' else 'non-clinical space'} - "
+                "UAE fire and life safety code (ADIBC) review and certification for "
+                f"{'sensitive space with high occupancy' if target_cat == 'clinical' else 'standard space'} - "
                 "includes fire compartment assessment, evacuation route verification, "
                 "and fire detection system compliance check"
             ),
@@ -1319,17 +1319,17 @@ def _compute_costs(
         "accessibility_audit": {
             "amount": accessibility,
             "explanation": (
-                "Mandatory accessibility audit per Belgian anti-discrimination law - "
+                "Mandatory accessibility audit per UAE/Estidama accessibility standards - "
                 "wheelchair turning radius, door widths, signage height, "
-                f"and {'patient bed clearance requirements' if target_cat == 'clinical' else 'public access standards'}"
+                f"and {'enhanced clearance requirements' if target_cat == 'clinical' else 'public access standards'}"
             ),
         },
         "infection_control": {
             "amount": infection_control,
             "explanation": (
-                "Hospital infection prevention and control assessment - "
-                "HVAC air changes, surface material ratings, hand hygiene stations, "
-                "and biological waste disposal routing"
+                "Indoor environment quality assessment - "
+                "HVAC air changes, surface material ratings, sanitation stations, "
+                "and waste disposal routing"
                 if infection_control > 0 else
                 "Not required for non-clinical target function"
             ),
@@ -1339,7 +1339,7 @@ def _compute_costs(
             "explanation": (
                 f"Cross-category change ({current_cat} to {target_cat}) requires "
                 "additional permitting: urbanistic permit application, "
-                "fire department sign-off, and regional health authority notification"
+                "Abu Dhabi Civil Defence sign-off, and DED notification"
                 if permitting > 0 else
                 "Same-category conversion - no additional permitting required"
             ),
@@ -1376,8 +1376,8 @@ def _compute_costs(
     if new_purchase > 3000:
         framework_discount_amt = round(new_purchase * 0.12)
         framework_detail = (
-            "CHIREC framework agreement with registered medical equipment "
-            "supplier (Hillrom/Stryker)"
+            "Campus framework agreement with registered equipment "
+            "supplier (preferred vendor programme)"
         )
 
     # Trade-in credit: removed items with unit_cost > EUR 500 get 25% buyback
@@ -1439,7 +1439,7 @@ def _compute_costs(
         },
         "bulk_procurement": {
             "amount": -bulk_procurement_amt,
-            "vendor": "CHIREC GPO",
+            "vendor": "Campus GPO",
             "vendor_status": "registered",
             "explanation": bulk_detail,
         },
@@ -1543,7 +1543,7 @@ def _compute_costs(
             "rate": cont_base_rate,
             "amount": cont_base_amt,
             "explanation": (
-                "Standard construction risk buffer for hospital "
+                "Standard construction risk buffer for campus "
                 "renovation projects"
             ),
         },
@@ -1709,7 +1709,7 @@ def _compute_costs(
         "subtotal": labour_subtotal,
     }
 
-    # ── G. Commune & Municipal Permits ──────────────────────────────
+    # ── G. Municipal Permits ─────────────────────────────────────────
     permit_costs = {
         "light": 400, "moderate": 600, "heavy": 750, "structural": 800
     }
@@ -1717,7 +1717,7 @@ def _compute_costs(
     is_clinical_target = target_cat == "clinical"
     is_revenue_target = target_cat == "revenue"
 
-    commune_permits = {
+    municipal_permits = {
         "building_permit": {
             "amount": building_permit_cost,
             "detail": {
@@ -1756,7 +1756,7 @@ def _compute_costs(
             "amount": 1200 if is_clinical_target else 0,
             "detail": {
                 "explanation": (
-                    "Clinical space requires health authority inspection "
+                    "Sensitive space requires regulatory inspection "
                     "and certification before occupation"
                     if is_clinical_target else
                     "Not required - target function is not clinical"
@@ -1787,11 +1787,11 @@ def _compute_costs(
             },
         },
     }
-    commune_permits_subtotal = sum(
-        v["amount"] for k, v in commune_permits.items()
+    municipal_permits_subtotal = sum(
+        v["amount"] for k, v in municipal_permits.items()
         if isinstance(v, dict) and "amount" in v
     )
-    commune_permits["subtotal"] = commune_permits_subtotal
+    municipal_permits["subtotal"] = municipal_permits_subtotal
 
     # ── I. Commissioning & Handover ─────────────────────────────────
     systems_testing_map = {
@@ -1956,7 +1956,7 @@ def _compute_costs(
             f"for neighbouring operational spaces"
         )
         adjacent_mitigation_just = (
-            "Hospital operational continuity requires protecting adjacent "
+            "Campus operational continuity requires protecting adjacent "
             "occupied spaces from construction disruption"
         )
 
@@ -2008,7 +2008,7 @@ def _compute_costs(
         "it_reconfiguration": {
             "amount": it_reconfig,
             "explanation": it_reconfig_expl,
-            "justification": "Hospital management systems must reflect the new room function for scheduling, access control, and asset tracking",
+            "justification": "Campus management systems must reflect the new room function for scheduling, access control, and asset tracking",
         },
         "staff_retraining": {
             "amount": staff_retrain,
@@ -2038,7 +2038,7 @@ def _compute_costs(
     disruption_total = disruption_subtotal
     total_project_cost = (
         total_capex_after_concessions + design_fees + contingency
-        + disruption_total + commune_permits_subtotal
+        + disruption_total + municipal_permits_subtotal
     )
 
     # Payment milestones
@@ -2085,8 +2085,8 @@ def _compute_costs(
             "rate": 21,
             "amount": vat_amount,
             "note": (
-                "Belgian standard rate, potentially recoverable for "
-                "healthcare institutions under Article 44 VAT Code"
+                "UAE VAT standard rate (5%), potentially recoverable for "
+                "commercial institutions under UAE Federal Tax Authority rules"
             ),
         },
         "depreciation": {
@@ -2095,8 +2095,8 @@ def _compute_costs(
             "furnishing_years": 7,
             "furnishing_annual": furnishing_annual,
             "explanation": (
-                "Straight-line depreciation per Belgian accounting "
-                "standards (IFRS 16 / Belgian GAAP)"
+                "Straight-line depreciation per IFRS 16 / UAE "
+                "accounting standards"
             ),
         },
     }
@@ -2114,7 +2114,7 @@ def _compute_costs(
         # New sections
         "cost_drivers": cost_drivers,
         "labour": labour,
-        "commune_permits": commune_permits,
+        "municipal_permits": municipal_permits,
         "vendor_concessions": vendor_concessions,
         "contingency_breakdown": contingency_breakdown,
         "disruption": disruption,
@@ -2199,9 +2199,9 @@ def _compute_roi(
                 "mitigation, IT reconfiguration, and scheduling losses"
             ),
         },
-        "commune_permits": {
-            "amount": (costs.get("commune_permits", {}).get("subtotal", 0)
-                if isinstance(costs.get("commune_permits"), dict) else 0),
+        "municipal_permits": {
+            "amount": (costs.get("municipal_permits", {}).get("subtotal", 0)
+                if isinstance(costs.get("municipal_permits"), dict) else 0),
             "explanation": (
                 "Building permit, change-of-use, fire inspection, health "
                 "authority approval, and occupation certificate"
@@ -2485,7 +2485,7 @@ def _build_justification(
         )
 
     # ── Distribution analysis ──
-    avg_pct = _hospital_benchmarks.get(target_fn, 0)
+    avg_pct = _campus_benchmarks.get(target_fn, 0)
     current_pct = (floor_fn_counts.get(target_fn, 0) / max(1, floor_total)) * 100
     gap = avg_pct - current_pct
     current_count = floor_fn_counts.get(target_fn, 0)
@@ -2495,7 +2495,7 @@ def _build_justification(
             f"Floor {space.get('floor_id', '?')} currently has "
             f"{current_count} {target_fn} space(s) "
             f"({current_pct:.1f}% of the floor). "
-            f"The hospital average is {avg_pct:.1f}%. "
+            f"The campus average is {avg_pct:.1f}%. "
             f"Adding another {target_fn} here addresses a "
             f"{gap:.1f}% shortfall."
         )
@@ -2503,14 +2503,14 @@ def _build_justification(
         sections.append(
             f"Floor {space.get('floor_id', '?')} has "
             f"{current_count} {target_fn} space(s), "
-            f"slightly below the hospital average. "
+            f"slightly below the campus average. "
             f"This conversion would improve floor balance."
         )
     else:
         sections.append(
             f"Floor {space.get('floor_id', '?')} has "
             f"{current_count} {target_fn} space(s), "
-            f"close to or above the hospital average of {avg_pct:.1f}%. "
+            f"close to or above the campus average of {avg_pct:.1f}%. "
             f"This conversion supports capacity but is not urgently needed."
         )
 
@@ -2732,7 +2732,7 @@ _PHASE_DETAILS = {
             "Remove existing wall and floor finishes",
             "Demolish non-structural partitions",
             "Disconnect and cap MEP services",
-            "Dispose of demolition waste per hospital protocol",
+            "Dispose of demolition waste per campus protocol",
             "Asbestos/hazmat survey if building pre-2000",
         ],
         "responsible": "Contractor",
@@ -2930,7 +2930,7 @@ def _build_option(
     floor_total: int,
     adjacent_spaces: list[dict],
     ft_label_map: dict,
-    hospital_fn_counts: dict | None = None,
+    campus_fn_counts: dict | None = None,
 ) -> dict | None:
     """Build a complete repurpose option for one target function."""
     area = space.get("area_m2") or 0
@@ -2982,7 +2982,7 @@ def _build_option(
         "cost_efficiency": _score_cost_efficiency(costs["total_capex"]),
         "revenue_impact": _score_revenue_impact(area, current_fn, profile, target_fn=target_fn),
         "service_continuity": _score_service_continuity(
-            current_fn, floor_fn_counts, hospital_fn_counts=hospital_fn_counts,
+            current_fn, floor_fn_counts, campus_fn_counts=campus_fn_counts,
         ),
         "patient_flow": _score_patient_flow(
             target_fn, profile, adjacent_spaces, floor_fn_counts, floor_total,
@@ -3116,7 +3116,7 @@ def compute_repurpose_options(
     adjacent_spaces: list[dict],
     ft_label_map: dict,
     top_n: int = 4,
-    hospital_fn_counts: dict | None = None,
+    campus_fn_counts: dict | None = None,
 ) -> list[dict]:
     """Compute top-N repurpose options for a space.
 
@@ -3138,7 +3138,7 @@ def compute_repurpose_options(
             space, target_fn, profile,
             current_furnishings, floor_fn_counts, floor_total,
             adjacent_spaces, ft_label_map,
-            hospital_fn_counts=hospital_fn_counts,
+            campus_fn_counts=campus_fn_counts,
         )
         if opt and opt["overall_score"] > 20:
             options.append(opt)

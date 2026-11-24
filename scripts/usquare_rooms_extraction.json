@@ -1,0 +1,1045 @@
+{
+  "summary": {
+    "total_scanned": 33691,
+    "room_groups": 65,
+    "storeys_with_rooms": 11
+  },
+  "rooms_by_storey": {
+    "BAT_AB_R00": [
+      {
+        "room_name": "cafe",
+        "element_count": 1,
+        "element_types": [
+          "IfcSlab"
+        ],
+        "sample_guids": [
+          "295n1QiS9ESeBLUp4SiI7V"
+        ]
+      },
+      {
+        "room_name": "polyvalent ruimte",
+        "element_count": 36,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcSlab",
+          "IfcCurtainWall",
+          "IfcWall"
+        ],
+        "sample_guids": [
+          "1nHHrwMeb3a8$g6pDdmaKt",
+          "3jTLSJhjL15gjqtysrDDZ5",
+          "1nHHrwMeb3a8$g6pDdma4O",
+          "1nHHrwMeb3a8$g6pDdmbYr",
+          "3jTLSJhjL15gjqtysrDDcP"
+        ]
+      },
+      {
+        "room_name": "sanitair / douches",
+        "element_count": 33,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcWall"
+        ],
+        "sample_guids": [
+          "1CNLjkACP0uAbRa$TXO8Jj",
+          "1CNLjkACP0uAbRa$TXO8H5",
+          "1CNLjkACP0uAbRa$TXO8SV",
+          "1CNLjkACP0uAbRa$TXO8Se",
+          "1CNLjkACP0uAbRa$TXO8O9"
+        ]
+      },
+      {
+        "room_name": "seminarie zaal",
+        "element_count": 4,
+        "element_types": [
+          "IfcWallStandardCase"
+        ],
+        "sample_guids": [
+          "0MlPk9QZbD4P0EHTc7vo0H",
+          "0MlPk9QZbD4P0EHTc7voSA",
+          "0MlPk9QZbD4P0EHTc7vo0H",
+          "0MlPk9QZbD4P0EHTc7voSA"
+        ]
+      },
+      {
+        "room_name": "technieken",
+        "element_count": 2,
+        "element_types": [
+          "IfcWallStandardCase"
+        ],
+        "sample_guids": [
+          "3jTLSJhjL15gjqtysrDDgs",
+          "3jTLSJhjL15gjqtysrDDgs"
+        ]
+      }
+    ],
+    "BAT_AB_R01": [
+      {
+        "room_name": "coworking",
+        "element_count": 6,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcSlab",
+          "IfcCurtainWall",
+          "IfcRoof"
+        ],
+        "sample_guids": [
+          "3IX3yFR759tevkRdR1S1KJ",
+          "3IX3yFR759tevkRdR1S1KJ",
+          "030R9$Oi5CEQANUDEKHk1e",
+          "2n1hxdHUDBwOnoWnHjqhZj",
+          "030R9$Oi5CEQANUDEKHXHA"
+        ]
+      },
+      {
+        "room_name": "gang",
+        "element_count": 1,
+        "element_types": [
+          "IfcSlab"
+        ],
+        "sample_guids": [
+          "030R9$Oi5CEQANUDEKHkGx"
+        ]
+      },
+      {
+        "room_name": "polyvalent ruimte",
+        "element_count": 1,
+        "element_types": [
+          "IfcSlab"
+        ],
+        "sample_guids": [
+          "030R9$Oi5CEQANUDEKHXw4"
+        ]
+      },
+      {
+        "room_name": "seminarie zaal",
+        "element_count": 20,
+        "element_types": [
+          "IfcSlab"
+        ],
+        "sample_guids": [
+          "36DqZdQ9b8P9yITwv4SGMB",
+          "08EpIfkdEpp4htgz0mlR5a",
+          "12rmQFbh0C$6tBsLY2OD6y",
+          "0UO$ACagNge14OloiZzmGY",
+          "3ljtcMsrL_4FHMiYoN56Al"
+        ]
+      },
+      {
+        "room_name": "technieken",
+        "element_count": 4,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcCurtainWall"
+        ],
+        "sample_guids": [
+          "3WNBcaOML7mwNq9pePA61_",
+          "3WNBcaOML7mwNq9pePA61_",
+          "0DGqwOC$L9U8Az1VvzxetZ",
+          "0DGqwOC$L9U8Az1Vvzxesg"
+        ]
+      }
+    ],
+    "BAT_AC_R00": [
+      {
+        "room_name": "berging",
+        "element_count": 10,
+        "element_types": [
+          "IfcWallStandardCase"
+        ],
+        "sample_guids": [
+          "2Rw7kVM8T3KAGPBxYdBmWa",
+          "2Rw7kVM8T3KAGPBxYdBmcR",
+          "2Rw7kVM8T3KAGPBxYdBmdj",
+          "2Rw7kVM8T3KAGPBxYdBmlk",
+          "2Rw7kVM8T3KAGPBxYdBtNQ"
+        ]
+      },
+      {
+        "room_name": "polyvalente ruimte",
+        "element_count": 78,
+        "element_types": [
+          "IfcSlab",
+          "IfcCurtainWall",
+          "IfcWall",
+          "IfcWallStandardCase",
+          "IfcColumn"
+        ],
+        "sample_guids": [
+          "1fZXT4eu92$9ndDamCZud_",
+          "1r0nK$uKL9nQwAygVZxHOf",
+          "2Rw7kVM8T3KAGPBxYdBmZE",
+          "2Rw7kVM8T3KAGPBxYdBtJ6",
+          "1QmdFN5OjDWxovvEz$5Umb"
+        ]
+      },
+      {
+        "room_name": "technieken",
+        "element_count": 8,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcColumn",
+          "IfcWall"
+        ],
+        "sample_guids": [
+          "1fZXT4eu92$9ndDamCZue7",
+          "2Rw7kVM8T3KAGPBxYdBtHK",
+          "27L7MU$Dz7LvcDHxMQJhci",
+          "27L7MU$Dz7LvcDHxMQJhbd",
+          "2Rw7kVM8T3KAGPBxYdBtHK"
+        ]
+      }
+    ],
+    "BAT_AC_R01": [
+      {
+        "room_name": "berging",
+        "element_count": 1,
+        "element_types": [
+          "IfcSlab"
+        ],
+        "sample_guids": [
+          "2ogVuOG6T8lQTO1R17OFro"
+        ]
+      },
+      {
+        "room_name": "polyvalente ruimte",
+        "element_count": 5,
+        "element_types": [
+          "IfcSlab"
+        ],
+        "sample_guids": [
+          "3Uy3ZaI0b2Q9S0wrrV_qY9",
+          "3Uy3ZaI0b2Q9S0wrrV_qif",
+          "3TG3hfkLj6uxqT0ajoWDAP",
+          "3HIhIMv9X15wxwv87ADrwJ",
+          "3HIhIMv9X15wxwv87ADru3"
+        ]
+      }
+    ],
+    "BAT_A_R00": [
+      {
+        "room_name": "afvalruimte",
+        "element_count": 12,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcSlab"
+        ],
+        "sample_guids": [
+          "24CFeIYu53eh6QBwjitrzv",
+          "1xXfS_KVP4Ow8Fx$mJ5TCP",
+          "1xXfS_KVP4Ow8Fx$mJ5TB2",
+          "1xXfS_KVP4Ow8Fx$mJ5TAh",
+          "1xXfS_KVP4Ow8Fx$mJ5T9b"
+        ]
+      },
+      {
+        "room_name": "atelier",
+        "element_count": 13,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcSlab"
+        ],
+        "sample_guids": [
+          "1xXfS_KVP4Ow8Fx$mJ5Tfh",
+          "1xXfS_KVP4Ow8Fx$mJ5Tfn",
+          "1xXfS_KVP4Ow8Fx$mJ5TfO",
+          "1xXfS_KVP4Ow8Fx$mJ5TeG",
+          "1xXfS_KVP4Ow8Fx$mJ5TdB"
+        ]
+      },
+      {
+        "room_name": "berging",
+        "element_count": 31,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcSlab"
+        ],
+        "sample_guids": [
+          "3nrpe1wf91O8RtBA1WCwL3",
+          "3nrpe1wf91O8RtBA1WCwLQ",
+          "3nrpe1wf91O8RtBA1WCwMs",
+          "3nrpe1wf91O8RtBA1WCwNb",
+          "3nrpe1wf91O8RtBA1WCwNx"
+        ]
+      },
+      {
+        "room_name": "cafe",
+        "element_count": 54,
+        "element_types": [
+          "IfcSlab",
+          "IfcCurtainWall",
+          "IfcCovering",
+          "IfcWall",
+          "IfcWallStandardCase"
+        ],
+        "sample_guids": [
+          "3M9SPTPtT33wWEjDgKuBkI",
+          "3XVvF92lv4Dw7RtyNdBj4T",
+          "3XVvF92lv4Dw7RtyNdBjwE",
+          "3xg1paAZ173wOYwjvhykSn",
+          "0zEkibnyD0bQR6GoTKM7Ql"
+        ]
+      },
+      {
+        "room_name": "controle centrum",
+        "element_count": 25,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcSlab",
+          "IfcCovering"
+        ],
+        "sample_guids": [
+          "1xXfS_KVP4Ow8Fx$mJ5TcM",
+          "1xXfS_KVP4Ow8Fx$mJ5TbC",
+          "1xXfS_KVP4Ow8Fx$mJ5Tag",
+          "1xXfS_KVP4Ow8Fx$mJ5TZd",
+          "1xXfS_KVP4Ow8Fx$mJ5TZE"
+        ]
+      },
+      {
+        "room_name": "douches",
+        "element_count": 62,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcSlab"
+        ],
+        "sample_guids": [
+          "1a1lGWU7v6bAfJ5_MIXmxc",
+          "0pORalwUL3Eu9JCLduc5yP",
+          "0pORalwUL3Eu9JCLduc5$b",
+          "2GBdzt4Jz2LQPiHhnBhwi8",
+          "2GBdzt4Jz2LQPiHhnBhwjY"
+        ]
+      },
+      {
+        "room_name": "fietsenstalling site",
+        "element_count": 64,
+        "element_types": [
+          "IfcSlab",
+          "IfcCurtainWall",
+          "IfcCovering",
+          "IfcWall",
+          "IfcWallStandardCase"
+        ],
+        "sample_guids": [
+          "0yRK4Im0b2agFfIZd9v6HV",
+          "3mbW2u0N51AwmccYXN6CkV",
+          "2GBdzt4Jz2LQPiHhnBhx75",
+          "2GBdzt4Jz2LQPiHhnBhxBH",
+          "0XwTpMhdPC9PljYNfocIA7"
+        ]
+      },
+      {
+        "room_name": "gang",
+        "element_count": 152,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcSlab",
+          "IfcCovering",
+          "IfcWall"
+        ],
+        "sample_guids": [
+          "24CFeIYu53eh6QBwjitriH",
+          "24CFeIYu53eh6QBwjitrjp",
+          "1z6SXeGcnE_AHPrpor48$k",
+          "3v860kH_1DUwCX3B79TilE",
+          "1a1lGWU7v6bAfJ5_MIXmxi"
+        ]
+      },
+      {
+        "room_name": "kantoor",
+        "element_count": 38,
+        "element_types": [
+          "IfcSlab",
+          "IfcCurtainWall",
+          "IfcCovering",
+          "IfcWall",
+          "IfcWallStandardCase"
+        ],
+        "sample_guids": [
+          "3M9SPTPtT33wWEjDgKuBkH",
+          "3XVvF92lv4Dw7RtyNdBj03",
+          "3XVvF92lv4Dw7RtyNdBj1N",
+          "2GBdzt4Jz2LQPiHhnBh4YE",
+          "0pORalwUL3Eu9JCLduc5zJ"
+        ]
+      },
+      {
+        "room_name": "kitchenette",
+        "element_count": 15,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcSlab"
+        ],
+        "sample_guids": [
+          "2GBdzt4Jz2LQPiHhnBhwfH",
+          "1xXfS_KVP4Ow8Fx$mJ5T$u",
+          "1xXfS_KVP4Ow8Fx$mJ5TzV",
+          "1xXfS_KVP4Ow8Fx$mJ5Ty4",
+          "1xXfS_KVP4Ow8Fx$mJ5Tx7"
+        ]
+      },
+      {
+        "room_name": "sanitair",
+        "element_count": 146,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcSlab",
+          "IfcWall"
+        ],
+        "sample_guids": [
+          "1a1lGWU7v6bAfJ5_MIXmxw",
+          "24CFeIYu53eh6QBwjitpRo",
+          "1a1lGWU7v6bAfJ5_MIXmar",
+          "3v860kH_1DUwCX3B79TilC",
+          "0pORalwUL3Eu9JCLduc5r8"
+        ]
+      },
+      {
+        "room_name": "sanitair / douches",
+        "element_count": 188,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcSlab",
+          "IfcCovering",
+          "IfcWall"
+        ],
+        "sample_guids": [
+          "2GBdzt4Jz2LQPiHhnBhubF",
+          "2GBdzt4Jz2LQPiHhnBhuhL",
+          "1a1lGWU7v6bAfJ5_MIXma$",
+          "1z6SXeGcnE_AHPrpor49Kc",
+          "0Yp2AWaSD0dhMMM6zWAwrU"
+        ]
+      },
+      {
+        "room_name": "seminariezaal",
+        "element_count": 79,
+        "element_types": [
+          "IfcSlab",
+          "IfcCurtainWall",
+          "IfcCovering",
+          "IfcWall",
+          "IfcWallStandardCase"
+        ],
+        "sample_guids": [
+          "3M9SPTPtT33wWEjDgKuBkJ",
+          "3M9SPTPtT33wWEjDgKuBfi",
+          "3XVvF92lv4Dw7RtyNdBj99",
+          "3XVvF92lv4Dw7RtyNdBjEy",
+          "3mbW2u0N51AwmccYXN6CkG"
+        ]
+      },
+      {
+        "room_name": "tecnieken/data",
+        "element_count": 10,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcSlab",
+          "IfcCovering"
+        ],
+        "sample_guids": [
+          "1xXfS_KVP4Ow8Fx$mJ5SA2",
+          "1xXfS_KVP4Ow8Fx$mJ5S9C",
+          "1xXfS_KVP4Ow8Fx$mJ5S9M",
+          "1xXfS_KVP4Ow8Fx$mJ5S7W",
+          "1xXfS_KVP4Ow8Fx$mJ5SA2"
+        ]
+      },
+      {
+        "room_name": "toezicht",
+        "element_count": 37,
+        "element_types": [
+          "IfcSlab",
+          "IfcCurtainWall",
+          "IfcCovering",
+          "IfcWall",
+          "IfcWallStandardCase"
+        ],
+        "sample_guids": [
+          "1a1lGWU7v6bAfJ5_MIXmxa",
+          "3XVvF92lv4Dw7RtyNdBj2g",
+          "2GBdzt4Jz2LQPiHhnBh5PJ",
+          "24CFeIYu53eh6QBwjitrXO",
+          "24CFeIYu53eh6QBwjitrUZ"
+        ]
+      },
+      {
+        "room_name": "trap",
+        "element_count": 88,
+        "element_types": [
+          "IfcSlab",
+          "IfcCurtainWall",
+          "IfcCovering",
+          "IfcWall",
+          "IfcWallStandardCase"
+        ],
+        "sample_guids": [
+          "3M9SPTPtT33wWEjDgKuBfk",
+          "3M9SPTPtT33wWEjDgKuBfg",
+          "1A6XX9UYb3sO4yavBLgABJ",
+          "3v860kH_1DUwCX3B79TilP",
+          "3tVk_Kv99COu1la_wY5ze6"
+        ]
+      },
+      {
+        "room_name": "trappenhal",
+        "element_count": 20,
+        "element_types": [
+          "IfcSlab",
+          "IfcCurtainWall",
+          "IfcCovering",
+          "IfcWall",
+          "IfcWallStandardCase"
+        ],
+        "sample_guids": [
+          "3M9SPTPtT33wWEjDgKuBfl",
+          "1xXfS_KVP4Ow8Fx$mJ5QXl",
+          "1xXfS_KVP4Ow8Fx$mJ5QYX",
+          "1xXfS_KVP4Ow8Fx$mJ5QXS",
+          "1xXfS_KVP4Ow8Fx$mJ5Q$l"
+        ]
+      },
+      {
+        "room_name": "warmtepomp/ventilatie",
+        "element_count": 14,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcSlab",
+          "IfcCovering"
+        ],
+        "sample_guids": [
+          "1xXfS_KVP4Ow8Fx$mJ5S6Y",
+          "1xXfS_KVP4Ow8Fx$mJ5S5k",
+          "1xXfS_KVP4Ow8Fx$mJ5S5r",
+          "1xXfS_KVP4Ow8Fx$mJ5S2k",
+          "1xXfS_KVP4Ow8Fx$mJ5S1X"
+        ]
+      },
+      {
+        "room_name": "water",
+        "element_count": 24,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcSlab",
+          "IfcCovering"
+        ],
+        "sample_guids": [
+          "1xXfS_KVP4Ow8Fx$mJ5SVT",
+          "1xXfS_KVP4Ow8Fx$mJ5SU1",
+          "1xXfS_KVP4Ow8Fx$mJ5STu",
+          "1xXfS_KVP4Ow8Fx$mJ5SSi",
+          "1xXfS_KVP4Ow8Fx$mJ5SRa"
+        ]
+      }
+    ],
+    "BAT_A_R01": [
+      {
+        "room_name": "atelier",
+        "element_count": 1,
+        "element_types": [
+          "IfcSlab"
+        ],
+        "sample_guids": [
+          "2V6Zthutb9ihty9Z5j7Vhw"
+        ]
+      },
+      {
+        "room_name": "berging",
+        "element_count": 2,
+        "element_types": [
+          "IfcSlab"
+        ],
+        "sample_guids": [
+          "2V6Zthutb9ihty9Z5j7SFo",
+          "2V6Zthutb9ihty9Z5j7Tuf"
+        ]
+      },
+      {
+        "room_name": "cafe",
+        "element_count": 2,
+        "element_types": [
+          "IfcSlab"
+        ],
+        "sample_guids": [
+          "1XzmFWSrP4FhGOAHCNCwJx",
+          "2V6Zthutb9ihty9Z5j7S6K"
+        ]
+      },
+      {
+        "room_name": "coworking",
+        "element_count": 2,
+        "element_types": [
+          "IfcWallStandardCase"
+        ],
+        "sample_guids": [
+          "2sLYLBaKT9BOfeVSiS7FMq",
+          "2sLYLBaKT9BOfeVSiS7FMq"
+        ]
+      },
+      {
+        "room_name": "douches",
+        "element_count": 1,
+        "element_types": [
+          "IfcWall"
+        ],
+        "sample_guids": [
+          "2sLYLBaKT9BOfeVSiS7EEG"
+        ]
+      },
+      {
+        "room_name": "fietsenstalling site",
+        "element_count": 2,
+        "element_types": [
+          "IfcWallStandardCase"
+        ],
+        "sample_guids": [
+          "05XPOSGPz4afBXvj_gc3Jv",
+          "05XPOSGPz4afBXvj_gc3Jv"
+        ]
+      },
+      {
+        "room_name": "gang",
+        "element_count": 4,
+        "element_types": [
+          "IfcSlab"
+        ],
+        "sample_guids": [
+          "2V6Zthutb9ihty9Z5j7TjK",
+          "2V6Zthutb9ihty9Z5j7TDa",
+          "2V6Zthutb9ihty9Z5j7VFi",
+          "0p66vLkjnBsvLW0hC$5OBH"
+        ]
+      },
+      {
+        "room_name": "kantoor",
+        "element_count": 7,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcSlab"
+        ],
+        "sample_guids": [
+          "2XaEFw5b982udz_he5wfCf",
+          "2XaEFw5b982udz_he5wfCR",
+          "2XaEFw5b982udz_he5wfDc",
+          "2XaEFw5b982udz_he5wfCf",
+          "2XaEFw5b982udz_he5wfCR"
+        ]
+      },
+      {
+        "room_name": "sanitair",
+        "element_count": 2,
+        "element_types": [
+          "IfcSlab"
+        ],
+        "sample_guids": [
+          "2V6Zthutb9ihty9Z5j7Uvo",
+          "2V6Zthutb9ihty9Z5j7UFT"
+        ]
+      },
+      {
+        "room_name": "seminariezaal",
+        "element_count": 2,
+        "element_types": [
+          "IfcSlab"
+        ],
+        "sample_guids": [
+          "1XzmFWSrP4FhGOAHCNCaHS",
+          "2V6Zthutb9ihty9Z5j7Vyb"
+        ]
+      },
+      {
+        "room_name": "studio 1sk",
+        "element_count": 60,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcCurtainWall"
+        ],
+        "sample_guids": [
+          "2sLYLBaKT9BOfeVSiS7Dk7",
+          "2sLYLBaKT9BOfeVSiS7De1",
+          "2sLYLBaKT9BOfeVSiS7Ems",
+          "1przqUa_PDsOlVwPCVm8Gl",
+          "1hjzwkP4nBfgRXEo5uRuhC"
+        ]
+      },
+      {
+        "room_name": "toezicht",
+        "element_count": 3,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcSlab"
+        ],
+        "sample_guids": [
+          "2sLYLBaKT9BOfeVSiS7E2c",
+          "2sLYLBaKT9BOfeVSiS7E2c",
+          "1XzmFWSrP4FhGOAHCNCa3Z"
+        ]
+      },
+      {
+        "room_name": "trap",
+        "element_count": 6,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcSlab"
+        ],
+        "sample_guids": [
+          "3USNG0VPPC5R8uoZznEITr",
+          "3USNG0VPPC5R8uoZznEITr",
+          "2V6Zthutb9ihty9Z5j7VPj",
+          "2V6Zthutb9ihty9Z5j7OCg",
+          "2V6Zthutb9ihty9Z5j7O2f"
+        ]
+      },
+      {
+        "room_name": "trappenhal",
+        "element_count": 2,
+        "element_types": [
+          "IfcSlab"
+        ],
+        "sample_guids": [
+          "2V6Zthutb9ihty9Z5j7O7Q",
+          "2Tv2lyUN5DkOakxmpDu$zF"
+        ]
+      },
+      {
+        "room_name": "vergaderzaal",
+        "element_count": 16,
+        "element_types": [
+          "IfcWallStandardCase"
+        ],
+        "sample_guids": [
+          "2sLYLBaKT9BOfeVSiS7DgZ",
+          "1przqUa_PDsOlVwPCVm8Sa",
+          "0XwTpMhdPC9PljYNfocH_3",
+          "2XaEFw5b982udz_he5wepC",
+          "2XaEFw5b982udz_he5wetA"
+        ]
+      },
+      {
+        "room_name": "water",
+        "element_count": 1,
+        "element_types": [
+          "IfcSlab"
+        ],
+        "sample_guids": [
+          "2V6Zthutb9ihty9Z5j7VZv"
+        ]
+      }
+    ],
+    "BAT_A_R01MEZZ": [
+      {
+        "room_name": "studio 1sk",
+        "element_count": 5,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcCurtainWall"
+        ],
+        "sample_guids": [
+          "0Izu_WSHrEjgbLveRrDlYs",
+          "0Izu_WSHrEjgbLveRrDlYs",
+          "1Iq7lLA2b12vV4E2rINMTg",
+          "1IwUvafj1E9wEPwR9KzfQ6",
+          "1IwUvafj1E9wEPwR9KzfUf"
+        ]
+      }
+    ],
+    "BAT_A_R02": [
+      {
+        "room_name": "studio 1sk",
+        "element_count": 12,
+        "element_types": [
+          "IfcCurtainWall"
+        ],
+        "sample_guids": [
+          "1Ne7uQYRX169bHqWpyfTxT",
+          "1Ne7uQYRX169bHqWpyfTxS",
+          "1Ne7uQYRX169bHqWpyfTbl",
+          "1Ne7uQYRX169bHqWpyfTbk",
+          "1Ne7uQYRX169bHqWpyfTb1"
+        ]
+      }
+    ],
+    "BAT_A_R02MEZZ": [
+      {
+        "room_name": "studio 1sk",
+        "element_count": 6,
+        "element_types": [
+          "IfcCurtainWall"
+        ],
+        "sample_guids": [
+          "1pGv5XepD4CxFuOFKZ7xLZ",
+          "1pGv5XepD4CxFuOFKZ7xHM",
+          "1pGv5XepD4CxFuOFKZ7xGF",
+          "1pGv5XepD4CxFuOFKZ7qdm",
+          "1pGv5XepD4CxFuOFKZ7qYs"
+        ]
+      }
+    ],
+    "BAT_B_R00": [
+      {
+        "room_name": "lockers",
+        "element_count": 15,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcSlab"
+        ],
+        "sample_guids": [
+          "1sD$1aQG50mwFJZRTdMWgD",
+          "1sD$1aQG50mwFJZRTdMWb8",
+          "1sD$1aQG50mwFJZRTdMWa5",
+          "1sD$1aQG50mwFJZRTdMWd5",
+          "1sD$1aQG50mwFJZRTdMWXc"
+        ]
+      },
+      {
+        "room_name": "lockers + kinderwagen",
+        "element_count": 12,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcWall"
+        ],
+        "sample_guids": [
+          "3yydr_cpnApfS9VB4p2KAK",
+          "3yydr_cpnApfS9VB4p2K2Z",
+          "37PWKa3y52nBZZaeF2LXn0",
+          "1sD$1aQG50mwFJZRTdMWG$",
+          "1sD$1aQG50mwFJZRTdMWJe"
+        ]
+      },
+      {
+        "room_name": "sas",
+        "element_count": 14,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcSlab",
+          "IfcWall"
+        ],
+        "sample_guids": [
+          "3l1ssH9czB8wVul$lZfVXD",
+          "3l1ssH9czB8wVul$lZfVZf",
+          "1aJy505_HCEeuaUSoi7iG7",
+          "0PUVjzmIb9OQUaJtQGECgz",
+          "3l5hvOHrz1_BhASJLf_euc"
+        ]
+      }
+    ],
+    "BAT_C_R00": [
+      {
+        "room_name": "berging",
+        "element_count": 13,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcSlab"
+        ],
+        "sample_guids": [
+          "2zoaUXZgfCThOW45UGTAMX",
+          "2zoaUXZgfCThOW45UGTANb",
+          "2zoaUXZgfCThOW45UGTAOz",
+          "2zoaUXZgfCThOW45UGTAP0",
+          "2zoaUXZgfCThOW45UGTAQt"
+        ]
+      },
+      {
+        "room_name": "data",
+        "element_count": 17,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcSlab"
+        ],
+        "sample_guids": [
+          "3FKbkrA_z8$P1rvH6qovNK",
+          "3FKbkrA_z8$P1rvH6qovM4",
+          "3FKbkrA_z8$P1rvH6qovH4",
+          "3FKbkrA_z8$P1rvH6qovHn",
+          "3FKbkrA_z8$P1rvH6qovGc"
+        ]
+      },
+      {
+        "room_name": "ehbo",
+        "element_count": 19,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcSlab"
+        ],
+        "sample_guids": [
+          "2zoaUXZgfCThOW45UGTBa1",
+          "2zoaUXZgfCThOW45UGTBdN",
+          "2zoaUXZgfCThOW45UGTBdd",
+          "2zoaUXZgfCThOW45UGTBer",
+          "2zoaUXZgfCThOW45UGTBfN"
+        ]
+      },
+      {
+        "room_name": "gang",
+        "element_count": 35,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcSlab"
+        ],
+        "sample_guids": [
+          "10NSf30s59S8auCEzlIaFV",
+          "10NSf30s59S8auCEzlIbnc",
+          "10NSf30s59S8auCEzlIbm2",
+          "3FKbkrA_z8$P1rvH6qovvL",
+          "3FKbkrA_z8$P1rvH6qovvk"
+        ]
+      },
+      {
+        "room_name": "sanitair M",
+        "element_count": 16,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcSlab",
+          "IfcWall"
+        ],
+        "sample_guids": [
+          "3n5via9CHEoxAziKndN2I7",
+          "3n5via9CHEoxAziKndN2HE",
+          "3n5via9CHEoxAziKndN2GL",
+          "3n5via9CHEoxAziKndN2NQ",
+          "3n5via9CHEoxAziKndN2Nc"
+        ]
+      },
+      {
+        "room_name": "sanitair V",
+        "element_count": 21,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcSlab"
+        ],
+        "sample_guids": [
+          "3n5via9CHEoxAziKndN2PJ",
+          "3n5via9CHEoxAziKndN2OL",
+          "3n5via9CHEoxAziKndN2VP",
+          "3n5via9CHEoxAziKndN2Vi",
+          "3n5via9CHEoxAziKndN2Uo"
+        ]
+      },
+      {
+        "room_name": "sas",
+        "element_count": 21,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcSlab"
+        ],
+        "sample_guids": [
+          "3FKbkrA_z8$P1rvH6qov4Q",
+          "3FKbkrA_z8$P1rvH6qov7S",
+          "3FKbkrA_z8$P1rvH6qov6B",
+          "3FKbkrA_z8$P1rvH6qov6$",
+          "3FKbkrA_z8$P1rvH6qov06"
+        ]
+      },
+      {
+        "room_name": "technieken",
+        "element_count": 41,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcSlab",
+          "IfcWall"
+        ],
+        "sample_guids": [
+          "0kjkbJl590tOeGJyzJ$vag",
+          "10NSf30s59S8auCEzlIbvb",
+          "0bI99V77v5oQ2BzvxCpvpw",
+          "3FKbkrA_z8$P1rvH6qocl4",
+          "3FKbkrA_z8$P1rvH6qoclR"
+        ]
+      },
+      {
+        "room_name": "trap",
+        "element_count": 39,
+        "element_types": [
+          "IfcWallStandardCase",
+          "IfcSlab",
+          "IfcWall"
+        ],
+        "sample_guids": [
+          "3334zP3Kn5jhqIf7uHV1_d",
+          "3334zP3Kn5jhqIf7uHV1$n",
+          "0QfaGkXMz72PIEobLO5XzM",
+          "0if0Al0kL24QIfL5dmYrbS",
+          "0if0Al0kL24QIfL5dmYrc5"
+        ]
+      }
+    ]
+  },
+  "geometry_test": [
+    {
+      "storey": "BAT_A_R00",
+      "room_name": "cafe",
+      "bounds": {
+        "min_x": 151283.31640393444,
+        "min_y": 167915.06526082088,
+        "min_z": 82.25876512923584,
+        "max_x": 151332.79261548317,
+        "max_y": 167947.86534503382,
+        "max_z": 87.33499999999998
+      },
+      "area_m2_approx": 0.2,
+      "elements_with_geom": 10,
+      "elements_total": 54
+    },
+    {
+      "storey": "BAT_A_R00",
+      "room_name": "seminariezaal",
+      "bounds": {
+        "min_x": 151288.46185813477,
+        "min_y": 167915.41145573746,
+        "min_z": 82.41,
+        "max_x": 151319.8485894621,
+        "max_y": 167942.39747585708,
+        "max_z": 87.13000000002664
+      },
+      "area_m2_approx": 0.1,
+      "elements_with_geom": 10,
+      "elements_total": 79
+    },
+    {
+      "storey": "BAT_A_R00",
+      "room_name": "kantoor",
+      "bounds": {
+        "min_x": 151307.94101370728,
+        "min_y": 167925.12745779287,
+        "min_z": 82.3259119341277,
+        "max_x": 151327.41107959917,
+        "max_y": 167939.20589308295,
+        "max_z": 87.13000000002667
+      },
+      "area_m2_approx": 0.0,
+      "elements_with_geom": 10,
+      "elements_total": 38
+    },
+    {
+      "storey": "BAT_A_R00",
+      "room_name": "trap",
+      "bounds": {
+        "min_x": 151283.81600700232,
+        "min_y": 167898.9170613522,
+        "min_z": 82.39999999999999,
+        "max_x": 151322.31800802055,
+        "max_y": 167941.87717914445,
+        "max_z": 87.44090529091436
+      },
+      "area_m2_approx": 0.2,
+      "elements_with_geom": 10,
+      "elements_total": 88
+    },
+    {
+      "storey": "BAT_A_R00",
+      "room_name": "trappenhal",
+      "bounds": {
+        "min_x": 151299.17824189406,
+        "min_y": 167921.11285790414,
+        "min_z": 82.71,
+        "max_x": 151308.84261234204,
+        "max_y": 167931.2941873331,
+        "max_z": 87.13
+      },
+      "area_m2_approx": 0.0,
+      "elements_with_geom": 10,
+      "elements_total": 20
+    }
+  ]
+}

@@ -1,23 +1,18 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import useStore from '../../store/useStore';
 import { fetchFloors } from '../../api/client';
+import { BUILDING_GROUPS, FLOOR_NAMES, FLOOR_ORDER } from '../../utils/translateNL';
 import './FloorSelector.css';
 
 /**
- * Static floor definitions with display metadata.
+ * Static floor definitions for the Office Campus.
+ * 35 floors across 8 buildings, grouped for the selector UI.
  * Used as fallback if the API is unavailable.
  */
-const FLOOR_DEFINITIONS = [
-  { id: 'H003', name: 'Basement 3', shortLabel: 'B3', level: -3 },
-  { id: 'H002', name: 'Basement 2', shortLabel: 'B2', level: -2 },
-  { id: 'H001', name: 'Basement 1', shortLabel: 'B1', level: -1 },
-  { id: 'H000', name: 'Ground Floor', shortLabel: 'Ground', level: 0 },
-  { id: 'H010', name: 'Floor +1', shortLabel: '+1', level: 1 },
-  { id: 'H020', name: 'Floor +2', shortLabel: '+2', level: 2 },
-  { id: 'H030', name: 'Floor +3', shortLabel: '+3', level: 3 },
-  { id: 'H040', name: 'Floor +4', shortLabel: '+4', level: 4 },
-  { id: 'H050', name: 'Floor +5', shortLabel: '+5', level: 5 },
-];
+const FLOOR_DEFINITIONS = FLOOR_ORDER.map((id, idx) => {
+  const names = FLOOR_NAMES[id] || { en: id, ar: id };
+  return { id, name: names.en, nameAr: names.ar, shortLabel: id.replace('_', ' '), level: idx };
+});
 
 export default function FloorSelector() {
   const floors = useStore((s) => s.floors);
@@ -28,6 +23,9 @@ export default function FloorSelector() {
   const setActiveFloor = useStore((s) => s.setActiveFloor);
   const showAllFloors = useStore((s) => s.showAllFloors);
 
+  // Drill-down: null = building list, string = drilled into that building group
+  const [currentBuilding, setCurrentBuilding] = useState(null);
+
   // Fetch floors from API, fallback to static definitions
   useEffect(() => {
     let cancelled = false;
@@ -36,13 +34,15 @@ export default function FloorSelector() {
       try {
         const apiFloors = await fetchFloors();
         if (!cancelled && apiFloors && apiFloors.length > 0) {
-          // Merge API floors with our display metadata
           const merged = apiFloors.map((af) => {
-            const def = FLOOR_DEFINITIONS.find((d) => d.id === af.id);
+            const names = FLOOR_NAMES[af.id] || { en: af.name || af.id, ar: af.name || af.id };
+            const orderIdx = FLOOR_ORDER.indexOf(af.id);
             return {
               ...af,
-              shortLabel: def?.shortLabel || af.name || af.id,
-              level: def?.level ?? 0,
+              name: names.en,
+              nameAr: names.ar,
+              shortLabel: af.id.replace('_', ' '),
+              level: orderIdx >= 0 ? orderIdx : 999,
             };
           });
           merged.sort((a, b) => a.level - b.level);
@@ -60,11 +60,8 @@ export default function FloorSelector() {
     return () => { cancelled = true; };
   }, [setFloors]);
 
+  const floorMap = new Map(floors.map((f) => [f.id, f]));
   const allVisible = floors.length > 0 && floors.every((f) => floorVisibility[f.id] !== false);
-
-  const handleAllClick = () => {
-    showAllFloors();
-  };
 
   const handleFloorClick = (floorId) => {
     toggleFloorVisibility(floorId);
@@ -74,35 +71,107 @@ export default function FloorSelector() {
     setActiveFloor(floorId);
   };
 
+  // Current group when drilled in
+  const activeGroup = currentBuilding
+    ? BUILDING_GROUPS.find((g) => g.id === currentBuilding)
+    : null;
+
+  // ── Building list view ──
+  if (!currentBuilding) {
+    return (
+      <div className="floor-selector">
+        <div className="floor-selector__header">
+          <span className="floor-selector__label">Buildings</span>
+          <button
+            className={`floor-selector__pill ${allVisible ? 'floor-selector__pill--active' : ''}`}
+            onClick={showAllFloors}
+            title="Show all floors"
+          >
+            All
+          </button>
+        </div>
+
+        <div className="floor-selector__list">
+          {BUILDING_GROUPS.map((group) => {
+            const groupFloors = group.floors.filter((fid) => floorMap.has(fid));
+            if (groupFloors.length === 0) return null;
+            const visibleCount = groupFloors.filter((fid) => floorVisibility[fid] !== false).length;
+            const allGroupVisible = visibleCount === groupFloors.length;
+
+            return (
+              <button
+                key={group.id}
+                className={`floor-selector__building ${allGroupVisible ? 'floor-selector__building--active' : ''}`}
+                onClick={() => setCurrentBuilding(group.id)}
+                title={group.labelAr}
+              >
+                <div className="floor-selector__building-info">
+                  <span className="floor-selector__building-name">{group.label}</span>
+                  <span className="floor-selector__building-name-ar">{group.labelAr}</span>
+                </div>
+                <div className="floor-selector__building-meta">
+                  <span className="floor-selector__building-count">{visibleCount}/{groupFloors.length}</span>
+                  <svg className="floor-selector__chevron" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M4.5 2.5L8 6L4.5 9.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Floor list view (drilled into a building) ──
+  const groupFloors = activeGroup ? activeGroup.floors.filter((fid) => floorMap.has(fid)) : [];
+
   return (
     <div className="floor-selector">
-      <span className="floor-selector__label">Floors</span>
+      <div className="floor-selector__header">
+        <button
+          className="floor-selector__back"
+          onClick={() => setCurrentBuilding(null)}
+          title="Back to buildings"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M9 3L5 7L9 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        <span className="floor-selector__label">{activeGroup.label}</span>
+        <button
+          className={`floor-selector__pill ${allVisible ? 'floor-selector__pill--active' : ''}`}
+          onClick={showAllFloors}
+          title="Show all floors"
+        >
+          All
+        </button>
+      </div>
 
-      <button
-        className={`floor-selector__btn floor-selector__btn--all ${allVisible ? 'floor-selector__btn--active' : ''}`}
-        onClick={handleAllClick}
-        title="Show all floors"
-      >
-        All
-      </button>
+      <div className="floor-selector__list">
+        {groupFloors.map((floorId) => {
+          const floor = floorMap.get(floorId);
+          if (!floor) return null;
+          const visible = floorVisibility[floorId] !== false;
+          const solo = activeFloorId === floorId;
+          const names = FLOOR_NAMES[floorId] || { en: floor.name, ar: '' };
+          const levelPart = names.en.includes('\u2013') ? names.en.split('\u2013')[1].trim() : names.en;
+          const levelPartAr = names.ar.includes('\u2013') ? names.ar.split('\u2013')[1].trim() : names.ar;
 
-      <div className="floor-selector__divider" />
-
-      {floors.map((floor) => {
-        const visible = floorVisibility[floor.id] !== false;
-        const solo = activeFloorId === floor.id;
-        return (
-          <button
-            key={floor.id}
-            className={`floor-selector__btn ${visible ? 'floor-selector__btn--active' : 'floor-selector__btn--dimmed'} ${solo ? 'floor-selector__btn--solo' : ''}`}
-            onClick={() => handleFloorClick(floor.id)}
-            onDoubleClick={() => handleFloorDoubleClick(floor.id)}
-            title={`${floor.name || floor.id} (click to toggle, double-click to solo)`}
-          >
-            {floor.shortLabel || floor.id}
-          </button>
-        );
-      })}
+          return (
+            <button
+              key={floorId}
+              className={`floor-selector__floor ${visible ? 'floor-selector__floor--active' : 'floor-selector__floor--dimmed'} ${solo ? 'floor-selector__floor--solo' : ''}`}
+              onClick={() => handleFloorClick(floorId)}
+              onDoubleClick={() => handleFloorDoubleClick(floorId)}
+              title={`${names.en} (click to toggle, double-click to solo)`}
+            >
+              <span className="floor-selector__floor-en">{levelPart}</span>
+              <span className="floor-selector__floor-ar">{levelPartAr}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

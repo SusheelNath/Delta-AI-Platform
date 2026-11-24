@@ -7,7 +7,7 @@ from app.database import Base
 class Floor(Base):
     __tablename__ = "floors"
 
-    id = Column(String, primary_key=True)  # H000, H001, etc.
+    id = Column(String, primary_key=True)  # A_G, B_1, CAMPUS_SITE, etc.
     name = Column(String, nullable=False)  # "Ground Floor", "Basement 1"
     level = Column(Integer, nullable=False)  # 0, -1, -2, 1, 2...
     elevation_cm = Column(Float, nullable=True)

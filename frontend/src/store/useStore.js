@@ -13,24 +13,10 @@ function loadPolygonsFromStorage() {
     const raw = localStorage.getItem(POLYGONS_KEY);
     if (!raw) return {};
     const data = JSON.parse(raw);
-    // Keep only h020-prefixed polygons for H020 (purge stale IFC-guid ones)
-    if (data.H020 && Array.isArray(data.H020)) {
-      const clean = data.H020.filter((p) => p.ifc_guid?.startsWith('h020-'));
-      if (clean.length !== data.H020.length) {
-        data.H020 = clean.length > 0 ? clean : undefined;
-        if (!data.H020) delete data.H020;
-      }
+    // Purge any stale hospital-era floor keys (H000-H050) from previous deployment
+    for (const key of Object.keys(data)) {
+      if (/^H\d{3}$/.test(key)) delete data[key];
     }
-    // Keep only h040-prefixed polygons for H040 (purge BIM-imported ones)
-    if (data.H040 && Array.isArray(data.H040)) {
-      const clean = data.H040.filter((p) => p.ifc_guid?.startsWith('h040-'));
-      if (clean.length !== data.H040.length) {
-        data.H040 = clean.length > 0 ? clean : undefined;
-        if (!data.H040) delete data.H040;
-      }
-    }
-    // H050 (rooftop) has no polygons - purge any cached ones
-    delete data.H050;
     // Strip cached metric values - these are always server-authoritative
     for (const floorId of Object.keys(data)) {
       if (!Array.isArray(data[floorId])) continue;
@@ -59,6 +45,7 @@ const useStore = create((set, get) => ({
   // Floor state
   floors: [],
   activeFloorId: null,
+  activeBuilding: null,   // building group ID (e.g. 'A', 'AB', 'Campus') or null for all
   floorVisibility: {},
 
   // Selection
@@ -87,10 +74,19 @@ const useStore = create((set, get) => ({
   panelExpanded: false,
   panelMode: 'list',          // 'list' | 'plan'
   searchQuery: '',
-  heatmapMode: 'function',    // 'function' | 'area_per_bed' | 'utilization' | 'status' | 'area'
+  heatmapMode: 'function',    // 'function' | 'utilization' | 'status' | 'area' | 'occupancy' | 'evacuation'
   compareMode: false,
   compareFloorId: null,
   mepVisible: false,
+
+  // Layer visibility (IFC entity type toggles — all on by default)
+  layerVisibility: {
+    walls: true, slabs: true, roofs: true, windows: true, doors: true,
+    structure: true, stairs: true, furnishings: true, coverings: true,
+    mep: true, spaces: true, other: true,
+  },
+  layerCounts: {},      // { walls: 1234, slabs: 56, ... } — populated after model load
+  layerPanelOpen: false,
 
   // StoreyViewsPlugin data
   storeyMaps: {},             // { [floorId]: StoreyMap }
@@ -128,6 +124,14 @@ const useStore = create((set, get) => ({
 
   // Routing navigation
   activeRoute: null,  // { type: 'elevator'|'staircase', path: [...], targetGuid, centroids: [[x,y],...], distanceM }
+
+  // Building assignments (manual overrides persisted to localStorage)
+  buildingAssignments: (() => {
+    try {
+      const raw = localStorage.getItem('delta_buildingAssignments');
+      return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
+  })(),  // { objectId: buildingGroupId }
 
   // Chat
   messages: [],
@@ -185,14 +189,21 @@ const useStore = create((set, get) => ({
     });
   },
 
+  setActiveBuilding: (buildingId) => {
+    // Building highlight mode: all floors stay visible, viewer handles X-ray
+    set({ activeBuilding: buildingId, activeFloorId: null });
+  },
+
   showAllFloors: () => {
     const { floors } = get();
     const visibility = {};
     floors.forEach((f) => {
       visibility[f.id] = true;
     });
-    set({ activeFloorId: null, floorVisibility: visibility });
+    set({ activeFloorId: null, activeBuilding: null, floorVisibility: visibility });
   },
+
+
 
   selectSpace: (spaceId, spaceData) => {
     set({ selectedSpaceId: spaceId, selectedSpace: spaceData, activeRoute: null });
@@ -255,7 +266,22 @@ const useStore = create((set, get) => ({
   setPanelMode: (mode) => set({ panelMode: mode }),
   setSearchQuery: (query) => set({ searchQuery: query }),
   setHeatmapMode: (mode) => set({ heatmapMode: mode }),
-  toggleMepVisible: () => set((s) => ({ mepVisible: !s.mepVisible })),
+  toggleMepVisible: () => set((s) => ({
+    mepVisible: !s.mepVisible,
+    layerVisibility: { ...s.layerVisibility, mep: !s.layerVisibility.mep },
+  })),
+  toggleLayer: (key) => set((s) => ({
+    layerVisibility: { ...s.layerVisibility, [key]: !s.layerVisibility[key] },
+    // Keep mepVisible in sync when mep layer is toggled
+    ...(key === 'mep' ? { mepVisible: !s.layerVisibility.mep } : {}),
+  })),
+  setAllLayersVisible: (visible) => set((s) => {
+    const lv = {};
+    for (const k of Object.keys(s.layerVisibility)) lv[k] = visible;
+    return { layerVisibility: lv, mepVisible: visible };
+  }),
+  setLayerCounts: (counts) => set({ layerCounts: counts }),
+  toggleLayerPanel: () => set((s) => ({ layerPanelOpen: !s.layerPanelOpen })),
   toggleCompareMode: () => set((s) => ({ compareMode: !s.compareMode, compareFloorId: null })),
   setCompareFloorId: (id) => set({ compareFloorId: id }),
   setStoreyMap: (floorId, map) => set((s) => ({ storeyMaps: { ...s.storeyMaps, [floorId]: map } })),

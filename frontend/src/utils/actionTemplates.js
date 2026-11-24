@@ -7,15 +7,13 @@
 
 import useStore from '../store/useStore';
 import { getCategoryIndex, FUNCTION_CATEGORIES } from './colorScheme';
+import { FLOOR_NAMES as TRANSLATED_FLOOR_NAMES, FLOOR_ORDER } from './translateNL';
 
-const FLOOR_NAMES = {
-  H003: 'Basement 3', H002: 'Basement 2', H001: 'Basement 1',
-  H000: 'Ground Floor',
-  H010: 'Floor +1', H020: 'Floor +2', H030: 'Floor +3',
-  H040: 'Floor +4', H050: 'Floor +5',
-};
-
-const FLOOR_ORDER = ['H003', 'H002', 'H001', 'H000', 'H010', 'H020', 'H030', 'H040', 'H050'];
+// Build a simple floor_id → English name map from translateNL
+const FLOOR_NAMES = {};
+for (const [id, names] of Object.entries(TRANSLATED_FLOOR_NAMES)) {
+  FLOOR_NAMES[id] = names.en;
+}
 
 // Infrastructure functions to exclude from "top functions" display
 const INFRA_FUNCTIONS = new Set([
@@ -179,7 +177,7 @@ function buildAllFloorsOverview() {
   const parts = [
     `Here's a full overview of the building.`,
     '',
-    `**Chirec Delta Hospital** - ${floorCount} floors, ${totalSpaces.toLocaleString()} spaces, ${totalAreaStr}`,
+    `**Office Campus** - ${floorCount} floors, ${totalSpaces.toLocaleString()} spaces, ${totalAreaStr}`,
     '',
   ];
 
@@ -350,8 +348,7 @@ export function buildFacilitiesText(furnishings) {
 
 // Station-based occupancy categories (mirrors backend compute_furnishing_occupancy)
 const _BED_TYPES = new Set([
-  'patient_bed', 'patient_bed_double', 'icu_bed', 'recovery_bed',
-  'crib', 'examination_table', 'surgical_table',
+  'sofa_bed', 'foldout_bed', 'examination_table',
 ]);
 const _INDEPENDENT_SEATING = new Set([
   'visitor_chair', 'waiting_bench', 'stool', 'wheelchair_bay',
@@ -601,7 +598,7 @@ export function buildRepurposeResponse(option, spaceName, floorId, activeTab = '
         zone_fit: 'Zone Fit', infrastructure: 'Infrastructure', regulatory: 'Regulatory',
         furnishing_reuse: 'Asset Retention', cost_efficiency: 'Cost Efficiency',
         revenue_impact: 'Revenue Impact', service_continuity: 'Service Continuity',
-        patient_flow: 'Patient Flow', operational_complexity: 'Conversion Ease',
+        workflow_impact: 'Workflow Impact', operational_complexity: 'Conversion Ease',
         utilisation_potential: 'Utilisation',
       };
       const entries = Object.entries(option.scores);
@@ -724,12 +721,12 @@ export function buildRepurposeResponse(option, spaceName, floorId, activeTab = '
     }
 
     // 7. Permits
-    if (c.commune_permits) {
-      p.push(`#### 7. Commune & Municipal Permits \u2014 ${eur(c.commune_permits.subtotal)}\n`);
+    if (c.municipal_permits) {
+      p.push(`#### 7. Municipal Permits \u2014 ${eur(c.municipal_permits.subtotal)}\n`);
       for (const [key, label] of [['building_permit', 'Building permit'], ['change_of_use', 'Change of use'],
-        ['fire_inspection', 'Fire inspection'], ['health_authority', 'Health authority'],
+        ['fire_inspection', 'Fire inspection'], ['health_authority', 'Regulatory authority'],
         ['occupation_certificate', 'Occupation certificate'], ['environmental_clearance', 'Environmental clearance']]) {
-        const item = c.commune_permits[key];
+        const item = c.municipal_permits[key];
         if (!item?.amount) continue;
         const d = item.detail;
         const processing = d?.processing_weeks ? ` _(${d.processing_weeks} weeks)_` : '';
@@ -756,7 +753,7 @@ export function buildRepurposeResponse(option, spaceName, floorId, activeTab = '
       p.push(`#### 9. Operational Disruption \u2014 ${eur(c.disruption.subtotal)}\n`);
       for (const [key, label] of [['temporary_relocation', 'Temporary relocation'], ['wayfinding_signage', 'Wayfinding & signage'],
         ['it_reconfiguration', 'IT reconfiguration'], ['staff_retraining', 'Staff retraining'],
-        ['adjacent_mitigation', 'Adjacent area mitigation'], ['patient_scheduling', 'Patient scheduling'],
+        ['adjacent_mitigation', 'Adjacent area mitigation'], ['tenant_scheduling', 'Tenant scheduling'],
         ['communication_plan', 'Communication plan']]) {
         const item = c.disruption[key];
         if (!item?.amount) continue;
@@ -790,7 +787,7 @@ export function buildRepurposeResponse(option, spaceName, floorId, activeTab = '
     if (c.infrastructure) p.push(`- Infrastructure \u2014 ${eur(c.infrastructure.subtotal)}`);
     if (c.compliance) p.push(`- Compliance \u2014 ${eur(c.compliance.subtotal)}`);
     if (c.labour) p.push(`- Labour \u2014 ${eur(c.labour.subtotal)}`);
-    if (c.commune_permits) p.push(`- Permits \u2014 ${eur(c.commune_permits.subtotal)}`);
+    if (c.municipal_permits) p.push(`- Permits \u2014 ${eur(c.municipal_permits.subtotal)}`);
     if (c.commissioning) p.push(`- Commissioning \u2014 ${eur(c.commissioning.subtotal)}`);
     if (c.disruption) p.push(`- Disruption \u2014 ${eur(c.disruption.subtotal)}`);
     p.push(`- **CAPEX** \u2014 **${eur(c.total_capex)}**`);
@@ -848,7 +845,7 @@ export function buildRepurposeResponse(option, spaceName, floorId, activeTab = '
       const ibExpl = (k) => { const v = ib[k]; return typeof v === 'object' ? v.explanation : null; };
       p.push('#### Investment Breakdown\n');
       for (const [k, label] of [['capex', 'Capital expenditure'], ['design_fees', 'Design & professional fees'],
-        ['contingency', 'Contingency reserve'], ['disruption', 'Operational disruption'], ['commune_permits', 'Commune & municipal permits']]) {
+        ['contingency', 'Contingency reserve'], ['disruption', 'Operational disruption'], ['municipal_permits', 'Municipal permits']]) {
         if (ibAmt(k) > 0) p.push(`- **${label}** \u2014 ${eur(ibAmt(k))}${ibExpl(k) ? `\n  ${ibExpl(k)}` : ''}`);
       }
       if (ibAmt('vendor_concessions') < 0) p.push(`- **Vendor concessions** \u2014 ${eur(ibAmt('vendor_concessions'))}${ibExpl('vendor_concessions') ? `\n  ${ibExpl('vendor_concessions')}` : ''}`);

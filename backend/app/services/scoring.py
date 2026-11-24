@@ -26,17 +26,51 @@ BASE_WEIGHTS = {
     "flexibility": 0.05,
 }
 
-# Floor alias → floor_id mapping (same as chat.py)
+# Floor alias → floor_id mapping (Office Campus)
 _FLOOR_ALIASES = {
-    "basement 3": "H003", "b3": "H003", "level -3": "H003",
-    "basement 2": "H002", "b2": "H002", "level -2": "H002",
-    "basement 1": "H001", "b1": "H001", "level -1": "H001",
-    "ground floor": "H000", "ground": "H000", "level 0": "H000",
-    "floor 1": "H010", "first floor": "H010", "level 1": "H010", "floor one": "H010",
-    "floor 2": "H020", "second floor": "H020", "level 2": "H020", "floor two": "H020",
-    "floor 3": "H030", "third floor": "H030", "level 3": "H030", "floor three": "H030",
-    "floor 4": "H040", "fourth floor": "H040", "level 4": "H040", "floor four": "H040",
-    "floor 5": "H050", "fifth floor": "H050", "level 5": "H050", "floor five": "H050",
+    # ── Campus-level ──
+    "campus site": "CAMPUS_SITE", "site plan": "CAMPUS_SITE", "site": "CAMPUS_SITE",
+    "campus ground": "CAMPUS_G", "campus g": "CAMPUS_G",
+    "campus 2": "CAMPUS_2", "campus level 2": "CAMPUS_2",
+    # ── CC (Common Core) ──
+    "building cc technical": "CC_T", "cc technical": "CC_T", "cc tech": "CC_T", "cct": "CC_T",
+    "building cc level 1": "CC_1", "cc level 1": "CC_1", "cc 1": "CC_1", "cc1": "CC_1",
+    # ── Building AB ──
+    "building ab basement": "AB_B1", "ab basement": "AB_B1", "ab b1": "AB_B1", "abb1": "AB_B1",
+    "building ab ground": "AB_G", "ab ground": "AB_G", "ab g": "AB_G", "abg": "AB_G",
+    "building ab level 1": "AB_1", "ab level 1": "AB_1", "ab 1": "AB_1", "ab1": "AB_1",
+    "building ab level 2": "AB_2", "ab level 2": "AB_2", "ab 2": "AB_2", "ab2": "AB_2",
+    # ── Building AC ──
+    "building ac ground": "AC_G", "ac ground": "AC_G", "ac g": "AC_G", "acg": "AC_G",
+    "building ac ground foyer": "AC_GF", "ac ground foyer": "AC_GF", "ac foyer": "AC_GF", "acgf": "AC_GF",
+    "building ac level 1": "AC_1", "ac level 1": "AC_1", "ac 1": "AC_1", "ac1": "AC_1",
+    "building ac level 2": "AC_2", "ac level 2": "AC_2", "ac 2": "AC_2", "ac2": "AC_2",
+    # ── Building A ──
+    "building a basement": "A_B1", "a basement": "A_B1", "a b1": "A_B1", "ab1a": "A_B1",
+    "building a ground": "A_G", "a ground": "A_G", "a g": "A_G", "ag": "A_G",
+    "building a level 1": "A_1", "a level 1": "A_1", "building a first": "A_1", "a 1": "A_1", "a1": "A_1",
+    "building a level 2": "A_2", "a level 2": "A_2", "building a second": "A_2", "a 2": "A_2", "a2": "A_2",
+    "building a level 3": "A_3", "a level 3": "A_3", "building a third": "A_3", "a 3": "A_3", "a3": "A_3",
+    "building a level 4": "A_4", "a level 4": "A_4", "building a fourth": "A_4", "a 4": "A_4", "a4": "A_4",
+    "building a mezzanine 1": "A_MZ1", "a mezzanine 1": "A_MZ1", "mezzanine 1": "A_MZ1", "a mz1": "A_MZ1", "amz1": "A_MZ1",
+    "building a mezzanine 2": "A_MZ2", "a mezzanine 2": "A_MZ2", "mezzanine 2": "A_MZ2", "a mz2": "A_MZ2", "amz2": "A_MZ2",
+    "building a roof": "A_R", "a roof": "A_R", "ar": "A_R",
+    # ── Building B ──
+    "building b ground": "B_G", "b ground": "B_G", "b g": "B_G", "bg": "B_G",
+    "building b level 1": "B_1", "b level 1": "B_1", "b 1": "B_1", "b1": "B_1",
+    "building b level 2": "B_2", "b level 2": "B_2", "b 2": "B_2", "b2": "B_2",
+    "building b level 3": "B_3", "b level 3": "B_3", "b 3": "B_3", "b3": "B_3",
+    # ── Building C ──
+    "building c ground": "C_G", "c ground": "C_G", "c g": "C_G", "cg": "C_G",
+    "building c level 1": "C_1", "c level 1": "C_1", "c 1": "C_1", "c1": "C_1",
+    "building c level 2": "C_2", "c level 2": "C_2", "c 2": "C_2", "c2": "C_2",
+    "building c level 3": "C_3", "c level 3": "C_3", "c 3": "C_3", "c3": "C_3",
+    "building c level 4": "C_4", "c level 4": "C_4", "c 4": "C_4", "c4": "C_4",
+    # ── Building M ──
+    "building m ground": "M_G", "m ground": "M_G", "m g": "M_G", "mg": "M_G",
+    "building m level 1": "M_1", "m level 1": "M_1", "m 1": "M_1", "m1": "M_1",
+    "building m annex": "M_AX", "m annex": "M_AX", "m ax": "M_AX", "max": "M_AX",
+    "building m roof": "M_R", "m roof": "M_R", "mr": "M_R",
 }
 
 # Intent keyword sets
@@ -176,7 +210,7 @@ def analyze_query_intent(user_message: str) -> QueryIntent:
         floor_match = _RE_FLOOR_NUM.search(msg)
         if floor_match:
             num = int(floor_match.group(1) or floor_match.group(2))
-            fid_map = {0: "H000", 1: "H010", 2: "H020", 3: "H030", 4: "H040", 5: "H050"}
+            fid_map = {1: "A_1", 2: "A_2", 3: "A_3", 4: "A_4"}
             intent.target_floor = fid_map.get(num)
             if intent.target_floor:
                 adjustments["location"] += 0.15

@@ -26,7 +26,7 @@ const SCORE_META = {
   cost_efficiency:     { label: 'Cost Efficiency',     meaning: 'Lower conversion cost = higher score' },
   revenue_impact:      { label: 'Revenue Impact',      meaning: 'Financial upside of the conversion' },
   service_continuity:  { label: 'Service Continuity',  meaning: 'Risk of removing this function from the floor' },
-  patient_flow:        { label: 'Patient Flow',        meaning: 'Impact on patient journey and care pathways' },
+  workflow_impact:     { label: 'Workflow Impact',      meaning: 'Impact on operational workflows and tenant routing' },
   operational_complexity: { label: 'Conversion Ease',  meaning: 'How disruptive and complex the conversion process is' },
   utilisation_potential:  { label: 'Utilisation',      meaning: 'Expected usage based on area, demand, and function type' },
 };
@@ -235,7 +235,7 @@ const DISRUPTION_LABELS = {
   it_reconfiguration: 'IT system reconfiguration',
   staff_retraining: 'Staff retraining',
   adjacent_mitigation: 'Adjacent space mitigation',
-  patient_scheduling: 'Patient scheduling loss',
+  tenant_scheduling: 'Tenant scheduling disruption',
   communication_plan: 'Communication plan',
 };
 
@@ -364,10 +364,10 @@ function CostBreakdown({ costs }) {
 
   // Permit keys
   const permitKeys = Object.keys(PERMIT_LABELS).filter((k) => {
-    const item = costs.commune_permits?.[k];
+    const item = costs.municipal_permits?.[k];
     return item && (typeof item === 'object' ? item.amount : item) > 0;
   });
-  const hasPermits = costs.commune_permits && permitKeys.length > 0;
+  const hasPermits = costs.municipal_permits && permitKeys.length > 0;
 
   // Commissioning keys
   const commissioningKeys = Object.keys(COMMISSIONING_LABELS).filter((k) => {
@@ -500,15 +500,15 @@ function CostBreakdown({ costs }) {
         </div>
       )}
 
-      {/* 7. Commune & Municipal Permits */}
+      {/* 7. Municipal Permits */}
       {hasPermits && (
         <div className="rp__cost-section">
           <div className="rp__cost-header">
-            <span>Commune &amp; Municipal Permits</span>
-            <span>&euro;{(costs.commune_permits.subtotal || 0).toLocaleString()}</span>
+            <span>Municipal Permits</span>
+            <span>&euro;{(costs.municipal_permits.subtotal || 0).toLocaleString()}</span>
           </div>
           {permitKeys.map((k) => {
-            const item = costs.commune_permits[k];
+            const item = costs.municipal_permits[k];
             const amount = typeof item === 'object' ? item.amount : item;
             const detail = typeof item === 'object' ? item.detail : null;
             const tipText = permitTipText(detail);
@@ -834,7 +834,7 @@ function ROISection({ roi, impact, costs }) {
         <>
           <div className="rp__section-title">Investment Breakdown</div>
           <div className="rp__roi-returns">
-            {['capex', 'design_fees', 'contingency', 'disruption', 'commune_permits'].map((k) => {
+            {['capex', 'design_fees', 'contingency', 'disruption', 'municipal_permits'].map((k) => {
               const { amount, explanation } = ibVal(k);
               if (!amount || amount <= 0) return null;
               const labels = {
@@ -842,7 +842,7 @@ function ROISection({ roi, impact, costs }) {
                 design_fees: 'Design & professional fees',
                 contingency: 'Contingency reserve',
                 disruption: 'Operational disruption',
-                commune_permits: 'Commune & municipal permits',
+                municipal_permits: 'Municipal permits',
               };
               return (
                 <div key={k} className="rp__roi-returns-row">

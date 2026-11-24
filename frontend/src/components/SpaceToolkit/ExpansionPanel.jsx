@@ -18,10 +18,10 @@ const SCORE_META = {
   wall_removability:    { label: 'Wall Removability',    meaning: 'Ease of removing the shared wall' },
   mep_complexity:       { label: 'MEP Simplicity',       meaning: 'Complexity of rerouting mechanical/electrical/plumbing' },
   structural_impact:    { label: 'Structural Safety',     meaning: 'Degree of structural intervention required' },
-  service_continuity:   { label: 'Service Continuity',    meaning: 'Impact of losing the candidate room on hospital operations' },
+  service_continuity:   { label: 'Service Continuity',    meaning: 'Impact of losing the candidate room on campus operations' },
   construction_access:  { label: 'Construction Access',   meaning: 'Ease of contractor access during works' },
   noise_sensitivity:    { label: 'Noise Tolerance',       meaning: 'How much noise the surrounding area can tolerate' },
-  infection_control:    { label: 'Infection Control',     meaning: 'ICRA containment level required' },
+  disruption_control:   { label: 'Disruption Control',    meaning: 'Dust and disruption containment level required' },
   egress_compliance:    { label: 'Egress Safety',         meaning: 'Impact on emergency evacuation routes' },
   utility_capacity:     { label: 'Utility Capacity',      meaning: 'Sufficiency of existing utility infrastructure' },
   phasing_feasibility:  { label: 'Phasing Feasibility',   meaning: 'Can the commercial space stay partially open?' },
@@ -305,10 +305,10 @@ function ConstructionTab({ candidate }) {
                 <span>{phase.decision_gate}</span>
               </div>
             )}
-            {phase.hospital_constraints && (
+            {phase.operational_constraints && (
               <div className="exp__phase-constraint">
                 <span className="exp__constraint-icon">&#127975;</span>
-                <span>{phase.hospital_constraints}</span>
+                <span>{phase.operational_constraints}</span>
               </div>
             )}
           </div>
@@ -548,10 +548,10 @@ function TimelineTab({ candidate }) {
               )}
 
               {/* Hospital constraints */}
-              {phase.hospital_constraints && (
+              {phase.operational_constraints && (
                 <div className="exp__tl-constraint">
                   <span className="exp__tl-constraint-icon">&#9888;</span>
-                  <span>{phase.hospital_constraints}</span>
+                  <span>{phase.operational_constraints}</span>
                 </div>
               )}
 

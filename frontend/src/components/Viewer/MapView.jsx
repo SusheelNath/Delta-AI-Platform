@@ -3,9 +3,9 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './MapView.css';
 
-// CHIREC Delta Hospital, Auderghem, Brussels
-export const HOSPITAL_LNG = 4.399963172085595;
-export const HOSPITAL_LAT = 50.81615342882996;
+// Office Campus, Ixelles, Brussels
+export const HOSPITAL_LNG = 4.3833;
+export const HOSPITAL_LAT = 50.8138;
 
 export default function MapView({ token, mapRef }) {
   const containerRef = useRef(null);

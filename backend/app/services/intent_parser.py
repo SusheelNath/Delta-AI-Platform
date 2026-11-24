@@ -18,29 +18,78 @@ from app.services.polygon_intelligence import FLOOR_NAMES, read_all_polygons
 # Entity dictionaries
 # ══════════════════════════════════════════════════════════════════════
 
-FLOOR_ORDER = ["H003", "H002", "H001", "H000", "H010", "H020", "H030", "H040", "H050"]
+FLOOR_ORDER = [
+    "CAMPUS_SITE", "CAMPUS_G", "CAMPUS_2", "CC_T", "AB_B1", "A_B1",
+    "C_G", "AC_G", "AC_GF", "M_G", "A_G", "AB_G", "M_AX", "B_G",
+    "CC_1", "AC_1", "M_1", "C_1", "AB_1", "A_1", "B_1",
+    "AC_2", "A_MZ1", "AB_2", "C_2", "B_2", "A_2",
+    "A_MZ2", "C_3", "M_R", "B_3", "A_3", "C_4", "A_4", "A_R",
+]
 
 FLOOR_MAP = {
-    "basement 3": "H003", "basement3": "H003", "basement three": "H003",
-    "b3": "H003", "level -3": "H003", "minus 3": "H003", "minus three": "H003",
-    "floor -3": "H003", "floor minus 3": "H003", "floor minus three": "H003",
-    "basement 2": "H002", "basement2": "H002", "basement two": "H002",
-    "b2": "H002", "level -2": "H002", "minus 2": "H002", "minus two": "H002",
-    "floor -2": "H002", "floor minus 2": "H002", "floor minus two": "H002",
-    "basement 1": "H001", "basement1": "H001", "basement one": "H001",
-    "b1": "H001", "level -1": "H001", "minus 1": "H001", "minus one": "H001",
-    "floor -1": "H001", "floor minus 1": "H001", "floor minus one": "H001",
-    "ground floor": "H000", "ground": "H000", "level 0": "H000",
-    "floor 1": "H010", "floor1": "H010", "first floor": "H010", "level 1": "H010", "1st floor": "H010",
-    "floor one": "H010", "floor plus 1": "H010", "floor plus one": "H010", "floor +1": "H010",
-    "floor 2": "H020", "floor2": "H020", "second floor": "H020", "level 2": "H020", "2nd floor": "H020",
-    "floor two": "H020", "floor plus 2": "H020", "floor plus two": "H020", "floor +2": "H020",
-    "floor 3": "H030", "floor3": "H030", "third floor": "H030", "level 3": "H030", "3rd floor": "H030",
-    "floor three": "H030", "floor plus 3": "H030", "floor plus three": "H030", "floor +3": "H030",
-    "floor 4": "H040", "floor4": "H040", "fourth floor": "H040", "level 4": "H040", "4th floor": "H040",
-    "floor four": "H040", "floor plus 4": "H040", "floor plus four": "H040", "floor +4": "H040",
-    "floor 5": "H050", "floor5": "H050", "fifth floor": "H050", "level 5": "H050", "5th floor": "H050",
-    "floor five": "H050", "floor plus 5": "H050", "floor plus five": "H050", "floor +5": "H050",
+    # ── Campus-level ──
+    "campus site": "CAMPUS_SITE", "site plan": "CAMPUS_SITE", "site": "CAMPUS_SITE",
+    "campus ground": "CAMPUS_G", "campus g": "CAMPUS_G",
+    "campus 2": "CAMPUS_2", "campus level 2": "CAMPUS_2",
+    # ── CC (Common Core) ──
+    "building cc technical": "CC_T", "cc technical": "CC_T", "cc tech": "CC_T", "cct": "CC_T",
+    "building cc level 1": "CC_1", "cc level 1": "CC_1", "cc 1": "CC_1", "cc1": "CC_1",
+    # ── Building AB ──
+    "building ab basement": "AB_B1", "ab basement": "AB_B1", "ab basement 1": "AB_B1",
+    "ab b1": "AB_B1", "abb1": "AB_B1",
+    "building ab ground": "AB_G", "ab ground": "AB_G", "ab g": "AB_G", "abg": "AB_G",
+    "building ab level 1": "AB_1", "ab level 1": "AB_1", "ab first": "AB_1",
+    "ab 1": "AB_1", "ab1": "AB_1",
+    "building ab level 2": "AB_2", "ab level 2": "AB_2", "ab second": "AB_2",
+    "ab 2": "AB_2", "ab2": "AB_2",
+    # ── Building AC ──
+    "building ac ground": "AC_G", "ac ground": "AC_G", "ac g": "AC_G", "acg": "AC_G",
+    "building ac ground foyer": "AC_GF", "ac ground foyer": "AC_GF", "ac foyer": "AC_GF", "acgf": "AC_GF",
+    "building ac level 1": "AC_1", "ac level 1": "AC_1", "ac first": "AC_1",
+    "ac 1": "AC_1", "ac1": "AC_1",
+    "building ac level 2": "AC_2", "ac level 2": "AC_2", "ac second": "AC_2",
+    "ac 2": "AC_2", "ac2": "AC_2",
+    # ── Building A ──
+    "building a basement": "A_B1", "a basement": "A_B1", "a basement 1": "A_B1",
+    "a b1": "A_B1",
+    "building a ground": "A_G", "a ground": "A_G", "a g": "A_G", "ag": "A_G",
+    "building a level 1": "A_1", "a level 1": "A_1", "building a first": "A_1",
+    "a first": "A_1", "a 1": "A_1", "a1": "A_1",
+    "building a level 2": "A_2", "a level 2": "A_2", "building a second": "A_2",
+    "a second": "A_2", "a 2": "A_2", "a2": "A_2",
+    "building a level 3": "A_3", "a level 3": "A_3", "building a third": "A_3",
+    "a third": "A_3", "a 3": "A_3", "a3": "A_3",
+    "building a level 4": "A_4", "a level 4": "A_4", "building a fourth": "A_4",
+    "a fourth": "A_4", "a 4": "A_4", "a4": "A_4",
+    "building a mezzanine 1": "A_MZ1", "a mezzanine 1": "A_MZ1", "mezzanine 1": "A_MZ1",
+    "a mz1": "A_MZ1", "amz1": "A_MZ1",
+    "building a mezzanine 2": "A_MZ2", "a mezzanine 2": "A_MZ2", "mezzanine 2": "A_MZ2",
+    "a mz2": "A_MZ2", "amz2": "A_MZ2",
+    "building a roof": "A_R", "a roof": "A_R", "ar": "A_R",
+    # ── Building B ──
+    "building b ground": "B_G", "b ground": "B_G", "b g": "B_G", "bg": "B_G",
+    "building b level 1": "B_1", "b level 1": "B_1", "b first": "B_1",
+    "b 1": "B_1", "b1": "B_1",
+    "building b level 2": "B_2", "b level 2": "B_2", "b second": "B_2",
+    "b 2": "B_2", "b2": "B_2",
+    "building b level 3": "B_3", "b level 3": "B_3", "b third": "B_3",
+    "b 3": "B_3", "b3": "B_3",
+    # ── Building C ──
+    "building c ground": "C_G", "c ground": "C_G", "c g": "C_G", "cg": "C_G",
+    "building c level 1": "C_1", "c level 1": "C_1", "c first": "C_1",
+    "c 1": "C_1", "c1": "C_1",
+    "building c level 2": "C_2", "c level 2": "C_2", "c second": "C_2",
+    "c 2": "C_2", "c2": "C_2",
+    "building c level 3": "C_3", "c level 3": "C_3", "c third": "C_3",
+    "c 3": "C_3", "c3": "C_3",
+    "building c level 4": "C_4", "c level 4": "C_4", "c fourth": "C_4",
+    "c 4": "C_4", "c4": "C_4",
+    # ── Building M ──
+    "building m ground": "M_G", "m ground": "M_G", "m g": "M_G", "mg": "M_G",
+    "building m level 1": "M_1", "m level 1": "M_1", "m first": "M_1",
+    "m 1": "M_1", "m1": "M_1",
+    "building m annex": "M_AX", "m annex": "M_AX", "m ax": "M_AX", "max": "M_AX",
+    "building m roof": "M_R", "m roof": "M_R", "mr": "M_R",
 }
 
 HEATMAP_MODES = {

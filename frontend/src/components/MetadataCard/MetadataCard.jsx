@@ -1,6 +1,24 @@
 import React, { useState } from 'react';
 import useStore from '../../store/useStore';
+import { FLOOR_NAMES, ROOM_TRANSLATIONS } from '../../utils/translateNL';
 import './MetadataCard.css';
+
+/**
+ * Look up Arabic translation for a room name.
+ * Returns the Arabic string or null if no translation exists.
+ */
+function getArabicRoomName(spaceName) {
+  if (!spaceName) return null;
+  const key = spaceName.trim().toLowerCase();
+  for (const [k, v] of Object.entries(ROOM_TRANSLATIONS)) {
+    if (k.toLowerCase() === key) return v.ar;
+  }
+  // Also check if the English name matches any translation value
+  for (const v of Object.values(ROOM_TRANSLATIONS)) {
+    if (v.en.toLowerCase() === key) return v.ar;
+  }
+  return null;
+}
 
 export default function MetadataCard() {
   const selectedSpace = useStore((s) => s.selectedSpace);
@@ -44,7 +62,10 @@ export default function MetadataCard() {
 
   const spaceName = s.space_name || s.id || 'Unknown Space';
   const spaceId = s.id || '--';
-  const floorName = s.floor_name || s.floor_id || '--';
+  const floorId = s.floor_id || s.floor_name || '--';
+  const floorNames = FLOOR_NAMES[floorId] || null;
+  const floorDisplayEn = floorNames ? floorNames.en : (s.floor_name || floorId);
+  const floorDisplayAr = floorNames ? floorNames.ar : (s.floor_name_ar || null);
   const department = s.functional_zone || '--';
   const area = s.area_m2 != null ? Number(s.area_m2).toFixed(1) : '--';
   const capacityNormal = s.normal_occupancy || '--';
@@ -52,6 +73,11 @@ export default function MetadataCard() {
   const status = s.data_status || 'Active';
   const bookable = getBool('bookable');
   const primaryFunction = s.primary_function || '--';
+
+  // Arabic translations
+  const spaceNameAr = s.space_name_ar || getArabicRoomName(spaceName);
+  const functionAr = s.primary_function_ar || getArabicRoomName(primaryFunction);
+  const departmentAr = s.functional_zone_ar || null;
 
   return (
     <div className={`metadata-card ${expanded ? 'metadata-card--expanded' : ''}`}>
@@ -63,15 +89,33 @@ export default function MetadataCard() {
       {/* Compact view */}
       <div className="metadata-card__compact">
         <h3 className="metadata-card__name">{spaceName}</h3>
-        <p className="metadata-card__sub">{spaceId} | {floorName}</p>
+        {spaceNameAr && (
+          <p className="metadata-card__name-ar">{spaceNameAr}</p>
+        )}
+        <p className="metadata-card__sub">
+          {spaceId} | {floorDisplayEn}
+        </p>
+        {floorDisplayAr && (
+          <p className="metadata-card__sub-ar">{floorDisplayAr}</p>
+        )}
 
         {department !== '--' && (
-          <p className="metadata-card__dept">{department}</p>
+          <div className="metadata-card__dept-block">
+            <p className="metadata-card__dept">{department}</p>
+            {departmentAr && (
+              <p className="metadata-card__dept-ar">{departmentAr}</p>
+            )}
+          </div>
         )}
 
         <div className="metadata-card__row">
           <span className="metadata-card__label">Function</span>
-          <span className="metadata-card__value">{primaryFunction}</span>
+          <div className="metadata-card__value-block">
+            <span className="metadata-card__value">{primaryFunction}</span>
+            {functionAr && functionAr !== primaryFunction && (
+              <span className="metadata-card__value-ar">{functionAr}</span>
+            )}
+          </div>
         </div>
 
         <div className="metadata-card__row">
@@ -115,9 +159,9 @@ export default function MetadataCard() {
               <MetaRow label="Space ID" value={get('id')} />
               <MetaRow label="IFC GUID" value={get('ifc_guid')} mono />
               <MetaRow label="Room Number" value={get('room_number')} />
-              <MetaRow label="Floor" value={floorName} />
+              <MetaRow label="Floor" value={floorDisplayEn} valueAr={floorDisplayAr} />
+              <MetaRow label="Building" value={get('building')} />
               <MetaRow label="Section" value={get('section')} />
-              <MetaRow label="Service Code" value={get('service_code')} />
             </div>
           </div>
 
@@ -135,7 +179,7 @@ export default function MetadataCard() {
           <div className="metadata-card__section">
             <h4 className="metadata-card__section-title">Functional</h4>
             <div className="metadata-card__grid">
-              <MetaRow label="Primary Function" value={primaryFunction} />
+              <MetaRow label="Primary Function" value={primaryFunction} valueAr={functionAr} />
               <MetaRow label="Secondary Functions" value={get('secondary_functions')} />
               <MetaRow label="Convertible To" value={get('convertible_functions')} />
               <MetaRow label="Restrictions" value={get('function_restrictions')} />
@@ -150,7 +194,6 @@ export default function MetadataCard() {
             <div className="metadata-card__grid">
               <MetaRow label="Normal Occupancy" value={get('normal_occupancy')} />
               <MetaRow label="Max Occupancy" value={get('max_occupancy')} />
-              <MetaRow label="Patient Capacity" value={get('patient_capacity')} />
               <MetaRow label="Accessible" value={get('accessible')} />
               <MetaRow label="Bookable" value={get('bookable')} />
               <MetaRow label="Access Level" value={get('access_level')} />
@@ -200,15 +243,18 @@ export default function MetadataCard() {
 }
 
 /**
- * A single metadata row (label: value).
+ * A single metadata row (label: value), with optional Arabic sub-text.
  */
-function MetaRow({ label, value, mono = false, full = false }) {
+function MetaRow({ label, value, valueAr = null, mono = false, full = false }) {
   return (
     <div className={`metadata-card__meta-row ${full ? 'metadata-card__meta-row--full' : ''}`}>
       <span className="metadata-card__meta-label">{label}</span>
       <span className={`metadata-card__meta-value ${mono ? 'metadata-card__meta-value--mono' : ''}`}>
         {value}
       </span>
+      {valueAr && valueAr !== value && valueAr !== '--' && (
+        <span className="metadata-card__meta-value-ar">{valueAr}</span>
+      )}
     </div>
   );
 }

@@ -46,7 +46,7 @@ function formatActionLabel(type) {
 
 const WELCOME_MESSAGE = {
   role: 'delta',
-  text: 'Hello! I\'m Delta AI. Ask me about any space, floor, facility in the hospital, or click a room in the 3D view and ask me about it.',
+  text: 'Hello! I\'m Delta AI. Ask me about any space, floor, or facility in the office campus, or click a room in the 3D view and ask me about it.',
   time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
 };
 
@@ -1142,11 +1142,9 @@ export default function ChatPanel() {
             // ── Instant actions for all remaining chips ──
             const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             const state = useStore.getState();
-            const FLOOR_ORDER = ['H003', 'H002', 'H001', 'H000', 'H010', 'H020', 'H030', 'H040', 'H050'];
-
             // Nav
             if (text === 'Go to Ground Floor') {
-              state.setActiveFloor('H000');
+              state.setActiveFloor('A_G');
               addMessage({ role: 'delta', text: 'Navigated to Ground Floor.', time: now });
               return;
             }
@@ -1228,7 +1226,7 @@ export default function ChatPanel() {
               const ASSEMBLY_KW = { conference: 10, meeting: 10, lecture: 10, seminar: 10, training: 10,
                 assembly: 10, auditorium: 10, 'multi-purpose': 9, multipurpose: 9, waiting: 8,
                 reception: 8, cafeteria: 8, canteen: 8, restaurant: 7, lounge: 7, atrium: 7, lobby: 7 };
-              const FLOOR_ACC = { H000: 10, H010: 8, H020: 8, H030: 7, H040: 6, H050: 6, H001: 5, H002: 4, H003: 3 };
+              const FLOOR_ACC = { A_G: 10, AB_G: 9, B_G: 9, C_G: 8, AC_G: 8, M_G: 8, CAMPUS_G: 10, A_1: 8, AB_1: 7, B_1: 7, C_1: 7, AC_1: 7, CC_1: 6, M_1: 6, A_2: 6, AB_2: 6, B_2: 6, C_2: 6, AC_2: 6, A_3: 5, B_3: 5, C_3: 5, A_4: 5, C_4: 5, AB_B1: 4, A_B1: 4 };
               const candidates = [];
               for (const fid of Object.keys(fp)) {
                 for (const p of (fp[fid] || [])) {

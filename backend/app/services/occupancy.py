@@ -1,191 +1,208 @@
 """
-Occupancy density model for CHIREC Delta Hospital spaces.
+Occupancy density model for Office Campus (Abu Dhabi).
 
-Maps primary_function categories to occupancy rates (persons per m²).
-Rates are derived from Belgian fire safety norms (NBN S 21-100) and
-European healthcare facility guidelines.
+Maps primary_function categories to occupancy rates (persons per m2).
+Rates are derived from ADIBC (Abu Dhabi International Building Code)
+Table 1004.1.2 and UAE Fire Code 2018 evacuation capacities.
+
+Reference norms (ADIBC Table 1004.1.2, net area):
+    Business / Office           9.3  m2/person
+    Assembly (concentrated)     0.65 m2/person
+    Assembly (unconcentrated)   1.4  m2/person
+    Residential                18.6  m2/person
+    Educational classroom       1.9  m2/person
+    Kitchen / commercial       18.6  m2/person
+    Storage                    27.9  m2/person
+    Mechanical                  no occupancy
+
+normal_occupancy  = floor(area / ADIBC rate)
+max_occupancy     = ceil(area / (ADIBC rate * reduction_factor))
+    where reduction_factor ~ 0.65-0.77  (i.e. max ~ 130-150% of normal)
 """
 
 import math
-import re
 
-# ── Zero-occupancy keywords ──
-# If a function contains any of these (case-insensitive), occupancy = 0.
+# ---------------------------------------------------------------------------
+# Zero-occupancy keywords
+# ---------------------------------------------------------------------------
+# If the function or space name contains any of these (case-insensitive),
+# the space is treated as non-occupiable (occupancy = 0).
 ZERO_OCCUPANCY_KEYWORDS = [
     "no access",
     "no infrastructure",
+    "technical room",
+    "technical",
+    "data room",
+    "hvac",
+    "hvac plant",
+    "mechanical",
+    "shaft",
+    "vent",
+    "riser",
+    "waste room",
+    "waste",
+    "bicycle parking",
+    "bike parking",
+    "parking",
     "staircase",
+    "stairwell",
     "stair ",
     "stair/",
-    "staircasse",     # typo in data
     "stairway",
-    "technical",
-    "vent",
-    "shaft",
     "corridor",
     "circulation",
+    "vestibule",
     "ramp",
-    "waste",
-    "cold storage",
-    "basement",
     "airlock",
-    "main hall",
-    "entrance",
-    "housekeeping",
-    "cleaning",
+    "elevator",
+    "lift",
+    "basement",
     "underground",
     "evacuation",
-    "coded technical",
-    "coded engineering",
 ]
 
-# ── Zero-override keywords ──
+# ---------------------------------------------------------------------------
+# Zero-override keywords
+# ---------------------------------------------------------------------------
 # If a space name contains any of these, it is NOT zeroed even when a
-# ZERO_OCCUPANCY_KEYWORDS match exists (e.g. "Control Room + Technicals").
+# ZERO_OCCUPANCY_KEYWORDS match exists (e.g. "Control Centre + Technical").
 ZERO_OVERRIDE_KEYWORDS = [
-    "control room",
+    "control centre",
+    "control center",
+    "surveillance",
+    "first aid",
 ]
 
-# ── Density rules ──
-# Each rule: (keyword_list, occupancy_class, normal_per_m2, max_per_m2)
-# Matched in order; first match wins.
+# ---------------------------------------------------------------------------
+# Density rules
+# ---------------------------------------------------------------------------
+# Each rule: (keyword_list, occupancy_class, normal_m2_per_person, max_m2_per_person)
+#
+# normal_m2_per_person  = ADIBC base rate (m2 per person)
+# max_m2_per_person     = reduced rate for peak/emergency (~130-150% load)
+#
+# Matched in order; first match wins. Put more specific rules above
+# broader ones.
 DENSITY_RULES = [
-    # Patient bed rooms - fixed per room, not per m²
-    (["single patient room", "single-bed"],
-     "patient_bed", None, None),  # handled specially: 1 patient + 2 staff normal, +1 max
-    (["double patient room", "two-bed"],
-     "patient_bed_double", None, None),  # 2 patients + 2 staff normal, +2 max
+    # -- Assembly: concentrated seating (seminar, multipurpose) --
+    # ADIBC concentrated assembly = 0.65 m2/person
+    (["seminar room", "seminar"],
+     "assembly_concentrated", 0.65, 0.5),
 
-    # Clinical / procedural
-    (["surgical", "surgery", "operating room", "operating-theatre", "operating theatre"],
-     "surgical", 1/25, 1/15),
-    (["patient care", "patient room", "intensive-care", "neonatal", "dialysis"],
-     "clinical", 1/12, 1/8),
-    (["endoscopy", "consultation", "examination", "check-up", "check up",
-      "dental", "clinical"],
-     "clinical", 1/12, 1/8),
-    (["nuclear-medicine", "nuclear medicine", "PET imaging"],
-     "clinical", 1/20, 1/12),
+    # -- Assembly: unconcentrated (meeting rooms) --
+    # ADIBC unconcentrated assembly = 1.4 m2/person
+    (["meeting room", "meeting", "multipurpose room", "multipurpose",
+      "conference", "boardroom"],
+     "assembly_unconcentrated", 1.4, 1.0),
 
-    # Ambulance / emergency vehicle workspace (large vehicle bays + staff)
-    (["ambulance"],
-     "ambulance", 1/25, 1/15),
+    # -- Coworking / hot-desk (denser than private office) --
+    # ADIBC business 9.3 m2/person; coworking uses ~60% of that (5.6 m2)
+    (["coworking", "co-working", "hot desk", "hotdesk", "open plan",
+      "flex space"],
+     "coworking", 5.6, 4.0),
 
-    # Emergency department (high throughput)
-    (["emergency"],
-     "emergency", 1/15, 1/10),
+    # -- Workshop (hands-on space, tools and benches) --
+    # Treat like educational/lab: moderate density
+    (["workshop"],
+     "workshop", 9.3, 6.5),
 
-    # Radiotherapy (restricted but staffed)
-    (["radiotherapy"],
-     "radiotherapy", 1/20, 1/12),
+    # -- Studio apartment / residential --
+    # ADIBC residential = 18.6 m2/person
+    (["studio apartment", "studio", "apartment", "residential"],
+     "residential", 18.6, 14.0),
 
-    # Sterilization (industrial process, multiple technicians)
-    (["sterilization", "sterilisation"],
-     "sterilization", 1/25, 1/15),
+    # -- Cafe / kitchenette --
+    # ADIBC kitchen/commercial = 18.6 m2/person for kitchen area;
+    # seating area treated as unconcentrated assembly (1.4).
+    # Blended rate for a cafe with both: ~3.7 m2/person
+    (["cafe", "café", "cafeteria", "kitchenette", "pantry", "break room",
+      "tea point", "coffee"],
+     "cafe", 3.7, 2.6),
 
-    # Morgue / preparation (mortuary technicians)
-    (["morgue", "incinerator"],
-     "morgue", 1/30, 1/20),
+    # -- Sanitary / showers --
+    # Transient occupancy; ~4 m2/person based on fixture count proxy
+    (["sanitary", "sanitation", "toilet", "washroom", "wc", "shower",
+      "showers", "restroom", "lavatory"],
+     "sanitary", 4.0, 3.0),
 
-    # Changing rooms / locker rooms (before office/storage so name wins over fn)
-    (["changing", "locker room", "locker"],
-     "changing", 1/4, 1/2.5),
+    # -- Locker room / changing --
+    # Similar to sanitary but slightly denser
+    (["locker room", "locker", "changing room", "changing"],
+     "changing", 4.0, 2.8),
 
-    # Staff / office (must come AFTER specific name-based rules above)
-    (["staff", "office", "bureau", "nursing station", "workroom",
-      "nurse's office", "doctor's office"],
-     "office", 1/10, 1/6),
+    # -- Business / private office (most common) --
+    # ADIBC business = 9.3 m2/person
+    (["office", "bureau", "workroom", "work room", "private office"],
+     "office", 9.3, 6.5),
 
-    # Waiting / public
-    (["waiting room", "main hall"],
-     "waiting", 1/2.5, 1/1.5),
+    # -- Storage --
+    # ADIBC storage = 27.9 m2/person (minimal occupancy, maintenance only)
+    (["storage", "store room", "storeroom", "archive"],
+     "storage", 27.9, 20.0),
 
-    # Atrium / public concourse (open, moderate density)
-    (["atrium"],
-     "atrium", 1/5, 1/3),
+    # -- Surveillance / control centre --
+    # Staffed monitoring; moderate density like office
+    (["surveillance", "control centre", "control center", "security"],
+     "control", 9.3, 6.5),
 
-    # Assembly / meeting / debrief
-    (["assembly", "meeting", "conference", "debrief", "gathering"],
-     "assembly", 1/2, 1/1.2),
+    # -- First aid --
+    # Small treatment space; fixed staff + patient
+    (["first aid", "medical room", "clinic"],
+     "first_aid", 9.3, 6.5),
 
-    # Commercial
-    (["restaurant", "cafeteria", "commercial"],
-     "commercial", 1/3, 1/1.8),
-
-    # Storage / support (no "locker" - locker rooms are changing, not storage)
-    (["storage", "store room", "janitor", "pantry", "archive",
-      "cold / refrigerated", "dirty utility"],
-     "storage", 1/20, 1/15),
-
-    # Laboratory / specialist
-    (["laboratory", "dosimetry", "medical physics",
-      "preparation room", "pharmacy"],
-     "laboratory", 1/15, 1/10),
-
-    # Sanitary
-    (["toilet", "sanitary", "sanitation", "washroom", "shower", "WC"],
-     "sanitary", 1/4, 1/3),
-
-    # Patient care + residency (on-call rooms etc.)
-    (["residency"],
-     "clinical", 1/15, 1/10),
-
-    # Control rooms
-    (["control room"],
-     "office", 1/15, 1/10),
-
-    # Accessibility elevator (bed/wheelchair transport + staff + passengers)
-    (["accessibility elevator"],
-     "elevator", 1/2, 1/1),
-
-    # Visitor / standard elevator
-    (["elevator", "lift"],
-     "elevator", 1/3, 1/1.5),
-
-    # Facilities / plant rooms (technician access)
-    (["facilities", "facitilies"],
-     "facilities", 1/25, 1/15),
-
-    # Reception / entrance / lobby (public-facing)
-    (["reception", "entrance", "lobby"],
-     "reception", 1/4, 1/2),
+    # -- Reception / lobby --
+    # Public-facing entry; treat as unconcentrated assembly
+    (["reception", "lobby", "entrance", "foyer"],
+     "reception", 2.8, 2.0),
 ]
 
-# Default fallback for unmatched functions (conservative)
+# Default fallback for unmatched functions
 DEFAULT_CLASS = "general"
-DEFAULT_NORMAL_PER_M2 = 1 / 12
-DEFAULT_MAX_PER_M2 = 1 / 8
+DEFAULT_M2_PER_PERSON_NORMAL = 9.3    # ADIBC business as safe default
+DEFAULT_M2_PER_PERSON_MAX = 6.5       # ~140% of normal
 
 
-def _matches_any(function: str, keywords: list[str]) -> bool:
-    """Check if function string contains any keyword (case-insensitive)."""
-    fn_lower = function.lower()
-    return any(kw.lower() in fn_lower for kw in keywords)
+def _matches_any(text: str, keywords: list[str]) -> bool:
+    """Check if text contains any keyword (case-insensitive)."""
+    text_lower = text.lower()
+    return any(kw.lower() in text_lower for kw in keywords)
 
 
-def compute_occupancy(primary_function: str | None, area_m2: float | None,
-                      space_name: str | None = None) -> dict:
+def compute_occupancy(
+    primary_function: str | None,
+    area_m2: float | None,
+    space_name: str | None = None,
+) -> dict:
     """
-    Compute occupancy metrics for a space.
+    Compute occupancy metrics for a campus space.
 
-    Tries primary_function first; if no rule matches, falls back to space_name.
-    Both fields come from polygon data.
+    Tries primary_function first; if no rule matches, falls back to
+    space_name. Both fields come from polygon data.
+
+    Args:
+        primary_function: The functional designation of the space
+            (e.g. "Office", "Meeting Room", "Corridor").
+        area_m2: Net floor area in square metres.
+        space_name: Human-readable name of the space (fallback for matching).
 
     Returns:
         {
-            "normal_occupancy": int,
-            "max_occupancy": int,
-            "occupancy_class": str,
-            "occupiable": bool,
+            "normal_occupancy": int,   -- typical working-day occupancy
+            "max_occupancy": int,      -- peak / evacuation-planning occupancy
+            "occupancy_class": str,    -- classification label
+            "occupiable": bool,        -- whether the space is occupiable at all
         }
     """
     fn = primary_function or ""
     name = space_name or ""
     area = area_m2 or 0.0
 
-    # Zero-occupancy check (both polygon fields)
+    # ── Zero-occupancy check ──
     combined = fn + " " + name
-    has_zero_kw = _matches_any(fn, ZERO_OCCUPANCY_KEYWORDS) or (name and _matches_any(name, ZERO_OCCUPANCY_KEYWORDS))
+    has_zero_kw = (
+        _matches_any(fn, ZERO_OCCUPANCY_KEYWORDS)
+        or (name and _matches_any(name, ZERO_OCCUPANCY_KEYWORDS))
+    )
     has_override = _matches_any(combined, ZERO_OVERRIDE_KEYWORDS)
     if has_zero_kw and not has_override:
         return {
@@ -195,6 +212,7 @@ def compute_occupancy(primary_function: str | None, area_m2: float | None,
             "occupiable": False,
         }
 
+    # ── No function / no name ──
     if not fn.strip() and not name.strip():
         return {
             "normal_occupancy": 0,
@@ -203,32 +221,12 @@ def compute_occupancy(primary_function: str | None, area_m2: float | None,
             "occupiable": False,
         }
 
-    # Try matching against both polygon fields (primary_function first, then space_name)
+    # Build candidate strings (primary_function first, then space_name)
     candidates = [fn] if fn.strip() else []
     if name.strip():
         candidates.append(name)
 
-    # Special: single patient bed room
-    for text in candidates:
-        if _matches_any(text, ["single patient room", "single-bed"]):
-            return {
-                "normal_occupancy": 3,   # 1 patient + 2 staff
-                "max_occupancy": 4,      # + 1 visitor
-                "occupancy_class": "patient_bed",
-                "occupiable": True,
-            }
-
-    # Special: double patient bed room
-    for text in candidates:
-        if _matches_any(text, ["double patient room", "two-bed"]):
-            return {
-                "normal_occupancy": 4,   # 2 patients + 2 staff
-                "max_occupancy": 6,      # + 2 visitors
-                "occupancy_class": "patient_bed_double",
-                "occupiable": True,
-            }
-
-    # Too small to occupy (catches 0 m² rooms before density rules)
+    # ── Too small to occupy ──
     if area < 2:
         return {
             "normal_occupancy": 0,
@@ -237,14 +235,14 @@ def compute_occupancy(primary_function: str | None, area_m2: float | None,
             "occupiable": False,
         }
 
-    # Density-based rules
-    for keywords, occ_class, normal_rate, max_rate in DENSITY_RULES:
-        if normal_rate is None:
-            continue  # skip bed-room rules (handled above)
+    # ── Density-based rules ──
+    for keywords, occ_class, normal_m2pp, max_m2pp in DENSITY_RULES:
         for text in candidates:
             if _matches_any(text, keywords):
-                normal = max(1, math.floor(area * normal_rate))
-                maximum = max(1, math.ceil(area * max_rate))
+                normal = max(1, math.floor(area / normal_m2pp))
+                maximum = max(1, math.ceil(area / max_m2pp))
+                # Ensure max >= normal
+                maximum = max(maximum, normal)
                 return {
                     "normal_occupancy": normal,
                     "max_occupancy": maximum,
@@ -252,9 +250,10 @@ def compute_occupancy(primary_function: str | None, area_m2: float | None,
                     "occupiable": True,
                 }
 
-    # Default fallback
-    normal = max(1, math.floor(area * DEFAULT_NORMAL_PER_M2))
-    maximum = max(1, math.ceil(area * DEFAULT_MAX_PER_M2))
+    # ── Default fallback (ADIBC business rate) ──
+    normal = max(1, math.floor(area / DEFAULT_M2_PER_PERSON_NORMAL))
+    maximum = max(1, math.ceil(area / DEFAULT_M2_PER_PERSON_MAX))
+    maximum = max(maximum, normal)
     return {
         "normal_occupancy": normal,
         "max_occupancy": maximum,

@@ -11,6 +11,7 @@ import { computeRouting } from './routing';
 import { selectSpaceFromPolygon } from './polygonOverrides';
 import { bulkModifyFurnishings, fetchSpaceFurnishings, invalidateCache } from '../api/client';
 import { buildFacilitiesText } from './actionTemplates';
+import { FLOOR_ORDER } from './translateNL';
 
 /**
  * Resolve a space_name to a polygon on the current active floor (or any floor).
@@ -234,7 +235,7 @@ export async function resolveAction(action) {
 
     case 'set_floor_relative': {
       // Resolve relative direction from current floor
-      const floorOrder = ['H003', 'H002', 'H001', 'H000', 'H010', 'H020', 'H030', 'H040', 'H050'];
+      const floorOrder = FLOOR_ORDER;
       let curFloor = store.activeFloorId;
       if (!curFloor) {
         const vis = (store.floors || []).filter((f) => (store.floorVisibility || {})[f.id]);
@@ -440,29 +441,29 @@ export async function resolveAction(action) {
         assembly: 10, auditorium: 10, 'multi-purpose': 9, 'multipurpose': 9,
         waiting: 8, reception: 8, lobby: 7, cafeteria: 8, canteen: 8,
         restaurant: 7, lounge: 7, atrium: 7,
-        office: 6, administrative: 6, classroom: 7, consultation: 6,
-        examination: 5, treatment: 5, 'patient care': 5, ward: 5,
-        nursing: 5, recovery: 5, rehabilitation: 5,
-        laboratory: 4, pharmacy: 4, radiology: 4, imaging: 4,
+        office: 6, administrative: 6, coworking: 7, workspace: 6,
+        workshop: 5, studio: 5, creative: 5,
         storage: 2, technical: 2, service: 2, utility: 2, mechanical: 2,
-        ambulance: 1, parking: 1, loading: 1,
+        parking: 1, loading: 1,
       };
 
       // ── Zone suitability scores (weight 30%) ──
       const ZONE_SCORES = {
-        Public: 10, Outpatient: 9, 'Outpatient Treatment': 9,
-        Administrative: 8, Amenity: 8, Departmental: 7,
-        'Inpatient Care': 6, 'Clinical Support': 6, Surgical: 5,
-        'Critical Care': 5, Emergency: 5, Maternity: 5,
-        Rehabilitation: 6, Diagnostics: 5, 'Staff Welfare': 6,
-        Operations: 4, Service: 3, 'Facility Services': 3,
-        Technical: 2, Circulation: 2,
+        Work: 7, Amenity: 10, Meeting: 10, Creative: 8,
+        Residential: 5, Circulation: 2, Sanitary: 2,
+        Support: 3, Technical: 2, Security: 4,
       };
 
       // ── Floor accessibility scores (weight 10%) ──
+      // Ground floors of main buildings score highest
       const FLOOR_SCORES = {
-        H000: 10, H010: 8, H020: 8, H030: 7, H040: 6, H050: 6,
-        H001: 5, H002: 4, H003: 3,
+        A_G: 10, AB_G: 9, B_G: 9, C_G: 8, AC_G: 8, M_G: 8, CAMPUS_G: 10,
+        A_1: 8, AB_1: 7, B_1: 7, C_1: 7, AC_1: 7, CC_1: 6, M_1: 6,
+        A_2: 6, AB_2: 6, B_2: 6, C_2: 6, AC_2: 6,
+        A_3: 5, B_3: 5, C_3: 5, A_4: 5, C_4: 5,
+        AB_B1: 4, A_B1: 4, A_MZ1: 5, A_MZ2: 5,
+        A_R: 3, M_R: 3, CC_T: 3, M_AX: 5,
+        CAMPUS_SITE: 7, CAMPUS_2: 6, AC_GF: 8,
       };
 
       const threshold = Math.floor(capacity * 0.7);

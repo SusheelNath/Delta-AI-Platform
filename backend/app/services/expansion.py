@@ -1,5 +1,5 @@
 """
-Commercial Space Expansion Analysis engine for CHIREC Delta Hospital.
+Commercial Space Expansion Analysis engine for Office Campus.
 
 When a commercial room is selected, this engine identifies adjacent rooms
 that could be absorbed/merged to expand the commercial footprint.  Seven
@@ -11,7 +11,7 @@ analysis layers are computed deterministically (no LLM):
     4. Financial Modelling   - costs, revenue uplift, ROI
     5. Construction Intel.   - wall classification, MEP, service continuity,
                                sequencing, interim provisions, risk  (PRIORITY)
-    6. Regulatory & Compliance - permits, codes, hospital-specific
+    6. Regulatory & Compliance - permits, codes, campus-specific
     7. Visualization helpers - GUIDs list for floor-plan highlighting
 
 Pre-computed at startup alongside the repurpose cache so API responses
@@ -244,7 +244,7 @@ def _classify_shared_wall(
     if any(kw in combined_lower for kw in wet_keywords):
         return {**WALL_CLASSIFICATIONS["wet_wall"], "classification": "wet_wall"}
 
-    # Clinical spaces typically have fire-rated compartmentation
+    # Sensitive spaces typically have fire-rated compartmentation
     candidate_profile = FUNCTION_PROFILES.get(candidate_fn, {})
     candidate_cat = candidate_profile.get("category", "support")
     commercial_cat = FUNCTION_PROFILES.get(commercial_fn, {}).get("category", "revenue")
@@ -545,7 +545,7 @@ def _plan_service_continuity(
         candidate_strategy = (
             f"Removing {candidate_fn} leaves only {remaining} on this floor. "
             f"Temporary relocation to an adjacent floor is mandatory. "
-            f"Patient scheduling must be coordinated hospital-wide."
+            f"Tenant scheduling must be coordinated campus-wide."
         )
         relocation_required = True
         relocation_cost = round(2500 + candidate_area * 20)
@@ -596,7 +596,7 @@ def _plan_service_continuity(
         "provision": "Dust and noise containment",
         "description": (
             "HEPA-filtered negative pressure enclosure around construction zone. "
-            "Critical in hospital environment to prevent airborne contamination. "
+            "Critical in occupied office campus to prevent airborne contamination. "
             "Includes temporary walls, air scrubbers, and vibration dampeners."
         ),
         "estimated_cost": round(1800 + candidate_area * 25),
@@ -607,19 +607,19 @@ def _plan_service_continuity(
     interim_provisions.append({
         "provision": "Temporary wayfinding and signage",
         "description": (
-            "Redirectional signage for visitors and patients around the "
+            "Redirectional signage for visitors and tenants around the "
             "construction zone. Digital display updates and staff communication."
         ),
         "estimated_cost": 650,
         "duration_weeks": commercial_downtime_weeks,
     })
 
-    # Patient/visitor flow management if near clinical areas
+    # Tenant/visitor flow management if near occupied areas
     if candidate_cat == "clinical":
         interim_provisions.append({
-            "provision": "Patient flow management",
+            "provision": "Tenant flow management",
             "description": (
-                "Temporary patient routing around the construction zone. "
+                "Temporary tenant routing around the construction zone. "
                 "Dedicated escort staff during peak hours. "
                 "Emergency egress path verification and marking."
             ),
@@ -691,9 +691,9 @@ def _build_construction_sequence(
             "Structural survey and wall classification confirmation",
             "Building permit application and approval",
             "Fire engineer compartmentation review",
-            "MEP shutdown scheduling with hospital operations",
+            "MEP shutdown scheduling with campus operations",
             "Contractor mobilisation and site compound setup",
-            "Infection control risk assessment (ICRA) sign-off",
+            "Indoor air quality risk assessment sign-off",
         ],
         "dependencies": [],
         "decision_gate": (
@@ -701,9 +701,9 @@ def _build_construction_sequence(
             "wall classification assumptions. Fire engineer must approve "
             "revised compartmentation before demolition begins."
         ),
-        "hospital_constraints": (
-            "All permit applications must be routed through CHIREC Facilities "
-            "Management. ICRA committee meets bi-weekly - allow lead time."
+        "operational_constraints": (
+            "All permit applications must be routed through Campus Facilities "
+            "Management. Building committee meets bi-weekly - allow lead time."
         ),
     })
 
@@ -727,8 +727,8 @@ def _build_construction_sequence(
             "Hazmat survey results must be clear before demolition. "
             "Any positive findings trigger remediation sub-phase."
         ),
-        "hospital_constraints": (
-            "Furniture removal via service corridors only - no patient corridor "
+        "operational_constraints": (
+            "Furniture removal via service corridors only - no tenant corridor "
             "transit. Evening/night shift scheduling preferred."
         ),
     })
@@ -785,10 +785,10 @@ def _build_construction_sequence(
             "Structural integrity confirmed before proceeding to MEP works. "
             "Air quality monitoring must show safe levels."
         ),
-        "hospital_constraints": (
+        "operational_constraints": (
             "Demolition work restricted to 07:00-19:00. Vibration monitoring "
-            "mandatory if adjacent clinical spaces are operational. "
-            "Noise levels must not exceed 75 dB at nearest patient area."
+            "mandatory if adjacent occupied spaces are operational. "
+            "Noise levels must not exceed 75 dB at nearest occupied area."
         ),
     })
 
@@ -822,10 +822,10 @@ def _build_construction_sequence(
             "fit-out begins. Pressure tests, continuity checks, and "
             "BMS integration verification required."
         ),
-        "hospital_constraints": (
+        "operational_constraints": (
             "HVAC shutdown windows limited to 2 hours max during occupied hours. "
-            "Electrical work on hospital ring main requires planned outage notification. "
-            "Medical gas work requires certified installer and zone valve isolation."
+            "Electrical work on campus ring main requires planned outage notification. "
+            "Specialised system work requires certified installer and zone valve isolation."
         ),
     })
 
@@ -846,7 +846,7 @@ def _build_construction_sequence(
         ],
         "dependencies": [3],
         "decision_gate": None,
-        "hospital_constraints": (
+        "operational_constraints": (
             "VOC-free paints and adhesives mandatory. "
             "Deliveries via loading dock only, scheduled with logistics."
         ),
@@ -864,7 +864,7 @@ def _build_construction_sequence(
             "Electrical safety testing and certification",
             "Fire alarm and sprinkler system testing",
             "Fire compartmentation sign-off",
-            "Infection control deep clean",
+            "Post-construction deep clean",
             "Snagging walk-through and defects list",
             "As-built documentation and BIM model update",
             "Staff orientation and operational handover",
@@ -875,9 +875,9 @@ def _build_construction_sequence(
             "All testing certificates must be complete before occupation. "
             "Fire safety certificate is the critical-path document."
         ),
-        "hospital_constraints": (
-            "Occupation certificate required from commune before public use. "
-            "Health authority notification for expanded commercial area."
+        "operational_constraints": (
+            "Occupation certificate required from Abu Dhabi Municipality before public use. "
+            "Abu Dhabi DED notification for expanded commercial area."
         ),
     })
 
@@ -906,7 +906,7 @@ def _build_construction_sequence(
             "night_work_recommended": night_work,
             "night_work_reason": (
                 "Demolition and heavy MEP work should be scheduled outside "
-                "clinical hours to minimise patient disturbance"
+                "business hours to minimise tenant disturbance"
                 if night_work else
                 "Standard daytime scheduling sufficient"
             ),
@@ -1028,16 +1028,16 @@ def _assess_expansion_risks(
             "cost_impact": round(mep_impact["total_reroute_cost"] * 0.15),
         })
 
-    # Infection control risk (hospital-specific)
+    # Indoor air quality risk (campus-specific)
     risks.append({
-        "category": "Infection Control",
+        "category": "Indoor Air Quality",
         "risk": "Airborne contamination from construction dust",
         "probability": "medium" if candidate_area > 30 else "low",
         "impact": "high",
         "risk_score": 7 if candidate_area > 30 else 4,
         "mitigation": (
-            "ICRA Class IV containment for all demolition activities. "
-            "HEPA filtration with negative pressure maintained at all times. "
+            "HEPA-filtered containment for all demolition activities. "
+            "Negative pressure maintained at all times. "
             "Daily air quality monitoring with particle counts. "
             "Ante-room with sticky mats at construction zone entry."
         ),
@@ -1078,8 +1078,8 @@ def _assess_expansion_risks(
         "risk_score": 5,
         "mitigation": (
             "Submit permits in parallel where possible. "
-            "Pre-consultation with commune planning office. "
-            "Fire department early engagement for compartmentation review."
+            "Pre-consultation with Abu Dhabi Municipality planning office. "
+            "Civil Defence early engagement for compartmentation review."
         ),
         "cost_impact": round(total_weeks * 200),  # weekly holding cost
     })
@@ -1088,14 +1088,14 @@ def _assess_expansion_risks(
     if wall_class.get("classification") in ("load_bearing", "partition_masonry"):
         risks.append({
             "category": "Operational",
-            "risk": "Noise and vibration impact on adjacent clinical spaces",
+            "risk": "Noise and vibration impact on adjacent occupied spaces",
             "probability": "high" if wall_class.get("classification") == "load_bearing" else "medium",
             "impact": "medium",
             "risk_score": 6 if wall_class.get("classification") == "load_bearing" else 4,
             "mitigation": (
                 "Vibration monitoring on adjacent structural elements. "
                 "Noise level agreements with contractor (max 75 dB at "
-                "nearest patient area). Restrict percussive demolition "
+                "nearest occupied area). Restrict percussive demolition "
                 "to agreed time windows."
             ),
             "cost_impact": 1200,
@@ -1230,8 +1230,8 @@ def _score_candidate(
         scores["construction_access"] = {"score": 55, "reason": "Clinical space - construction access requires careful scheduling"}
 
     # 6. Noise sensitivity (0-100, high = low sensitivity)
-    clinical_fns = {"Patient Care", "Surgery Room", "Consultation", "Laboratory"}
-    if candidate_fn in clinical_fns:
+    sensitive_fns = {"Meeting Room", "Office", "Consultation", "Laboratory"}
+    if candidate_fn in sensitive_fns:
         scores["noise_sensitivity"] = {"score": 25, "reason": f"{candidate_fn} is noise-sensitive - demolition constraints apply"}
     elif candidate_fn in ("Waiting Room", "Reception"):
         scores["noise_sensitivity"] = {"score": 45, "reason": "Public-facing space - noise management needed during work hours"}
@@ -1240,11 +1240,11 @@ def _score_candidate(
 
     # 7. Infection control (0-100, high = low risk)
     if candidate_profile.get("category") == "clinical":
-        scores["infection_control"] = {"score": 25, "reason": "Clinical space - ICRA Class IV containment required"}
+        scores["infection_control"] = {"score": 25, "reason": "Sensitive space - full HEPA containment required"}
     elif candidate_profile.get("patient_facing"):
-        scores["infection_control"] = {"score": 50, "reason": "Patient-facing space - ICRA Class III containment"}
+        scores["infection_control"] = {"score": 50, "reason": "Tenant-facing space - enhanced containment required"}
     else:
-        scores["infection_control"] = {"score": 85, "reason": "Non-clinical, non-patient space - standard containment"}
+        scores["infection_control"] = {"score": 85, "reason": "Non-sensitive, back-of-house space - standard containment"}
 
     # 8. Egress compliance (0-100)
     if candidate_fn in ("Corridor", "Staircase", "Elevator", "Ramp"):
@@ -1527,7 +1527,7 @@ def _compute_expansion_costs(
         },
         "health_authority": {
             "amount": 600,
-            "explanation": "Health authority notification for expanded commercial area in hospital",
+            "explanation": "Abu Dhabi DED notification for expanded commercial area on campus",
         },
         "occupation_certificate": {
             "amount": 250,
@@ -1730,10 +1730,10 @@ def _assess_regulatory(
     # Building permit
     requirements.append({
         "requirement": "Building Permit",
-        "authority": "Commune/Municipality",
+        "authority": "Abu Dhabi Municipality (ADM)",
         "required": True,
         "processing_weeks": 4 if wall_type not in ("load_bearing",) else 8,
-        "description": "Standard building permit for internal modification",
+        "description": "Standard building permit for internal modification per ADIBC",
         "status": "required",
     })
 
@@ -1751,7 +1751,7 @@ def _assess_regulatory(
     # Fire safety
     requirements.append({
         "requirement": "Fire Safety Certificate",
-        "authority": "Fire Department / SIAMU",
+        "authority": "Abu Dhabi Civil Defence",
         "required": True,
         "processing_weeks": 4 if wall_type == "fire_rated" else 2,
         "description": (
@@ -1766,30 +1766,30 @@ def _assess_regulatory(
     if candidate_cat != "revenue":
         requirements.append({
             "requirement": "Change of Use Permit",
-            "authority": "Regional Planning Authority",
+            "authority": "Abu Dhabi DED / ADM Planning",
             "required": True,
             "processing_weeks": 8,
             "description": f"Converting {candidate_cat} space to commercial use",
             "status": "required",
         })
 
-    # Health authority
+    # Regulatory authority
     requirements.append({
-        "requirement": "Health Authority Notification",
-        "authority": "AVIQ / COCOM",
+        "requirement": "DED Trade Licence Amendment",
+        "authority": "Abu Dhabi DED",
         "required": True,
         "processing_weeks": 6,
-        "description": "Hospital commercial space expansion notification",
+        "description": "Campus commercial space expansion notification and trade licence update",
         "status": "required",
     })
 
-    # ICRA
+    # Indoor air quality
     requirements.append({
-        "requirement": "Infection Control Risk Assessment",
-        "authority": "Hospital ICRA Committee",
+        "requirement": "Indoor Air Quality Risk Assessment",
+        "authority": "Campus Facilities Management",
         "required": True,
         "processing_weeks": 2,
-        "description": "Construction in operational hospital requires ICRA approval before works begin",
+        "description": "Construction in operational campus requires IAQ assessment approval before works begin",
         "status": "required",
     })
 
@@ -1797,17 +1797,17 @@ def _assess_regulatory(
     if merged_area > 50:
         requirements.append({
             "requirement": "Accessibility Audit",
-            "authority": "CAWaB / AccessPlus",
+            "authority": "ADM / Estidama",
             "required": True,
             "processing_weeks": 3,
-            "description": "Expanded commercial area must meet accessibility standards",
+            "description": "Expanded commercial area must meet UAE accessibility standards",
             "status": "required",
         })
 
     # Occupation certificate
     requirements.append({
         "requirement": "Occupation Certificate",
-        "authority": "Commune/Municipality",
+        "authority": "Abu Dhabi Municipality (ADM)",
         "required": True,
         "processing_weeks": 2,
         "description": "Final certificate before reopening expanded space to public",

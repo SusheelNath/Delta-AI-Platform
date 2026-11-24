@@ -129,7 +129,7 @@ export default function FloorPlanCanvas({ floorIdOverride }) {
 
       const isActive = catIdx < 0 || activeFunctionFilters[catIdx];
       const area = detail.area_m2 || 0;
-      const capacity = parseInt(detail.normal_occupancy || detail.patient_capacity || '0', 10) || 0;
+      const capacity = parseInt(detail.normal_occupancy || '0', 10) || 0;
       const maxOccupancy = parseInt(detail.max_occupancy || '0', 10) || 0;
       const absoluteOccupancy = parseInt(detail.absolute_occupancy || '0', 10) || 0;
       const freeArea = parseFloat(detail.free_area_m2) || 0;
@@ -241,8 +241,7 @@ export default function FloorPlanCanvas({ floorIdOverride }) {
     const values = [];
     for (const r of rooms) {
       if (!r.isActive) continue;
-      if (heatmapMode === 'area_per_bed' && r.areaPerBed !== null) values.push(r.areaPerBed);
-      else if (heatmapMode === 'utilization') values.push(r.capacity > 0 ? 0.7 : 0.3);
+      if (heatmapMode === 'utilization') values.push(r.capacity > 0 ? 0.7 : 0.3);
       else if (heatmapMode === 'area') values.push(r.area);
       else if (heatmapMode === 'occupancy' && r.maxOccupancy > 0) values.push(r.maxOccupancy);
       else if (heatmapMode === 'occupancy_density' && r.maxOccupancy > 0 && r.area > 0) values.push(r.maxOccupancy / r.area);
@@ -271,8 +270,7 @@ export default function FloorPlanCanvas({ floorIdOverride }) {
       return room.catIdx >= 0 ? FUNCTION_CATEGORIES[room.catIdx].cssColor : '#808590';
     }
     let val = 0;
-    if (heatmapMode === 'area_per_bed') val = room.areaPerBed ?? 0;
-    else if (heatmapMode === 'utilization') val = room.capacity > 0 ? 0.7 : 0.3;
+    if (heatmapMode === 'utilization') val = room.capacity > 0 ? 0.7 : 0.3;
     else if (heatmapMode === 'area') val = room.area;
     else if (heatmapMode === 'occupancy') val = room.maxOccupancy;
     else if (heatmapMode === 'occupancy_density') val = room.maxOccupancy > 0 && room.area > 0 ? room.maxOccupancy / room.area : 0;
@@ -684,7 +682,7 @@ export default function FloorPlanCanvas({ floorIdOverride }) {
         </div>
       )}
 
-      {(heatmapMode === 'area_per_bed' || heatmapMode === 'area' || heatmapMode === 'utilization' || heatmapMode === 'occupancy' || heatmapMode === 'occupancy_density') && (
+      {(heatmapMode === 'area' || heatmapMode === 'utilization' || heatmapMode === 'occupancy' || heatmapMode === 'occupancy_density') && (
         <div className="fpc__legend">
           <div className="fpc__legend-gradient">
             <span className="fpc__legend-label">Low</span>

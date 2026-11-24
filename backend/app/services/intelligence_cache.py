@@ -23,7 +23,7 @@ from app.services.classifier import classify_function
 from app.services.geometry import compute_floor_spatial, compute_space_spatial
 from app.services.repurpose import (
     compute_repurpose_options,
-    _compute_hospital_benchmarks,
+    _compute_campus_benchmarks,
     NON_REPURPOSABLE_FUNCTIONS,
 )
 
@@ -276,8 +276,8 @@ def _get_patient_capacity_cached(ifc_guid: str) -> int:
 
 def _build_repurpose_cache() -> dict[str, list[dict]]:
     """Pre-compute repurpose options for all eligible spaces."""
-    # Build hospital benchmarks from actual data
-    _compute_hospital_benchmarks(_floor_groups, _intelligence)
+    # Build campus benchmarks from actual data
+    _compute_campus_benchmarks(_floor_groups, _intelligence)
 
     # Build furnishing type label map
     ft_label_map = {
@@ -298,12 +298,12 @@ def _build_repurpose_cache() -> dict[str, list[dict]]:
         floor_fn_counts_cache[fid] = dict(counts)
         floor_totals_cache[fid] = total
 
-    # Compute hospital-wide function counts (sum across all floors)
-    hospital_fn_counts: dict[str, int] = defaultdict(int)
+    # Compute campus-wide function counts (sum across all floors)
+    campus_fn_counts: dict[str, int] = defaultdict(int)
     for fid_counts in floor_fn_counts_cache.values():
         for fn, count in fid_counts.items():
-            hospital_fn_counts[fn] += count
-    hospital_fn_counts = dict(hospital_fn_counts)
+            campus_fn_counts[fn] += count
+    campus_fn_counts = dict(campus_fn_counts)
 
     cache = {}
     computed = 0
@@ -351,7 +351,7 @@ def _build_repurpose_cache() -> dict[str, list[dict]]:
             floor_total=floor_totals_cache.get(fid, 0),
             adjacent_spaces=adjacent_spaces,
             ft_label_map=ft_label_map,
-            hospital_fn_counts=hospital_fn_counts,
+            campus_fn_counts=campus_fn_counts,
         )
 
         if options:
@@ -411,7 +411,7 @@ def _build_floor_summaries_from_cache() -> str:
     total_spaces = sum(f["count"] for f in floors.values())
     total_area = sum(f["area"] for f in floors.values())
 
-    lines = [f"\n[Hospital spatial summary \u2014 {total_spaces} mapped spaces, {total_area:.0f} m\u00b2 across {len(floors)} floors]"]
+    lines = [f"\n[Campus spatial summary \u2014 {total_spaces} mapped spaces, {total_area:.0f} m\u00b2 across {len(floors)} floors]"]
     for fid in sorted(floors.keys()):
         fd = floors[fid]
         fname = FLOOR_NAMES.get(fid, fid)

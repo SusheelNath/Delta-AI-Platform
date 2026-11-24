@@ -14,18 +14,18 @@ const VOICE_COMMANDS = [
 
 const PROMPT_SECTIONS = [
   {
-    title: 'Navigate the Hospital',
+    title: 'Navigate the Campus',
     prompts: [
-      { cmd: 'Go to Floor 2',                         desc: 'Navigates the 3D viewer to Floor +2' },
-      { cmd: 'Take me to the Ground Floor',            desc: 'Navigates to Level 0' },
-      { cmd: 'Show me Basement 1',                     desc: 'Navigates to Level -1' },
+      { cmd: 'Go to Building A Ground',                desc: 'Navigates the 3D viewer to Building A ground floor' },
+      { cmd: 'Take me to Building C Level 2',          desc: 'Navigates to Building C second floor' },
+      { cmd: 'Show me the Campus site',                desc: 'Navigates to the campus site level' },
     ],
   },
   {
     title: 'Find & Search Rooms',
     prompts: [
-      { cmd: 'Show me all patient rooms',              desc: 'Lists patient rooms on the current floor' },
-      { cmd: 'Find all operating rooms on Floor 2',    desc: 'Searches a specific floor and function' },
+      { cmd: 'Show me all offices',                    desc: 'Lists office spaces on the current floor' },
+      { cmd: 'Find all meeting rooms on Level 1',      desc: 'Searches a specific floor and function' },
       { cmd: 'Where are the conference rooms?',        desc: 'Locates and lists matching spaces' },
       { cmd: 'Find a bookable room',                   desc: 'Filters rooms by bookability' },
       { cmd: 'List all toilets on this floor',         desc: 'Function-based search on active floor' },
@@ -77,11 +77,10 @@ const PROMPT_SECTIONS = [
 ];
 
 const HEATMAP_MODES = [
-  { mode: 'Function',          desc: 'Default view. Each room is coloured by its primary function (e.g. Patient Care, Offices, Circulation). Quickly identify which departments occupy which areas.' },
+  { mode: 'Function',          desc: 'Default view. Each room is coloured by its primary function (e.g. Work, Meeting, Amenity, Circulation). Quickly identify which departments occupy which areas.' },
   { mode: 'Area',              desc: 'Colours rooms by total floor area (m\u00B2). Larger rooms appear red, smaller rooms green. Useful for spotting oversized or undersized spaces.' },
   { mode: 'Occupancy',         desc: 'Based on maximum occupancy count. Highlights rooms that hold the most people, helping with crowd management and fire-safety audits.' },
   { mode: 'Occupancy Density', desc: 'Persons per square metre (max occupancy \u00F7 area). Flags rooms that may be over-packed relative to their size.' },
-  { mode: 'Area per Bed',      desc: 'Square metres per bed (area \u00F7 normal occupancy). Only meaningful for rooms with beds. Helps ensure patient rooms meet minimum space standards.' },
   { mode: 'Utilisation',       desc: 'Binary indicator \u2014 shows whether a room has any assigned capacity. Green = has occupancy potential, red = no capacity assigned. Quick way to find vacant or unallocated spaces.' },
   { mode: 'Evacuation',        desc: 'Based on absolute occupancy. Highlights rooms that require the most evacuation time. Critical for emergency planning and fire-warden assignments.' },
   { mode: 'Status',            desc: 'Operational state of each room: green = operational, amber = maintenance, red = closed, grey = unknown. Essential for daily facilities checks.' },
@@ -98,7 +97,7 @@ const REPURPOSE_SCORES = [
   { label: 'Cost Efficiency',       desc: 'Inverse of conversion cost \u2014 cheaper conversions score higher.' },
   { label: 'Revenue Impact',        desc: 'Expected financial upside from the new function.' },
   { label: 'Service Continuity',    desc: 'Risk level of removing the room\u2019s current function from the floor.' },
-  { label: 'Patient Flow',          desc: 'Impact on care pathways and patient routing (healthcare-specific).' },
+  { label: 'Workflow Impact',        desc: 'Impact on operational workflows and tenant routing.' },
   { label: 'Conversion Ease',       desc: 'How disruptive the physical conversion work would be.' },
   { label: 'Utilisation Potential',  desc: 'Expected usage rate of the room after conversion.' },
 ];
@@ -109,8 +108,8 @@ const EXPANSION_SCORES = [
   { label: 'Structural Impact',     desc: 'Load-bearing considerations and whether a structural engineer is needed.' },
   { label: 'Service Continuity',    desc: 'Risk of disrupting the adjacent room\u2019s current service.' },
   { label: 'Construction Access',   desc: 'Ease of getting construction teams and materials to the site.' },
-  { label: 'Noise Sensitivity',     desc: 'Whether nearby rooms are noise-sensitive (e.g. patient wards, theatres).' },
-  { label: 'Infection Control',     desc: 'Contamination risk during construction in a clinical environment.' },
+  { label: 'Noise Sensitivity',     desc: 'Whether nearby rooms are noise-sensitive (e.g. meeting rooms, studios).' },
+  { label: 'Dust/Disruption Control', desc: 'Contamination and disruption risk during construction in an occupied campus.' },
   { label: 'Egress Compliance',     desc: 'Impact on emergency exit routes and fire-safety compliance.' },
   { label: 'Utility Capacity',      desc: 'Whether existing utility feeds can handle the expanded room.' },
   { label: 'Phasing Feasibility',   desc: 'Whether construction can be staged to keep adjacent spaces operational.' },
@@ -143,7 +142,7 @@ export default function HelpGuide({ open, onClose }) {
             <span className="help-guide__icon">&#9651;</span>
             <div>
               <h1 className="help-guide__title">How to Use Delta</h1>
-              <p className="help-guide__subtitle">CHIREC Delta Hospital Intelligence Platform</p>
+              <p className="help-guide__subtitle">Office Campus Intelligence Platform</p>
             </div>
           </div>
 
@@ -163,7 +162,7 @@ export default function HelpGuide({ open, onClose }) {
                   <strong>Left Panel &mdash; Floor Directory</strong>
                 </div>
                 <p>Browse all floors via the dropdown at the top. Below it, every room on the selected floor
-                   is grouped by function (e.g. Patient Care, Offices, Circulation). Click a group to expand it and
+                   is grouped by function (e.g. Work, Meeting, Amenity, Circulation). Click a group to expand it and
                    see individual rooms. Click a room to select it in the 3D viewer and open the Space Toolkit.</p>
                 <ul className="help-guide__panel-card-list">
                   <li>Floor selector dropdown at top</li>
@@ -180,7 +179,7 @@ export default function HelpGuide({ open, onClose }) {
                   </span>
                   <strong>Centre Panel &mdash; 3D Viewer</strong>
                 </div>
-                <p>Interactive 3D model of the hospital, powered by xeokit. Rooms are colour-coded
+                <p>Interactive 3D model of the office campus, powered by xeokit. Rooms are colour-coded
                    by the active heatmap mode. Click any room to select it, double-click to fly in close.
                    The Space Toolkit drawer opens at the bottom of this panel when a room is selected.</p>
                 <ul className="help-guide__panel-card-list">
@@ -281,7 +280,7 @@ export default function HelpGuide({ open, onClose }) {
             <div className="help-guide__def-list">
               <div className="help-guide__def-item">
                 <span className="help-guide__def-term">Primary Function</span>
-                <span className="help-guide__def-desc">The room&rsquo;s assigned department or use (e.g. Patient Care, Offices, Storage)</span>
+                <span className="help-guide__def-desc">The room&rsquo;s assigned department or use (e.g. Office, Meeting Room, Storage)</span>
               </div>
               <div className="help-guide__def-item">
                 <span className="help-guide__def-term">Room Number</span>
@@ -467,9 +466,9 @@ export default function HelpGuide({ open, onClose }) {
             </div>
 
             <div className="help-guide__tip">
-              <strong>Tip:</strong> Pay close attention to <em>Infection Control</em> and
-              <em> Noise Sensitivity</em> scores when expanding clinical spaces &mdash; these are the
-              most common causes of project delays in hospital environments.
+              <strong>Tip:</strong> Pay close attention to <em>Noise Sensitivity</em> and
+              <em> Dust/Disruption Control</em> scores when expanding occupied spaces &mdash; these are the
+              most common causes of project delays in campus environments.
             </div>
           </section>
 

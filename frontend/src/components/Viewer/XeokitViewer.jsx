@@ -1,12 +1,15 @@
 import React, { useRef, useEffect, useCallback, useState, useMemo } from 'react';
 import useStore from '../../store/useStore';
-import { searchSpaces, fullSavePolygons } from '../../api/client';
+import { fullSavePolygons } from '../../api/client';
 import { getColorForFunction, getCategoryIndex } from '../../utils/colorScheme';
 import { unprojectPolygon, earClipTriangulate, computePolygonMetrics } from '../../utils/unprojectPolygon';
 import { selectSpaceFromPolygon } from '../../utils/polygonOverrides';
 import { buildEvacTooltip } from '../../utils/evacTooltip';
+import { IFC_STOREY_TO_FLOOR_ID, FLOOR_ORDER, BUILDING_GROUPS } from '../../utils/translateNL';
 import DeltaSpinner from '../shared/DeltaSpinner';
+import LayerPanel from './LayerPanel';
 import './XeokitViewer.css';
+
 
 let Viewer, XKTLoaderPlugin, NavCubePlugin, StoreyViewsPlugin, SectionPlanesPlugin;
 let XMesh, XReadableGeometry, XPhongMaterial, XbuildSphereGeometry;
@@ -24,15 +27,6 @@ async function loadXeokit() {
   XPhongMaterial = sdk.PhongMaterial;
   XbuildSphereGeometry = sdk.buildSphereGeometry;
 }
-
-const MEP_SPACE_CLASSES = new Set([
-  'Void / shaft',
-  'Technical / vertical core',
-  'Technical / plant',
-  'Vertical circulation / lift support',
-  'Circulation',
-  'Transition / circulation',
-]);
 
 // Heatmap gradient: t=0 → green (low), t=1 → red (high) - matches FloorPlanCanvas
 function heatColorRGB(t) {
@@ -134,7 +128,31 @@ const GLASS_TYPES = {
   'IfcCurtainWall': { opacity: 0.50 },
 };
 
-let cachedXKT = null;
+// ── Layer categories: maps IFC entity types to toggleable groups ──
+const LAYER_CONFIG = [
+  { key: 'walls',       types: new Set(['IfcWall', 'IfcWallStandardCase']) },
+  { key: 'slabs',       types: new Set(['IfcSlab']) },
+  { key: 'roofs',       types: new Set(['IfcRoof']) },
+  { key: 'windows',     types: new Set(['IfcWindow', 'IfcCurtainWall']) },
+  { key: 'doors',       types: new Set(['IfcDoor']) },
+  { key: 'structure',   types: new Set(['IfcBeam', 'IfcColumn', 'IfcMember', 'IfcPlate', 'IfcPile', 'IfcFooting']) },
+  { key: 'stairs',      types: new Set(['IfcStair', 'IfcStairFlight', 'IfcRamp', 'IfcRampFlight', 'IfcRailing', 'IfcTransportElement']) },
+  { key: 'furnishings', types: new Set(['IfcFurnishingElement']) },
+  { key: 'coverings',   types: new Set(['IfcCovering']) },
+  { key: 'mep',         types: new Set(['IfcFlowSegment', 'IfcFlowFitting', 'IfcFlowTerminal', 'IfcFlowController', 'IfcDistributionControlElement', 'IfcElectricDistributionPoint', 'IfcDistributionPort']) },
+  { key: 'spaces',      types: new Set(['IfcSpace']) },
+];
+
+// Build reverse lookup: ifcType → layerKey
+const IFC_TYPE_TO_LAYER = {};
+for (const { key, types } of LAYER_CONFIG) {
+  for (const t of types) IFC_TYPE_TO_LAYER[t] = key;
+}
+
+// MEP model ID — proxies from this model are classified as MEP equipment
+const MEP_MODEL_ID = 'usquare_mep';
+
+const cachedXKTs = new Map(); // modelId → ArrayBuffer
 
 let cachedExclusions = null;
 
@@ -170,10 +188,14 @@ export default function XeokitViewer() {
   const setFloorToStoreyId = useStore((s) => s.setFloorToStoreyId);
   const setStoreyPluginRef = useStore((s) => s.setStoreyPluginRef);
   const mepVisible = useStore((s) => s.mepVisible);
+  const layerVisibility = useStore((s) => s.layerVisibility);
+  const setLayerCounts = useStore((s) => s.setLayerCounts);
   const setFloorSnapshot = useStore((s) => s.setFloorSnapshot);
   const floorTransitioning = useStore((s) => s.floorTransitioning);
   const setFloorTransitioning = useStore((s) => s.setFloorTransitioning);
   const heatmapMode = useStore((s) => s.heatmapMode);
+  const activeBuilding = useStore((s) => s.activeBuilding);
+  const buildingAssignments = useStore((s) => s.buildingAssignments);
 
   const [modelError, setModelError] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -236,9 +258,10 @@ export default function XeokitViewer() {
   const storeyObjectsRef = useRef({});
   const mepIdsRef = useRef(new Set());
   const sectionPluginRef = useRef(null);
+  const layerObjectsRef = useRef({});  // { walls: Set<id>, slabs: Set<id>, ... }
+  const objectLayerRef = useRef(new Map()); // objectId → layerKey
   const sectionPlaneRef = useRef(null);
-  const xrayedIdsRef = useRef([]);
-  const hiddenSlabsRef = useRef([]);
+
   const prevFloorRef = useRef(undefined); // track previous floor for transition guard
 
   // ── Initialize xeokit viewer ──
@@ -339,23 +362,50 @@ export default function XeokitViewer() {
       const xktLoader = new XKTLoaderPlugin(viewer);
       viewerRef.current = viewer;
 
-      // ── Download XKT ──
-      let xktData = cachedXKT;
+      // ── Fetch manifest and download XKT models ──
+      let manifest;
+      try {
+        const manifestRes = await fetch('/models/usquare/manifest.json', { signal: abortController.signal });
+        if (!manifestRes.ok) throw new Error(`HTTP ${manifestRes.status} fetching manifest`);
+        manifest = await manifestRes.json();
+      } catch (err) {
+        if (err.name === 'AbortError') return;
+        console.error('[Delta] Failed to fetch model manifest:', err);
+        if (!destroyed) { setLoading(false); setModelError(true); }
+        return;
+      }
 
-      if (!xktData) {
-        setLoadStatus('Downloading 3D model (227 MB)...');
-        setLoadStage('Downloading 3D model...');
-        setLoadProgress(8);
-        console.log('[Delta] Starting XKT download...');
+      if (destroyed) return;
 
-        try {
-          const response = await fetch('/models/hospital.xkt', {
+      // All models load by default (including MEP)
+      const defaultModels = manifest.models.filter((m) => m.loadByDefault);
+
+      setLoadStatus(`Downloading ${defaultModels.length} models...`);
+      setLoadStage('Downloading 3D models...');
+      setLoadProgress(8);
+      console.log(`[Delta] Downloading ${defaultModels.length} default models...`);
+
+      // Download all default models in parallel with aggregate progress
+      const modelBytes = new Map(); // modelId → ArrayBuffer
+      let totalReceived = 0;
+      let totalExpected = 0;
+
+      try {
+        await Promise.all(defaultModels.map(async (modelDef) => {
+          if (cachedXKTs.has(modelDef.id)) {
+            modelBytes.set(modelDef.id, cachedXKTs.get(modelDef.id));
+            return;
+          }
+
+          const response = await fetch(`/models/usquare/${modelDef.file}`, {
             signal: abortController.signal,
           });
-          if (!response.ok) throw new Error(`HTTP ${response.status} fetching model`);
+          if (!response.ok) throw new Error(`HTTP ${response.status} fetching ${modelDef.file}`);
 
           const contentLength = response.headers.get('content-length');
-          const total = contentLength ? parseInt(contentLength, 10) : 0;
+          const modelTotal = contentLength ? parseInt(contentLength, 10) : 0;
+          totalExpected += modelTotal;
+
           const reader = response.body.getReader();
           const chunks = [];
           let received = 0;
@@ -365,14 +415,13 @@ export default function XeokitViewer() {
             if (done) break;
             chunks.push(value);
             received += value.length;
-            if (total > 0) {
-              const pct = Math.round((received / total) * 100);
-              setLoadStatus(`Downloading 3D model... ${pct}%`);
-              setLoadProgress(8 + Math.round(pct * 0.72));
+            totalReceived += value.length;
+            if (totalExpected > 0) {
+              const pct = Math.round((totalReceived / totalExpected) * 100);
+              setLoadStatus(`Downloading models... ${pct}%`);
+              setLoadProgress(8 + Math.round(pct * 0.70));
             }
           }
-
-          if (destroyed) return;
 
           const combined = new Uint8Array(received);
           let offset = 0;
@@ -381,105 +430,128 @@ export default function XeokitViewer() {
             offset += chunk.length;
           }
 
-          xktData = combined.buffer;
-          cachedXKT = xktData;
-          console.log(`[Delta] Download complete: ${(received / 1024 / 1024).toFixed(1)} MB`);
-        } catch (err) {
-          if (err.name === 'AbortError') {
-            console.log('[Delta] Download aborted (component unmounted)');
-            return;
-          }
-          console.error('[Delta] Download failed:', err);
-          if (!destroyed) { setLoading(false); setModelError(true); }
+          const buf = combined.buffer;
+          cachedXKTs.set(modelDef.id, buf);
+          modelBytes.set(modelDef.id, buf);
+          console.log(`[Delta] Downloaded ${modelDef.id}: ${(received / 1024 / 1024).toFixed(1)} MB`);
+        }));
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          console.log('[Delta] Download aborted (component unmounted)');
           return;
         }
-      } else {
-        console.log('[Delta] Using cached XKT data');
+        console.error('[Delta] Model download failed:', err);
+        if (!destroyed) { setLoading(false); setModelError(true); }
+        return;
       }
 
       if (destroyed) return;
 
-      // ── Parse model ──
+      // ── Parse all models ──
       setLoadStatus('Parsing geometry...');
       setLoadStage('Parsing geometry...');
-      setLoadProgress(82);
+      setLoadProgress(80);
+
+      let modelsLoaded = 0;
+      const totalToLoad = defaultModels.length;
+
+      function onAllModelsLoaded() {
+        if (destroyed) return;
+
+        const objCount = Object.keys(viewer.scene.objects).length;
+        const aabb = viewer.scene.aabb;
+        console.log(`[Delta] All models loaded: ${objCount} objects total`);
+        console.log(`[Delta] Scene AABB: [${aabb.map(v => v.toFixed(1)).join(', ')}]`);
+
+        modelAABBRef.current = [...aabb];
+
+        setLoadStatus('Colouring spaces...');
+        setLoadStage('Colouring spaces...');
+        setLoadProgress(88);
+        buildLayerGroups(viewer);
+        applyExclusions(viewer);
+        buildStoreyMapping(viewer);
+        applyGlassTransparency(viewer);
+        colorByFunction(viewer);
+        applyElementColorOverrides(viewer);
+        extractFloorGeometry(viewer);
+
+        // Initialize StoreyViewsPlugin for rendered floor plans
+        try {
+          const storeyPlugin = new StoreyViewsPlugin(viewer, { fitStoreyMaps: true });
+          setStoreyPluginRef(storeyPlugin);
+          console.log('[Delta] StoreyViewsPlugin initialized,', Object.keys(storeyPlugin.storeys || {}).length, 'storeys');
+        } catch (err) {
+          console.warn('[Delta] StoreyViewsPlugin init failed:', err);
+        }
+
+        // Initialize SectionPlanesPlugin for floor cutaway
+        try {
+          sectionPluginRef.current = new SectionPlanesPlugin(viewer, {
+            overviewVisible: false,
+          });
+          console.log('[Delta] SectionPlanesPlugin initialized');
+        } catch (err) {
+          console.warn('[Delta] SectionPlanesPlugin init failed:', err);
+        }
+
+        viewer.cameraFlight.flyTo({ aabb, duration: 0.5 }, () => {
+          console.log('[Delta] Camera positioned at model');
+        });
+
+        // Expose metaScene extraction for rename registry export
+        window.__deltaExportMetaScene = async () => {
+          const metaObjects = viewer.metaScene?.metaObjects;
+          if (!metaObjects) return null;
+          const elements = [];
+          for (const [id, mo] of Object.entries(metaObjects)) {
+            elements.push({
+              id,
+              type: mo.type || 'Unknown',
+              name: mo.name || null,
+              parent_name: mo.parent?.name || null,
+              parent_type: mo.parent?.type || null,
+            });
+          }
+          return elements;
+        };
+
+        setLoadStage('Ready');
+        setLoadProgress(100);
+        setLoading(false);
+        setViewerReady(true);
+      }
 
       try {
-        const model = xktLoader.load({ id: 'hospital', xkt: xktData, edges: false });
-        modelRef.current = model;
+        for (const modelDef of defaultModels) {
+          const xktData = modelBytes.get(modelDef.id);
+          if (!xktData) continue;
 
-        model.on('loaded', () => {
-          if (destroyed) return;
+          const model = xktLoader.load({ id: modelDef.id, xkt: xktData, edges: false });
 
-          const objCount = Object.keys(viewer.scene.objects).length;
-          const aabb = viewer.scene.aabb;
-          console.log(`[Delta] Model loaded: ${objCount} objects`);
-          console.log(`[Delta] Scene AABB: [${aabb.map(v => v.toFixed(1)).join(', ')}]`);
+          // Track the first model ref for compatibility
+          if (!modelRef.current) modelRef.current = model;
 
-          modelAABBRef.current = [...aabb];
+          model.on('loaded', () => {
+            modelsLoaded++;
+            const pct = Math.round((modelsLoaded / totalToLoad) * 100);
+            setLoadStatus(`Parsing models... ${modelsLoaded}/${totalToLoad}`);
+            setLoadProgress(80 + Math.round(pct * 0.08));
+            console.log(`[Delta] Model ${modelDef.id} parsed (${modelsLoaded}/${totalToLoad})`);
 
-          setLoadStatus('Colouring spaces...');
-          setLoadStage('Colouring spaces...');
-          setLoadProgress(88);
-          hideStructuralElements(viewer);
-          applyExclusions(viewer);
-          buildStoreyMapping(viewer);
-          applyGlassTransparency(viewer);
-          colorByFunction(viewer);
-          applyElementColorOverrides(viewer);
-          extractFloorGeometry(viewer);
-          buildMepSet();
-
-          // Initialize StoreyViewsPlugin for rendered floor plans
-          try {
-            const storeyPlugin = new StoreyViewsPlugin(viewer, { fitStoreyMaps: true });
-            setStoreyPluginRef(storeyPlugin);
-            console.log('[Delta] StoreyViewsPlugin initialized,', Object.keys(storeyPlugin.storeys || {}).length, 'storeys');
-          } catch (err) {
-            console.warn('[Delta] StoreyViewsPlugin init failed:', err);
-          }
-
-          // Initialize SectionPlanesPlugin for floor cutaway
-          try {
-            sectionPluginRef.current = new SectionPlanesPlugin(viewer, {
-              overviewVisible: false,
-            });
-            console.log('[Delta] SectionPlanesPlugin initialized');
-          } catch (err) {
-            console.warn('[Delta] SectionPlanesPlugin init failed:', err);
-          }
-
-          viewer.cameraFlight.flyTo({ aabb, duration: 0.5 }, () => {
-            console.log('[Delta] Camera positioned at model');
+            if (modelsLoaded === totalToLoad) {
+              onAllModelsLoaded();
+            }
           });
 
-          // Expose metaScene extraction for rename registry export
-          window.__deltaExportMetaScene = async () => {
-            const metaObjects = viewer.metaScene?.metaObjects;
-            if (!metaObjects) return null;
-            const elements = [];
-            for (const [id, mo] of Object.entries(metaObjects)) {
-              elements.push({
-                id,
-                type: mo.type || 'Unknown',
-                name: mo.name || null,
-                parent_name: mo.parent?.name || null,
-                parent_type: mo.parent?.type || null,
-              });
+          model.on('error', (err) => {
+            console.error(`[Delta] Model ${modelDef.id} parse error:`, err);
+            modelsLoaded++;
+            if (modelsLoaded === totalToLoad) {
+              onAllModelsLoaded();
             }
-            return elements;
-          };
-
-          setLoadStage('Ready');
-          setLoadProgress(100);
-          setLoading(false);
-          setViewerReady(true);
-        });
-
-        model.on('error', (err) => {
-          console.error('[Delta] Model parse error:', err);
-          if (!destroyed) { setLoading(false); setModelError(true); }
-        });
+          });
+        }
       } catch (err) {
         console.error('[Delta] xktLoader.load() threw:', err);
         if (!destroyed) { setLoading(false); setModelError(true); }
@@ -612,19 +684,49 @@ export default function XeokitViewer() {
     };
   }, []);
 
-  // ── Hide structural elements (piles, footings, columns) ──
-  function hideStructuralElements(viewer) {
+  // ── Build layer groups: categorise every scene object by IFC type ──
+  function buildLayerGroups(viewer) {
     const metaObjects = viewer.metaScene?.metaObjects;
     if (!metaObjects) return;
-    const hideTypes = new Set(['IfcPile', 'IfcFooting', 'IfcColumn']);
-    let hidden = 0;
+
+    const groups = {};
+    for (const { key } of LAYER_CONFIG) groups[key] = new Set();
+    groups.other = new Set();
+
+    const objLayer = new Map();
+
     for (const [id, metaObj] of Object.entries(metaObjects)) {
-      if (hideTypes.has(metaObj.type)) {
-        const obj = viewer.scene.objects[id];
-        if (obj) { obj.visible = false; hidden++; }
+      const sceneObj = viewer.scene.objects[id];
+      if (!sceneObj) continue; // skip non-geometric meta
+
+      let layerKey = IFC_TYPE_TO_LAYER[metaObj.type];
+
+      // IfcBuildingElementProxy: route by source model
+      // MEP model proxies = electrical fixtures/sensors/security equipment
+      // Architecture/site proxies stay in 'other' (mixed facade grilles, kitchen, etc.)
+      if (!layerKey && metaObj.type === 'IfcBuildingElementProxy') {
+        const modelId = sceneObj.model?.id;
+        layerKey = modelId === MEP_MODEL_ID ? 'mep' : 'other';
       }
+
+      if (!layerKey) layerKey = 'other';
+      groups[layerKey].add(id);
+      objLayer.set(id, layerKey);
     }
-    console.log(`[Delta] Hidden ${hidden} structural elements (piles/footings/columns)`);
+
+    layerObjectsRef.current = groups;
+    objectLayerRef.current = objLayer;
+
+    // Publish counts to store for the LayerPanel
+    const counts = {};
+    for (const [key, ids] of Object.entries(groups)) counts[key] = ids.size;
+    setLayerCounts(counts);
+
+    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+    console.log(`[Delta] Layer groups built: ${total} objects across ${Object.keys(counts).filter(k => counts[k] > 0).length} layers`);
+    for (const [k, c] of Object.entries(counts)) {
+      if (c > 0) console.log(`[Delta]   ${k}: ${c}`);
+    }
   }
 
   // ── Apply exclusions from static JSON on load ──
@@ -649,11 +751,11 @@ export default function XeokitViewer() {
     for (const [id, metaObj] of Object.entries(metaObjects)) {
       if (metaObj.type === 'IfcBuildingStorey') {
         const childIds = collectChildIds(metaObj);
-        mapping[id] = childIds;
         const name = metaObj.name || '';
-        const floorMatch = name.match(/H\d{3}/i);
-        if (floorMatch) {
-          const floorId = floorMatch[0].toUpperCase();
+
+        // Map IFC storey name to campus floor ID
+        const floorId = IFC_STOREY_TO_FLOOR_ID[name];
+        if (floorId) {
           if (!mapping[floorId]) {
             mapping[floorId] = childIds;
           } else {
@@ -664,13 +766,52 @@ export default function XeokitViewer() {
           if (!floorToStorey[floorId]) {
             floorToStorey[floorId] = id;
           }
+        } else {
+          console.warn(`[Delta] Unmapped IFC storey: "${name}" (id: ${id})`);
         }
       }
     }
     storeyObjectsRef.current = mapping;
     setFloorToStoreyId(floorToStorey);
-    console.log('[Delta] Storey mapping:', Object.keys(mapping).length, 'storeys');
+    console.log('[Delta] Storey mapping:', Object.keys(mapping).length, 'storeys,', Object.keys(floorToStorey).length, 'mapped to floor IDs');
     console.log('[Delta] Floor-to-storey IDs:', Object.keys(floorToStorey).join(', '));
+
+    // ── DIAGNOSTIC: orphan analysis ──
+    const mappedIds = new Set();
+    const floorSizes = {};
+    for (const [floorId, objectIds] of Object.entries(mapping)) {
+      floorSizes[floorId] = objectIds.length;
+      for (const oid of objectIds) mappedIds.add(oid);
+    }
+    const allSceneIds = Object.keys(viewer.scene.objects);
+    const orphanIds = allSceneIds.filter((oid) => !mappedIds.has(oid));
+    console.log(`[Delta] DIAGNOSTIC — Total scene objects: ${allSceneIds.length}, Mapped to floors: ${mappedIds.size}, Orphans: ${orphanIds.length}`);
+    console.log('[Delta] DIAGNOSTIC — Objects per floor:', JSON.stringify(floorSizes, null, 0));
+
+    // Check orphan parents (IFC type of their metaScene parent)
+    const orphanParentTypes = {};
+    const orphanModels = {};
+    for (const oid of orphanIds) {
+      const meta = metaObjects[oid];
+      const parentType = meta?.parent?.type || '(no parent)';
+      orphanParentTypes[parentType] = (orphanParentTypes[parentType] || 0) + 1;
+      const modelId = viewer.scene.objects[oid]?.model?.id || '(unknown)';
+      orphanModels[modelId] = (orphanModels[modelId] || 0) + 1;
+    }
+    console.log('[Delta] DIAGNOSTIC — Orphan parent types:', JSON.stringify(orphanParentTypes));
+    console.log('[Delta] DIAGNOSTIC — Orphans per model:', JSON.stringify(orphanModels));
+
+    // Check building group coverage
+    for (const group of BUILDING_GROUPS) {
+      let total = 0;
+      const missing = [];
+      for (const floorId of group.floors) {
+        const count = floorSizes[floorId] || 0;
+        total += count;
+        if (count === 0) missing.push(floorId);
+      }
+      console.log(`[Delta] DIAGNOSTIC — ${group.label}: ${total} objects across ${group.floors.length} floors${missing.length > 0 ? ', EMPTY floors: ' + missing.join(', ') : ''}`);
+    }
   }
 
   function collectChildIds(metaObj) {
@@ -713,28 +854,8 @@ export default function XeokitViewer() {
   }
 
   // ── Per-element color overrides (applied after colorByFunction) ──
-  const ELEMENT_COLOR_OVERRIDES = {
-    '2dXBJaEM1BReUR07kz7NA1': [0.55, 0.57, 0.62],
-    '3jgtwS1EH6jOj3i4pQgEmi': [0.55, 0.57, 0.62],
-    '0Y2h8VME5AWvcAclFiBlXG': [0.55, 0.57, 0.62],
-    '05GXCJWHrCGxE4mU7PVyFZ': [0.55, 0.57, 0.62],
-    '2A0H3kuVn1HunsV3vdOHwD': [0.55, 0.57, 0.62],
-    '2K5XXoyg9BHhrc9$Ya2uwB': [0.55, 0.57, 0.62],
-    '3jhv1hhAjEOALm1re0PIjO': [0.55, 0.57, 0.62],
-    '2P0a3mup52o9zTOesMO5Xv': [0.55, 0.57, 0.62],
-    '2l2c39k4X25AisbVd27tok': [0.78, 0.80, 0.82],
-    '0$XbCuEHb379S23ihwhGue': [0.78, 0.80, 0.82],
-    '02KHbdq85F0gVMsBrMfo_n': [0.78, 0.80, 0.82],
-    '3G9W4WfvbBBA2RSAXyYjSD': [0.78, 0.80, 0.82],
-    '05bes2cs98P9SO5E9YkZZE': [0.78, 0.80, 0.82],
-    '1bM80eh4L9NhDLykMYbqxM': [0.78, 0.80, 0.82],
-    '2ecJUeL0PFmwbRBWFJx9RP': [0.78, 0.80, 0.82],
-    '2QlRG69pzAY9Wcg9UHM5Nt': [0.78, 0.80, 0.82],
-    '3INOHyKIj2xxK$ndX9bhIA': [0.78, 0.80, 0.82],
-    '2Xf1kNTYD4fxfR8$Zqv$Jf': [0.78, 0.80, 0.82],
-    '1b1JWMdwX1wx3jDPiUQPzx': [0.78, 0.80, 0.82],
-    '368E3ezHzD4Q$j2ZpQ0gPH': [0.78, 0.80, 0.82],
-  };
+  // Campus: no per-GUID overrides needed yet; placeholder for future fine-tuning
+  const ELEMENT_COLOR_OVERRIDES = {};
 
   // ── Name-based color overrides (applied after per-element overrides) ──
   const NAME_COLOR_OVERRIDES = [
@@ -748,8 +869,6 @@ export default function XeokitViewer() {
         obj.colorize = [1, 1, 1];
         obj.colorize = color;
         obj.opacity = 1.0;
-      } else {
-        console.warn(`[Delta] Color override: entity ${guid} not found in scene`);
       }
     }
     // Apply name-based color overrides
@@ -766,26 +885,9 @@ export default function XeokitViewer() {
           }
         }
       }
-      console.log(`[Delta] Applied ${nameOverrides} name-based color overrides`);
-    }
-
-    // Tint white/whitish materials on +2 floor (H020) to a warm cream
-    const h020Ids = storeyObjectsRef.current['H020'] || [];
-    if (h020Ids.length > 0 && metaObjects) {
-      const CREAM = [0.96, 0.92, 0.84];
-      let tinted = 0;
-      for (const id of h020Ids) {
-        const meta = metaObjects[id];
-        if (meta && meta.type === 'IfcSpace') continue; // skip - colored by function
-        const obj = viewer.scene.objects[id];
-        if (!obj) continue;
-        const c = obj.colorize;
-        if (c && c[0] > 0.85 && c[1] > 0.85 && c[2] > 0.85) {
-          obj.colorize = CREAM;
-          tinted++;
-        }
+      if (nameOverrides > 0) {
+        console.log(`[Delta] Applied ${nameOverrides} name-based color overrides`);
       }
-      console.log(`[Delta] Tinted ${tinted} white elements on H020 to cream`);
     }
   }
 
@@ -794,10 +896,11 @@ export default function XeokitViewer() {
     const metaObjects = viewer.metaScene?.metaObjects;
     if (!metaObjects) return;
     const mapping = storeyObjectsRef.current;
+    const validFloorIds = new Set(FLOOR_ORDER);
 
     for (const [key, objectIds] of Object.entries(mapping)) {
-      if (!/^H\d{3}$/i.test(key)) continue;
-      const floorId = key.toUpperCase();
+      if (!validFloorIds.has(key)) continue;
+      const floorId = key;
       const spaces = [];
 
       for (const objId of objectIds) {
@@ -829,7 +932,7 @@ export default function XeokitViewer() {
     let totalIfcSpaces = 0;
     const capturedIds = new Set();
     for (const [key, objectIds] of Object.entries(mapping)) {
-      if (!/^H\d{3}$/i.test(key)) continue;
+      if (!validFloorIds.has(key)) continue;
       for (const oid of objectIds) {
         const meta = metaObjects[oid];
         if (meta && meta.type === 'IfcSpace') capturedIds.add(oid);
@@ -859,42 +962,48 @@ export default function XeokitViewer() {
     console.log('[Delta] Floor geometry extracted for 2D plans');
   }
 
-  // ── Build MEP object set from API data ──
-  async function buildMepSet() {
-    try {
-      const allSpaces = await searchSpaces({});
-      const mepIds = new Set();
-      for (const sp of allSpaces) {
-        if (!sp.ifc_guid) continue;
-        const isMep = MEP_SPACE_CLASSES.has(sp.space_class || '') || sp.occupiable === 'No';
-        if (isMep) mepIds.add(sp.ifc_guid);
-      }
-      mepIdsRef.current = mepIds;
-      console.log(`[Delta] MEP set built: ${mepIds.size} infrastructure objects`);
-
-      // Apply initial state (hide MEP by default)
-      const viewer = viewerRef.current;
-      if (viewer) {
-        const ids = [...mepIds].filter((id) => viewer.scene.objects[id]);
-        if (ids.length > 0) viewer.scene.setObjectsVisible(ids, false);
-      }
-    } catch (err) {
-      console.warn('[Delta] Failed to build MEP set:', err);
-    }
-  }
-
-  // ── Watch mepVisible → show/hide MEP in 3D ──
+  // ── Watch layerVisibility → show/hide objects by IFC type layer ──
   useEffect(() => {
     const viewer = viewerRef.current;
-    if (!viewer || mepIdsRef.current.size === 0) return;
+    if (!viewer) return;
+    const groups = layerObjectsRef.current;
+    if (!groups || Object.keys(groups).length === 0) return;
+
     const excludedSet = new Set(cachedExclusions || []);
-    const ids = [...mepIdsRef.current].filter((id) => {
-      if (excludedSet.has(id)) return false; // respect permanent exclusions
-      return !!viewer.scene.objects[id];
-    });
-    if (ids.length === 0) return;
-    viewer.scene.setObjectsVisible(ids, mepVisible);
-  }, [mepVisible]);
+    const floorVis = useStore.getState().floorVisibility;
+    const mapping = storeyObjectsRef.current;
+
+    // Build reverse: objectId → floorId for floor-aware visibility
+    // (only computed once and cached in the ref if not already built)
+    if (!layerObjectsRef.current._reverseFloor) {
+      const rev = new Map();
+      for (const [floorId, objectIds] of Object.entries(mapping)) {
+        for (const oid of objectIds) rev.set(oid, floorId);
+      }
+      layerObjectsRef.current._reverseFloor = rev;
+    }
+    const reverseFloor = layerObjectsRef.current._reverseFloor;
+
+    for (const [layerKey, ids] of Object.entries(groups)) {
+      if (layerKey === '_reverseFloor') continue;
+      const visible = layerVisibility[layerKey] !== false;
+
+      for (const oid of ids) {
+        const obj = viewer.scene.objects[oid];
+        if (!obj) continue;
+        if (excludedSet.has(oid)) continue;
+
+        if (visible) {
+          // Only show if the object's floor is also visible
+          const floorId = reverseFloor.get(oid);
+          const floorOn = !floorId || floorVis[floorId] !== false;
+          obj.visible = floorOn;
+        } else {
+          obj.visible = false;
+        }
+      }
+    }
+  }, [layerVisibility]);
 
   // ── Project space centers to canvas percentage coordinates ──
   function projectSpaces(viewer, spaces) {
@@ -1039,9 +1148,9 @@ export default function XeokitViewer() {
     const maxRange = Math.max(xMax - xMin, zMax - zMin);
 
     // Height above floor to see everything; slight tilt offset (~80° angle)
-    const heightMul = floorId === 'H050' ? 3.4
-      : new Set(['H010', 'H020', 'H030', 'H040']).has(floorId) ? 1.8
-      : 1.3;
+    // Campus has varied floor sizes; campus/site levels need extra altitude
+    const isCampus = floorId.startsWith('CAMPUS');
+    const heightMul = isCampus ? 2.5 : 1.6;
     const height = maxRange * heightMul;
     const tiltOffset = height * 0.18; // tan(10°) ≈ 0.176
 
@@ -1053,133 +1162,86 @@ export default function XeokitViewer() {
     });
   }, []);
 
-  // ── Watch activeFloorId → fly to top-down, xray IfcSpace, section plane ──
+  // ── Watch activeBuilding → x-ray non-building objects, highlight the selected building ──
+  const xrayedByBuildingRef = useRef([]);
   useEffect(() => {
     const viewer = viewerRef.current;
     if (!viewer || loading) return;
 
-    // ── Begin floor transition ──
-    // Destroy old polygon meshes immediately to prevent stale 3D overlays
-    for (const mesh of savedMeshesRef.current.values()) {
-      try { mesh.destroy(); } catch {}
-    }
-    savedMeshesRef.current.clear();
-
-    // Only show transition overlay when actively switching floors (not on initial load)
-    const isInitial = prevFloorRef.current === undefined;
-    const floorChanged = prevFloorRef.current !== activeFloorId;
-    prevFloorRef.current = activeFloorId;
-
-    if (!isInitial && floorChanged) {
-      const floors = useStore.getState().floors;
-      const targetFloor = activeFloorId
-        ? floors.find((f) => f.id === activeFloorId)
-        : null;
-      const label = targetFloor
-        ? (targetFloor.name || targetFloor.shortLabel || activeFloorId)
-        : 'All floors';
-      setTransitionLabel(label);
-      setFloorTransitioning(true);
-    }
-
-    // Clean up previous state
-    if (sectionPlaneRef.current) {
-      sectionPlaneRef.current.destroy();
-      sectionPlaneRef.current = null;
-    }
-    for (const oid of xrayedIdsRef.current) {
+    // Restore previously x-rayed objects
+    for (const oid of xrayedByBuildingRef.current) {
       const entity = viewer.scene.objects[oid];
       if (entity) entity.xrayed = false;
     }
-    xrayedIdsRef.current = [];
-    // Restore previously hidden slabs
-    for (const oid of hiddenSlabsRef.current) {
-      const entity = viewer.scene.objects[oid];
-      if (entity) entity.visible = true;
-    }
-    hiddenSlabsRef.current = [];
-    // Re-apply element color overrides after slab restore
-    applyElementColorOverrides(viewer);
+    xrayedByBuildingRef.current = [];
 
-    const metaObjects = viewer.metaScene?.metaObjects;
-
-    if (activeFloorId) {
-      // Cancel any in-progress flight before starting new one
+    if (activeBuilding) {
       try { viewer.cameraFlight.cancel(); } catch {}
-      flyToFloorPlan(viewer, activeFloorId);
+
+      // Configure X-ray material: blue AutoCAD-style wireframe
+      viewer.scene.xrayMaterial.fill = true;
+      viewer.scene.xrayMaterial.fillColor = [0.15, 0.25, 0.55];
+      viewer.scene.xrayMaterial.fillAlpha = 0.08;
+      viewer.scene.xrayMaterial.edgeColor = [0.25, 0.45, 0.75];
+      viewer.scene.xrayMaterial.edgeAlpha = 0.3;
+      viewer.scene.xrayMaterial.edges = true;
+
+      // Find the building group and collect all its floor object IDs
+      const group = BUILDING_GROUPS.find((g) => g.id === activeBuilding);
+      if (!group) return;
 
       const mapping = storeyObjectsRef.current;
-      const objectIds = mapping[activeFloorId] || [];
-
-      // X-ray IfcSpace on this floor (ghost wireframe, no solid Z-fighting faces)
-      const xrayed = [];
-      let maxY = -Infinity;
-      for (const oid of objectIds) {
-        const meta = metaObjects?.[oid];
-        if (!meta || meta.type !== 'IfcSpace') continue;
-        const entity = viewer.scene.objects[oid];
-        if (!entity) continue;
-        entity.xrayed = true;
-        xrayed.push(oid);
-        const topY = entity.aabb[4];
-        if (topY > maxY) maxY = topY;
+      const buildingObjectIds = new Set();
+      // Add storey-mapped objects
+      for (const floorId of group.floors) {
+        const objectIds = mapping[floorId] || [];
+        for (const oid of objectIds) buildingObjectIds.add(oid);
       }
-      xrayedIdsRef.current = xrayed;
+      // Add manually assigned objects for this building
+      for (const [oid, bId] of Object.entries(buildingAssignments)) {
+        if (bId === activeBuilding) buildingObjectIds.add(oid);
+      }
+      // Remove objects storey-mapped here but manually assigned to a different building
+      for (const [oid, bId] of Object.entries(buildingAssignments)) {
+        if (bId !== activeBuilding) buildingObjectIds.delete(oid);
+      }
 
-      // Hide ALL IfcSlab and IfcCovering across the ENTIRE scene
-      const slabTypes = new Set(['IfcSlab', 'IfcCovering']);
-      const hiddenSlabs = [];
-      if (metaObjects) {
-        for (const [oid, meta] of Object.entries(metaObjects)) {
-          if (!slabTypes.has(meta.type)) continue;
-          const entity = viewer.scene.objects[oid];
-          if (entity && entity.visible) {
-            entity.visible = false;
-            hiddenSlabs.push(oid);
-          }
+      // X-ray everything NOT in this building
+      const xrayed = [];
+      for (const [oid, entity] of Object.entries(viewer.scene.objects)) {
+        if (!buildingObjectIds.has(oid)) {
+          entity.xrayed = true;
+          xrayed.push(oid);
         }
       }
-      hiddenSlabsRef.current = hiddenSlabs;
+      xrayedByBuildingRef.current = xrayed;
 
-      // Section plane at ceiling to clip from above
-      if (sectionPluginRef.current && maxY > -Infinity) {
-        const clipY = maxY - 0.15;
-        sectionPlaneRef.current = sectionPluginRef.current.createSectionPlane({
-          pos: [0, clipY, 0],
-          dir: [0, -1, 0],
-          active: true,
-        });
+      // Fly camera to building AABB
+      let aabb = [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity];
+      let hasAABB = false;
+      for (const oid of buildingObjectIds) {
+        const entity = viewer.scene.objects[oid];
+        if (!entity) continue;
+        const b = entity.aabb;
+        if (b[0] < aabb[0]) aabb[0] = b[0];
+        if (b[1] < aabb[1]) aabb[1] = b[1];
+        if (b[2] < aabb[2]) aabb[2] = b[2];
+        if (b[3] > aabb[3]) aabb[3] = b[3];
+        if (b[4] > aabb[4]) aabb[4] = b[4];
+        if (b[5] > aabb[5]) aabb[5] = b[5];
+        hasAABB = true;
       }
-      console.log(`[Delta] Floor plan: x-rayed ${xrayed.length} spaces, hidden ${hiddenSlabs.length} slabs/coverings, section plane active`);
+      if (hasAABB) {
+        viewer.cameraFlight.flyTo({ aabb, duration: 1.0 });
+      }
 
-      // Capture snapshot when camera flight arrives, then end transition
-      let cancelled = false;
-      let settleTimer = null;
-      const subId = viewer.cameraFlight.on('stopped', () => {
-        viewer.cameraFlight.off(subId);
-        if (cancelled || !viewerRef.current) return;
-        settleTimer = setTimeout(() => {
-          if (!cancelled && viewerRef.current) {
-            captureFloorSnapshot(viewerRef.current, activeFloorId);
-            // Small delay for snapshot to propagate and polygon meshes to rebuild
-            setTimeout(() => { if (!cancelled) setFloorTransitioning(false); }, 200);
-          }
-        }, 100);
-      });
-      return () => {
-        cancelled = true;
-        viewer.cameraFlight.off(subId);
-        if (settleTimer) clearTimeout(settleTimer);
-      };
+      console.log(`[Delta] Building ${activeBuilding}: ${buildingObjectIds.size} solid, ${xrayed.length} x-rayed`);
     } else {
-      // All floors - fly back to full model perspective
+      // All buildings — fly back to full model
       const aabb = modelAABBRef.current || viewer.scene.aabb;
       viewer.cameraFlight.flyTo({ aabb, duration: 1.0 });
-      // End transition after flight duration
-      const flightTimer = setTimeout(() => setFloorTransitioning(false), 1200);
-      return () => clearTimeout(flightTimer);
     }
-  }, [activeFloorId, loading, flyToFloorPlan, captureFloorSnapshot, setFloorTransitioning]);
+  }, [activeBuilding, buildingAssignments, loading]);
 
   // ── Watch floor visibility ──
   useEffect(() => {
@@ -1188,10 +1250,9 @@ export default function XeokitViewer() {
     const mapping = storeyObjectsRef.current;
     if (!mapping || Object.keys(mapping).length === 0) return;
     const excludedSet = new Set(cachedExclusions || []);
-    const hideTypes = new Set(['IfcPile', 'IfcFooting', 'IfcColumn']);
-    const metaObjects = viewer.metaScene?.metaObjects;
-    const mepIds = mepIdsRef.current;
-    const showMep = useStore.getState().mepVisible;
+    const objLayer = objectLayerRef.current;
+    const layerVis = useStore.getState().layerVisibility;
+
     for (const [floorId, objectIds] of Object.entries(mapping)) {
       const visible = floorVisibility[floorId] !== false;
       const existingIds = objectIds.filter((oid) => viewer.scene.objects[oid]);
@@ -1199,12 +1260,15 @@ export default function XeokitViewer() {
       if (visible) {
         const showIds = existingIds.filter((oid) => {
           if (excludedSet.has(oid)) return false;
-          const meta = metaObjects?.[oid];
-          if (meta && hideTypes.has(meta.type)) return false;
-          if (!showMep && mepIds.has(oid)) return false;
+          // Respect layer visibility
+          const layerKey = objLayer.get(oid) || 'other';
+          if (layerVis[layerKey] === false) return false;
           return true;
         });
         if (showIds.length > 0) viewer.scene.setObjectsVisible(showIds, true);
+        // Hide objects whose layer is off
+        const hideIds = existingIds.filter((oid) => !showIds.includes(oid));
+        if (hideIds.length > 0) viewer.scene.setObjectsVisible(hideIds, false);
       } else {
         viewer.scene.setObjectsVisible(existingIds, false);
       }
@@ -1711,7 +1775,6 @@ export default function XeokitViewer() {
         else if (heatmapMode === 'occupancy_density' && (p.max_occupancy || 0) > 0 && (p.area_m2 || 0) > 0) v = p.max_occupancy / p.area_m2;
         else if (heatmapMode === 'evacuation' && (p.absolute_occupancy || 0) > 0) v = p.absolute_occupancy;
         else if (heatmapMode === 'area') v = p.area_m2 || 0;
-        else if (heatmapMode === 'area_per_bed' && p.area_per_bed != null) v = p.area_per_bed;
         else if (heatmapMode === 'utilization') v = (p.max_occupancy || 0) > 0 ? 0.7 : 0.3;
         if (v != null && v > 0) { vals.push(v); raw.set(p.ifc_guid, v); }
       }
@@ -2142,16 +2205,15 @@ export default function XeokitViewer() {
     if (!heatmapMode || heatmapMode === 'function') return null;
     const labels = {
       occupancy: 'Occupancy Capacity',
-      occupancy_density: 'Occupancy Density (ppl/m²)',
+      occupancy_density: 'Occupancy Density (ppl/m\u00B2)',
       evacuation: 'Evacuation Access',
-      area: 'Area (m²)',
-      area_per_bed: 'Area per Bed (m²)',
+      area: 'Area (m\u00B2)',
       utilization: 'Utilization',
       status: 'Status',
     };
     const units = {
-      occupancy: '', occupancy_density: ' ppl/m²', evacuation: '',
-      area: ' m²', area_per_bed: ' m²', utilization: '', status: '',
+      occupancy: '', occupancy_density: ' ppl/m\u00B2', evacuation: '',
+      area: ' m\u00B2', utilization: '', status: '',
     };
     const vals = [];
     for (const p of floorPolygons) {
@@ -2160,7 +2222,6 @@ export default function XeokitViewer() {
       else if (heatmapMode === 'occupancy_density' && (p.max_occupancy || 0) > 0 && (p.area_m2 || 0) > 0) v = p.max_occupancy / p.area_m2;
       else if (heatmapMode === 'evacuation' && (p.absolute_occupancy || 0) > 0) v = p.absolute_occupancy;
       else if (heatmapMode === 'area') v = p.area_m2 || 0;
-      else if (heatmapMode === 'area_per_bed' && p.area_per_bed != null) v = p.area_per_bed;
       else if (heatmapMode === 'utilization') v = (p.max_occupancy || 0) > 0 ? 0.7 : 0.3;
       if (v != null && v > 0) vals.push(v);
     }
@@ -2182,6 +2243,8 @@ export default function XeokitViewer() {
       <canvas ref={canvasRef} className="xeokit-viewer__canvas" />
       <canvas ref={navCubeCanvasRef} className="xeokit-viewer__navcube" />
 
+      {!loading && <LayerPanel />}
+
       {loading && (
         <div className="xeokit-viewer__overlay">
           <DeltaSpinner size={72} label={loadStatus} />
@@ -2198,7 +2261,7 @@ export default function XeokitViewer() {
         <div className="xeokit-viewer__overlay">
           <div className="xeokit-viewer__error-icon">&#9651;</div>
           <p className="xeokit-viewer__error-title">3D model not loaded</p>
-          <p className="xeokit-viewer__error-sub">Run the setup script to convert the IFC file.</p>
+          <p className="xeokit-viewer__error-sub">Run the setup script to convert the campus IFC files.</p>
         </div>
       )}
 
@@ -2319,6 +2382,7 @@ export default function XeokitViewer() {
           </div>
         </div>
       )}
+
     </div>
   );
 }

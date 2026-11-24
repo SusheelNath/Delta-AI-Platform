@@ -25,7 +25,7 @@ VALID_TYPES = {"function_interest", "floor_preference", "facility_need", "genera
 
 MAX_LEARNINGS = 20
 
-EXTRACTION_PROMPT = """Analyze this conversation between a hospital staff member and the Delta AI assistant.
+EXTRACTION_PROMPT = """Analyze this conversation between a campus staff member and the Delta AI assistant.
 Extract specific user preferences and interests as short, factual observations.
 
 Categories:

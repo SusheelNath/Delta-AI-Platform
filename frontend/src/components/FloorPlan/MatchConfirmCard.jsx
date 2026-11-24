@@ -170,7 +170,7 @@ export default function MatchConfirmCard() {
             <Row label="Perimeter" value={previewMetrics ? `${Math.round(previewMetrics.perimeter_m * 100)} cm` : (s.perimeter_cm ? `${Number(s.perimeter_cm).toFixed(0)} cm` : null)} />
             <Row label="Occupancy" value={s.normal_occupancy} />
             <Row label="Max Occupancy" value={s.max_occupancy} />
-            <Row label="Patient Capacity" value={s.patient_capacity} />
+            <Row label="Desk Capacity" value={s.desk_capacity} />
             <Row label="Space Class" value={s.space_class} />
             <Row label="Accessible" value={s.accessible} />
             <Row label="Bookable" value={s.bookable} />

@@ -30,10 +30,88 @@ from app.services.geometry import (
 POLYGONS_FILE = DATA_DIR / "polygons.json"
 
 FLOOR_NAMES = {
-    "H003": "Basement 3", "H002": "Basement 2", "H001": "Basement 1",
-    "H000": "Ground Floor",
-    "H010": "Floor +1", "H020": "Floor +2", "H030": "Floor +3",
-    "H040": "Floor +4", "H050": "Floor +5",
+    # Campus / Site
+    "CAMPUS_SITE": "Campus – Site Level",
+    "CAMPUS_G": "Campus – Ground",
+    "CAMPUS_2": "Campus – Level 2",
+    # CC
+    "CC_T": "Building CC – Technical",
+    # Basements
+    "AB_B1": "Building AB – Basement",
+    "A_B1": "Building A – Basement",
+    # Ground Floors
+    "C_G": "Building C – Ground",
+    "AC_G": "Building AC – Ground",
+    "AC_GF": "Building AC – Ground (Finished)",
+    "M_G": "Building M – Ground",
+    "A_G": "Building A – Ground",
+    "AB_G": "Building AB – Ground",
+    "M_AX": "Building M – Annex",
+    "B_G": "Building B – Ground",
+    # Level 1
+    "CC_1": "Building CC – Level 1",
+    "AC_1": "Building AC – Level 1",
+    "M_1": "Building M – Level 1",
+    "C_1": "Building C – Level 1",
+    "AB_1": "Building AB – Level 1",
+    "A_1": "Building A – Level 1",
+    "B_1": "Building B – Level 1",
+    # Level 2
+    "AC_2": "Building AC – Level 2",
+    "A_MZ1": "Building A – Mezzanine 1",
+    "AB_2": "Building AB – Level 2",
+    "C_2": "Building C – Level 2",
+    "B_2": "Building B – Level 2",
+    "A_2": "Building A – Level 2",
+    "A_MZ2": "Building A – Mezzanine 2",
+    # Level 3
+    "C_3": "Building C – Level 3",
+    "M_R": "Building M – Roof",
+    "B_3": "Building B – Level 3",
+    "A_3": "Building A – Level 3",
+    # Level 4
+    "C_4": "Building C – Level 4",
+    "A_4": "Building A – Level 4",
+    # Roof
+    "A_R": "Building A – Roof",
+}
+
+FLOOR_NAMES_AR = {
+    "CAMPUS_SITE": "الحرم الجامعي – مستوى الموقع",
+    "CAMPUS_G": "الحرم الجامعي – الطابق الأرضي",
+    "CAMPUS_2": "الحرم الجامعي – الطابق الثاني",
+    "CC_T": "المبنى CC – الطابق الفني",
+    "AB_B1": "المبنى AB – الطابق السفلي",
+    "A_B1": "المبنى A – الطابق السفلي",
+    "C_G": "المبنى C – الطابق الأرضي",
+    "AC_G": "المبنى AC – الطابق الأرضي",
+    "AC_GF": "المبنى AC – الطابق الأرضي (مكتمل)",
+    "M_G": "المبنى M – الطابق الأرضي",
+    "A_G": "المبنى A – الطابق الأرضي",
+    "AB_G": "المبنى AB – الطابق الأرضي",
+    "M_AX": "المبنى M – الملحق",
+    "B_G": "المبنى B – الطابق الأرضي",
+    "CC_1": "المبنى CC – الطابق الأول",
+    "AC_1": "المبنى AC – الطابق الأول",
+    "M_1": "المبنى M – الطابق الأول",
+    "C_1": "المبنى C – الطابق الأول",
+    "AB_1": "المبنى AB – الطابق الأول",
+    "A_1": "المبنى A – الطابق الأول",
+    "B_1": "المبنى B – الطابق الأول",
+    "AC_2": "المبنى AC – الطابق الثاني",
+    "A_MZ1": "المبنى A – الميزانين الأول",
+    "AB_2": "المبنى AB – الطابق الثاني",
+    "C_2": "المبنى C – الطابق الثاني",
+    "B_2": "المبنى B – الطابق الثاني",
+    "A_2": "المبنى A – الطابق الثاني",
+    "A_MZ2": "المبنى A – الميزانين الثاني",
+    "C_3": "المبنى C – الطابق الثالث",
+    "M_R": "المبنى M – السطح",
+    "B_3": "المبنى B – الطابق الثالث",
+    "A_3": "المبنى A – الطابق الثالث",
+    "C_4": "المبنى C – الطابق الرابع",
+    "A_4": "المبنى A – الطابق الرابع",
+    "A_R": "المبنى A – السطح",
 }
 
 # ══════════════════════════════════════════════════════════════════════
@@ -189,6 +267,7 @@ def compute_space_intelligence(
         "id": ifc_guid,  # use guid as ID in polygon-first world
         "floor_id": floor_id,
         "floor_name": FLOOR_NAMES.get(floor_id, floor_id),
+        "floor_name_ar": FLOOR_NAMES_AR.get(floor_id, ""),
         "space_name": space_name,
         "primary_function": primary_function,
 

@@ -508,7 +508,7 @@ _STOP_WORDS = {
     "each", "every", "both", "few", "more", "most", "other", "some",
     "such", "only", "own", "same", "tell", "show", "find", "list",
     "give", "get", "many", "much", "also", "there", "here", "then",
-    "delta", "hospital", "spaces", "rooms", "room", "space", "please",
+    "delta", "campus", "spaces", "rooms", "room", "space", "please",
 }
 
 _MULTI_WORD = [

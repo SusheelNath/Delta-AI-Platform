@@ -4,12 +4,15 @@ import { fetchFloors, fetchFloorPolygons, syncPolygons, savePolygon } from '../.
 import { computePolygonMetrics } from '../../utils/unprojectPolygon';
 import RoomDirectory from './RoomDirectory';
 import FloorPlanImage from './FloorPlanImage';
+import { FLOOR_NAMES, BUILDING_GROUPS } from '../../utils/translateNL';
 import './FloorPlanPanel.css';
 
-const FLOOR_LABELS = {
-  H003: 'B3', H002: 'B2', H001: 'B1', H000: 'GF',
-  H010: '+1', H020: '+2', H030: '+3', H040: '+4', H050: '+5',
-};
+// Build short labels from FLOOR_NAMES: take the level part after the dash
+const FLOOR_LABELS = {};
+for (const [id, names] of Object.entries(FLOOR_NAMES)) {
+  const parts = names.en.split('\u2013');
+  FLOOR_LABELS[id] = parts.length > 1 ? parts[1].trim() : id.replace('_', ' ');
+}
 
 export default function FloorPlanPanel() {
   const floors = useStore((s) => s.floors);
@@ -193,16 +196,8 @@ export default function FloorPlanPanel() {
 
   return (
     <div ref={panelRef} className="floorplan-panel">
-      {/* ── Hero floor selector ── */}
-      <FloorDropdown
-        floors={floors}
-        activeFloorId={activeFloorId}
-        activeFloor={activeFloor}
-        polyCount={polyCount}
-        onSelect={(id) => {
-          if (id) { handleFloorClick(id); } else { showAllFloors(); clearSelection(); }
-        }}
-      />
+      {/* ── Hero building selector ── */}
+      <BuildingDropdown />
 
       {/* ── Search (only when floor selected) ── */}
       {activeFloorId && (
@@ -297,10 +292,13 @@ export default function FloorPlanPanel() {
   );
 }
 
-/* ── Custom floor dropdown ── */
-function FloorDropdown({ floors, activeFloorId, activeFloor, polyCount, onSelect }) {
+/* ── Building selector dropdown ── */
+function BuildingDropdown() {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
+  const activeBuilding = useStore((s) => s.activeBuilding);
+  const setActiveBuilding = useStore((s) => s.setActiveBuilding);
+  const showAllFloors = useStore((s) => s.showAllFloors);
 
   // Close on outside click
   useEffect(() => {
@@ -312,7 +310,10 @@ function FloorDropdown({ floors, activeFloorId, activeFloor, polyCount, onSelect
     return () => document.removeEventListener('mousedown', handleClick);
   }, [open]);
 
-  const selectedLabel = activeFloor ? activeFloor.name : 'All floors';
+  const activeGroup = activeBuilding
+    ? BUILDING_GROUPS.find((g) => g.id === activeBuilding)
+    : null;
+  const selectedLabel = activeGroup ? activeGroup.label : 'All Buildings';
 
   return (
     <div className="floorplan-panel__hero" ref={ref}>
@@ -329,29 +330,21 @@ function FloorDropdown({ floors, activeFloorId, activeFloor, polyCount, onSelect
       {open && (
         <div className="floorplan-panel__dropdown">
           <button
-            className={`floorplan-panel__dropdown-item ${!activeFloorId ? 'floorplan-panel__dropdown-item--active' : ''}`}
-            onClick={() => { onSelect(''); setOpen(false); }}
+            className={`floorplan-panel__dropdown-item ${!activeBuilding ? 'floorplan-panel__dropdown-item--active' : ''}`}
+            onClick={() => { showAllFloors(); setOpen(false); }}
           >
-            All floors
+            All Buildings
           </button>
           <div className="floorplan-panel__dropdown-divider" />
-          {floors.map((floor) => (
+          {BUILDING_GROUPS.map((group) => (
             <button
-              key={floor.id}
-              className={`floorplan-panel__dropdown-item ${activeFloorId === floor.id ? 'floorplan-panel__dropdown-item--active' : ''}`}
-              onClick={() => { onSelect(floor.id); setOpen(false); }}
+              key={group.id}
+              className={`floorplan-panel__dropdown-item ${activeBuilding === group.id ? 'floorplan-panel__dropdown-item--active' : ''}`}
+              onClick={() => { setActiveBuilding(group.id); setOpen(false); }}
             >
-              {floor.name}
+              {group.label}
             </button>
           ))}
-        </div>
-      )}
-
-      {activeFloor && (
-        <div className="floorplan-panel__hero-stats">
-          <span>{polyCount} spaces</span>
-          <span className="floorplan-panel__hero-dot">&middot;</span>
-          <span>{activeFloor.total_area_m2 != null ? `${Math.round(Number(activeFloor.total_area_m2))} m\u00B2` : '--'}</span>
         </div>
       )}
     </div>

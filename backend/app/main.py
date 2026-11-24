@@ -14,7 +14,7 @@ FRONTEND_DIST = Path(__file__).resolve().parent.parent.parent / "frontend" / "di
 
 app = FastAPI(
     title="Delta Intelligence Platform",
-    description="API for CHIREC Delta Hospital spatial intelligence",
+    description="API for Office Campus spatial intelligence — Abu Dhabi",
     version="0.1.0",
 )
 

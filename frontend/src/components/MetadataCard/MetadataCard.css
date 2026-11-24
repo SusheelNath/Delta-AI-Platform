@@ -235,3 +235,57 @@
   font-size: var(--text-xs);
   color: var(--c-text-secondary);
 }
+
+/* ── Arabic bilingual sub-text ── */
+
+.metadata-card__name-ar {
+  font-size: 13px;
+  color: #9ca3af;
+  direction: rtl;
+  text-align: right;
+  margin-bottom: 2px;
+  line-height: 1.3;
+}
+
+.metadata-card__sub-ar {
+  font-size: 11px;
+  color: #b0aaa0;
+  direction: rtl;
+  text-align: right;
+  margin-bottom: var(--sp-2);
+  line-height: 1.2;
+}
+
+.metadata-card__dept-block {
+  margin-bottom: var(--sp-3);
+}
+
+.metadata-card__dept-ar {
+  font-size: 11px;
+  color: #c09060;
+  direction: rtl;
+  text-align: right;
+  line-height: 1.2;
+}
+
+.metadata-card__value-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.metadata-card__value-ar {
+  font-size: 10px;
+  color: #9ca3af;
+  direction: rtl;
+  line-height: 1.2;
+}
+
+.metadata-card__meta-value-ar {
+  font-size: 10px;
+  color: #9ca3af;
+  direction: rtl;
+  text-align: right;
+  line-height: 1.2;
+  margin-top: 1px;
+}

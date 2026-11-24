@@ -1,5 +1,5 @@
 """
-Furnishing type catalog and rule-based seeder for CHIREC Delta Hospital.
+Furnishing type catalog and rule-based seeder for Office Campus (Abu Dhabi).
 
 Provides:
 - FURNISHING_CATALOG: reference data for the furnishing_types table
@@ -23,117 +23,82 @@ from app.models import FurnishingType, SpaceFurnishing, SpaceMetrics
 # (item_type, category, label, footprint_m2, normal_occ, max_occ)
 
 FURNISHING_CATALOG = [
-    # ── Beds ──
-    ("patient_bed",         "bed",       "Patient Bed",           4.5, 1, 2),
-    ("patient_bed_double",  "bed",       "Patient Bed (Double)",  6.0, 2, 4),
-    ("icu_bed",             "bed",       "ICU Bed",               8.0, 1, 3),
-    ("surgical_table",      "bed",       "Surgical Table",        6.0, 0, 5),
+    # ── Beds (campus-relevant only) ──
+    ("single_bed",          "bed",       "Single Bed (Studio)",   3.5, 1, 2),
     ("examination_table",   "bed",       "Examination Table",     3.0, 1, 2),
-    ("recovery_bed",        "bed",       "Recovery Bed",          3.5, 1, 2),
-    ("crib",                "bed",       "Crib",                  2.0, 1, 2),
-    ("stretcher",           "bed",       "Stretcher / Gurney",    2.5, 1, 2),
-    ("incubator",           "bed",       "Incubator",             2.0, 1, 1),
-    ("bassinet",            "bed",       "Bassinet",              1.2, 1, 1),
-    ("dialysis_chair",      "bed",       "Dialysis Chair",        3.0, 1, 1),
-    ("triage_station",      "bed",       "Triage Station",        4.0, 1, 2),
-    ("birthing_bed",        "bed",       "Birthing Bed",          5.0, 1, 3),
-    ("dental_chair",        "bed",       "Dental Chair",          3.5, 1, 2),
 
     # ── Seating ──
     ("visitor_chair",       "seating",   "Visitor Chair",         0.8, 1, 1),
     ("desk_chair",          "seating",   "Desk Chair",            1.2, 1, 1),
     ("waiting_bench",       "seating",   "Waiting Bench",         1.8, 3, 4),
     ("stool",               "seating",   "Stool",                 0.4, 1, 1),
-    ("wheelchair_bay",      "seating",   "Wheelchair Bay",        1.5, 1, 1),
-    ("recliner",            "seating",   "Recliner",              1.5, 1, 1),
     ("sofa",                "seating",   "Sofa",                  2.5, 2, 3),
-    ("high_chair",          "seating",   "High Chair",            0.5, 1, 1),
+    ("recliner",            "seating",   "Recliner",              1.5, 1, 1),
+    ("bar_stool",           "seating",   "Bar Stool",             0.4, 1, 1),
+    ("lounge_chair",        "seating",   "Lounge Chair",          1.2, 1, 1),
+    ("ergonomic_chair",     "seating",   "Ergonomic Chair",       1.2, 1, 1),
 
     # ── Storage ──
     ("wardrobe",            "storage",   "Wardrobe",              0.6, 0, 0),
     ("closet",              "storage",   "Closet",                0.5, 0, 0),
     ("cabinet",             "storage",   "Cabinet",               0.4, 0, 0),
     ("shelving",            "storage",   "Shelving Unit",         0.5, 0, 0),
-    ("medication_cart",     "storage",   "Medication Cart",       0.6, 0, 0),
-    ("supply_cart",         "storage",   "Supply Cart",           0.5, 0, 0),
     ("locker",              "storage",   "Locker",                0.3, 0, 0),
     ("filing_cabinet",      "storage",   "Filing Cabinet",        0.4, 0, 0),
-    ("linen_cart",          "storage",   "Linen Cart",            0.6, 0, 0),
-    ("laundry_cart",        "storage",   "Laundry Cart",          0.6, 0, 0),
     ("waste_bin",           "storage",   "Waste Bin",             0.2, 0, 0),
-    ("biohazard_bin",       "storage",   "Biohazard Bin",         0.3, 0, 0),
-    ("sharps_container",    "storage",   "Sharps Container",      0.1, 0, 0),
-    ("crash_cart",          "storage",   "Crash Cart",            0.6, 0, 0),
-    ("instrument_trolley",  "storage",   "Instrument Trolley",    0.5, 0, 0),
-    ("iv_stand",            "storage",   "IV Stand",              0.2, 0, 0),
+    ("recycling_bin",       "storage",   "Recycling Bin",         0.2, 0, 0),
     ("coat_rack",           "storage",   "Coat Rack",             0.3, 0, 0),
-
-    # ── Clinical Equipment ──
-    ("ventilator",          "equipment", "Ventilator",            0.8, 0, 0),
-    ("monitor",             "equipment", "Patient Monitor",       0.3, 0, 0),
-    ("infusion_pump",       "equipment", "Infusion Pump",         0.2, 0, 0),
-    ("anaesthesia_unit",    "equipment", "Anaesthesia Unit",      1.0, 0, 0),
-    ("defibrillator",       "equipment", "Defibrillator",         0.3, 0, 0),
-    ("imaging_unit",        "equipment", "Imaging Unit",          4.0, 0, 2),
-    ("autoclave",           "equipment", "Autoclave",             1.0, 0, 0),
-    ("oxygen_tank",         "equipment", "Oxygen Tank",           0.3, 0, 0),
-    ("suction_unit",        "equipment", "Suction Unit",          0.3, 0, 0),
-    ("ecg_machine",         "equipment", "ECG Machine",           0.5, 0, 0),
-    ("ultrasound",          "equipment", "Ultrasound Machine",    1.2, 0, 1),
-    ("blood_pressure_unit", "equipment", "Blood Pressure Monitor",0.2, 0, 0),
-    ("pulse_oximeter",      "equipment", "Pulse Oximeter",        0.1, 0, 0),
-    ("dialysis_machine",    "equipment", "Dialysis Machine",      1.5, 0, 0),
-    ("xray_unit",           "equipment", "X-Ray Unit",            6.0, 0, 2),
-    ("ct_scanner",          "equipment", "CT Scanner",           12.0, 0, 3),
-    ("mri_scanner",         "equipment", "MRI Scanner",          20.0, 0, 3),
-    ("sterilizer",          "equipment", "Sterilizer",            0.8, 0, 0),
-    ("centrifuge",          "equipment", "Centrifuge",            0.4, 0, 0),
-    ("microscope",          "equipment", "Microscope",            0.3, 0, 0),
-    ("surgical_light",      "equipment", "Surgical Light",        0.0, 0, 0),
-    ("baby_warmer",         "equipment", "Baby Warmer",           1.5, 0, 0),
-    ("phototherapy_unit",   "equipment", "Phototherapy Unit",     1.0, 0, 0),
+    ("supply_cart",         "storage",   "Supply Cart",           0.5, 0, 0),
+    ("tool_cabinet",        "storage",   "Tool Cabinet",          0.5, 0, 0),
 
     # ── Office / IT Equipment ──
-    ("printer",             "equipment", "Printer / Copier",      0.8, 0, 0),
     ("computer",            "equipment", "Computer Workstation",  0.5, 0, 0),
+    ("monitor_screen",      "equipment", "Monitor (Desk)",        0.2, 0, 0),
+    ("printer",             "equipment", "Printer / Copier",      0.8, 0, 0),
     ("server_rack",         "equipment", "Server Rack",           1.0, 0, 0),
     ("projector",           "equipment", "Projector",             0.3, 0, 0),
     ("display_screen",      "equipment", "Display Screen",        0.2, 0, 0),
+    ("presentation_screen", "equipment", "Presentation Screen",   0.5, 0, 0),
+    ("video_conference_unit","equipment","Video Conference Unit",  0.3, 0, 0),
     ("telephone",           "equipment", "Telephone",             0.1, 0, 0),
     ("intercom",            "equipment", "Intercom",              0.0, 0, 0),
     ("whiteboard",          "equipment", "Whiteboard",            0.5, 0, 0),
+    ("acoustic_panel",      "equipment", "Acoustic Panel",        0.1, 0, 0),
 
     # ── Fixtures ──
     ("sink",                "fixture",   "Sink",                  0.4, 0, 0),
     ("toilet",              "fixture",   "Toilet",                1.2, 0, 0),
     ("shower",              "fixture",   "Shower",                1.5, 0, 0),
-    ("scrub_station",       "fixture",   "Scrub Station",         0.8, 0, 0),
-    ("gas_outlet",          "fixture",   "Gas Outlet",            0.0, 0, 0),
-    ("nurse_call",          "fixture",   "Nurse Call",            0.0, 0, 0),
+    ("ablution_fixture",    "fixture",   "Ablution Fixture",      0.6, 0, 0),
     ("hand_sanitizer",      "fixture",   "Hand Sanitizer Station",0.1, 0, 0),
     ("fire_extinguisher",   "fixture",   "Fire Extinguisher",     0.1, 0, 0),
-    ("eyewash_station",     "fixture",   "Eyewash Station",       0.3, 0, 0),
     ("water_fountain",      "fixture",   "Water Fountain",        0.3, 0, 0),
     ("mirror",              "fixture",   "Mirror",                0.0, 0, 0),
     ("soap_dispenser",      "fixture",   "Soap Dispenser",        0.0, 0, 0),
     ("paper_towel_dispenser","fixture",  "Paper Towel Dispenser", 0.0, 0, 0),
-    ("baby_changing_station","fixture",  "Baby Changing Station", 1.0, 0, 0),
     ("grab_bar",            "fixture",   "Grab Bar",              0.0, 0, 0),
+    ("bike_rack",           "fixture",   "Bike Rack",             1.5, 0, 0),
+    ("stroller_parking_spot","fixture",  "Stroller Parking Spot", 1.2, 0, 0),
+    ("prayer_mat",          "fixture",   "Prayer Mat",            1.2, 1, 1),
 
     # ── Furniture ──
     ("desk",                "furniture", "Desk",                  2.0, 1, 1),
+    ("standing_desk",       "furniture", "Standing Desk",         2.0, 1, 1),
+    ("sit_stand_desk",      "furniture", "Sit-Stand Desk",        2.0, 1, 1),
+    ("hot_desk_station",    "furniture", "Hot Desk Station",      1.8, 1, 1),
     ("reception_desk",      "furniture", "Reception Desk",        4.0, 1, 2),
+    ("workbench",           "furniture", "Workbench",             3.0, 1, 2),
     ("table",               "furniture", "Table",                 1.8, 0, 0),
     ("conference_table",    "furniture", "Conference Table",      4.0, 0, 0),
     ("dining_table",        "furniture", "Dining Table",          2.5, 0, 0),
     ("countertop",          "furniture", "Countertop",            1.5, 0, 0),
     ("bedside_table",       "furniture", "Bedside Table",         0.3, 0, 0),
-    ("curtain_divider",     "furniture", "Curtain Divider",       0.2, 0, 0),
     ("room_divider",        "furniture", "Room Divider / Screen", 1.0, 0, 0),
     ("bookshelf",           "furniture", "Bookshelf",             0.5, 0, 0),
     ("notice_board",        "furniture", "Notice Board",          0.0, 0, 0),
     ("sign_board",          "furniture", "Sign Board",            0.0, 0, 0),
     ("podium",              "furniture", "Podium / Lectern",      0.5, 0, 0),
+    ("phone_booth",         "furniture", "Phone Booth / Pod",     1.5, 1, 1),
 
     # ── Kitchen / Food Service ──
     ("refrigerator",        "appliance", "Refrigerator",          0.8, 0, 0),
@@ -143,7 +108,6 @@ FURNISHING_CATALOG = [
     ("coffee_machine",      "appliance", "Coffee Machine",        0.3, 0, 0),
     ("vending_machine",     "appliance", "Vending Machine",       1.0, 0, 0),
     ("ice_machine",         "appliance", "Ice Machine",           0.5, 0, 0),
-    ("food_trolley",        "appliance", "Food Trolley",          0.6, 0, 0),
     ("water_cooler",        "appliance", "Water Cooler",          0.3, 0, 0),
 
     # ── Elevator ──
@@ -169,7 +133,6 @@ FURNISHING_CATALOG = [
     ("spill_kit",           "safety",    "Spill Kit",             0.2, 0, 0),
     ("fire_blanket",        "safety",    "Fire Blanket",          0.1, 0, 0),
     ("evacuation_chair",    "safety",    "Evacuation Chair",      0.5, 0, 0),
-    ("oxygen_mask_station", "safety",    "Oxygen Mask Station",   0.1, 0, 0),
 ]
 
 
@@ -182,15 +145,14 @@ EXCLUDED_PATTERNS = [
     "shaft", "vent shaft", "ventilation", "vent",
     "no access", "no acccess", "no infrastructure",
     "parking", "ramp",
+    "bicycle parking", "stroller parking",
     "airlock", "lobby", "transition",
     "basement",
     "waste",
     "technical", "plant room", "building-services",
-    "coded technical",
     "core / technical",
     "staircasse",  # typo in data
     "loading",
-    "ambulance",  # vehicle bay, not a room
     "atrium",     # open public space, not furnishable rooms
 ]
 
@@ -223,312 +185,117 @@ def _is_excluded(fn: str, space_name: str | None = None) -> bool:
 #            scales quantity based on room area
 
 FUNCTION_FURNISHING_RULES = [
-    # ═══════════════════ SINGLE PATIENT ROOMS ═══════════════════
-    (["single patient room", "single-bed", "single surgery/medicine inpatient",
-      "single geriatric inpatient", "single-bed rehabilitation",
-      "single neonatal intensive-care", "single post-partum maternity",
-      "single high-risk pregnancy", "koala maternity",
-      "single clinical/day-hospital treatment"],
-     [("patient_bed", 1), ("bedside_table", 1), ("wardrobe", 1),
-      ("visitor_chair", 2), ("nurse_call", 1), ("gas_outlet", 1), ("cabinet", 1),
-      ("monitor", 1), ("hand_sanitizer", 1), ("waste_bin", 1)],
-     {"min_area": 10}),
+    # ═══════════════════ OFFICE / KANTOOR ═══════════════════
+    (["office", "kantoor", "bureau", "workroom"],
+     [("desk", 1), ("desk_chair", 1), ("monitor_screen", 1), ("cabinet", 1),
+      ("filing_cabinet", 1), ("computer", 1), ("telephone", 1),
+      ("waste_bin", 1), ("recycling_bin", 1)],
+     {"min_area": 5,
+      "scale": {"desk": {"per_m2": 8, "min": 1, "max": 8},
+                "desk_chair": {"per_m2": 8, "min": 1, "max": 8},
+                "monitor_screen": {"per_m2": 8, "min": 1, "max": 8},
+                "computer": {"per_m2": 8, "min": 1, "max": 8}}}),
 
-    # ═══════════════════ DOUBLE PATIENT ROOMS ═══════════════════
-    (["double patient room", "two-bed", "double surgery/medicine inpatient",
-      "double geriatric inpatient", "double-bed rehabilitation",
-      "double post-partum maternity", "double bariatric"],
-     [("patient_bed", 2), ("bedside_table", 2), ("wardrobe", 2),
-      ("visitor_chair", 2), ("curtain_divider", 1), ("nurse_call", 2), ("gas_outlet", 2),
-      ("monitor", 2), ("hand_sanitizer", 1), ("waste_bin", 2)],
-     {"min_area": 18}),
+    # ═══════════════════ COWORKING / OPEN PLAN ═══════════════════
+    (["coworking", "co-working", "open plan", "open office", "flex space"],
+     [("hot_desk_station", 4), ("desk_chair", 4), ("monitor_screen", 4),
+      ("locker", 4), ("phone_booth", 1), ("printer", 1),
+      ("water_cooler", 1), ("waste_bin", 2), ("recycling_bin", 2)],
+     {"min_area": 20,
+      "scale": {"hot_desk_station": {"per_m2": 6, "min": 2, "max": 40},
+                "desk_chair": {"per_m2": 6, "min": 2, "max": 40},
+                "monitor_screen": {"per_m2": 6, "min": 2, "max": 40},
+                "locker": {"per_m2": 6, "min": 2, "max": 40},
+                "phone_booth": {"per_m2": 50, "min": 1, "max": 6}}}),
 
-    # ═══════════════════ LARGER PATIENT ROOMS / SUITES ═══════════════════
-    (["larger single patient room", "suite / larger single",
-      "surgery/medicine suite", "geriatric suite", "rehabilitation suite",
-      "maternity suite", "bariatric/adapted suite"],
-     [("patient_bed", 1), ("bedside_table", 1), ("wardrobe", 1),
-      ("visitor_chair", 2), ("desk", 1), ("desk_chair", 1),
-      ("nurse_call", 1), ("gas_outlet", 1), ("cabinet", 1),
-      ("monitor", 1), ("hand_sanitizer", 1), ("waste_bin", 1), ("recliner", 1)],
+    # ═══════════════════ SEMINAR ROOM / SEMINARIEZAAL ═══════════════════
+    (["seminar", "seminariezaal", "lecture", "auditorium", "assembly"],
+     [("conference_table", 1), ("desk_chair", 12), ("projector", 1),
+      ("presentation_screen", 1), ("podium", 1), ("whiteboard", 1),
+      ("display_screen", 1), ("waste_bin", 1)],
+     {"min_area": 20,
+      "scale": {"desk_chair": {"per_m2": 3, "min": 8, "max": 60}}}),
+
+    # ═══════════════════ MEETING ROOM / VERGADERZAAL ═══════════════════
+    (["meeting", "vergaderzaal", "conference", "boardroom", "debrief",
+      "gathering"],
+     [("conference_table", 1), ("desk_chair", 6), ("display_screen", 1),
+      ("video_conference_unit", 1), ("whiteboard", 1), ("waste_bin", 1)],
+     {"min_area": 8,
+      "scale": {"desk_chair": {"per_m2": 4, "min": 4, "max": 24}}}),
+
+    # ═══════════════════ MULTIPURPOSE ROOM ═══════════════════
+    (["multipurpose", "multi-purpose", "polyvalent", "flexible room"],
+     [("table", 4), ("visitor_chair", 12), ("projector", 1),
+      ("presentation_screen", 1), ("display_screen", 1),
+      ("podium", 1), ("waste_bin", 2)],
+     {"min_area": 15,
+      "scale": {"table": {"per_m2": 10, "min": 2, "max": 20},
+                "visitor_chair": {"per_m2": 3, "min": 6, "max": 60}}}),
+
+    # ═══════════════════ STUDIO APARTMENT ═══════════════════
+    (["studio apartment", "studio", "residential unit", "accommodation"],
+     [("single_bed", 1), ("bedside_table", 1), ("desk", 1), ("desk_chair", 1),
+      ("wardrobe", 1), ("countertop", 1), ("sink", 1), ("microwave", 1),
+      ("refrigerator", 1), ("waste_bin", 1)],
      {"min_area": 15}),
 
-    # ═══════════════════ ISOLATED SEATING ROOM ═══════════════════
-    (["isolated seating"],
-     [("recliner", 1), ("bedside_table", 1), ("nurse_call", 1),
-      ("hand_sanitizer", 1), ("waste_bin", 1), ("curtain_divider", 1)],
-     {"min_area": 6}),
+    # ═══════════════════ CAFE ═══════════════════
+    (["caf\u00e9", "cafe", "cafeteria", "restaurant", "canteen"],
+     [("dining_table", 4), ("visitor_chair", 16), ("countertop", 2),
+      ("coffee_machine", 1), ("refrigerator", 1), ("microwave", 1),
+      ("water_cooler", 1), ("waste_bin", 3), ("recycling_bin", 2),
+      ("hand_sanitizer", 1), ("vending_machine", 1)],
+     {"min_area": 20,
+      "scale": {"dining_table": {"per_m2": 12, "min": 2, "max": 20},
+                "visitor_chair": {"per_m2": 3, "min": 8, "max": 80},
+                "waste_bin": {"per_m2": 50, "min": 2, "max": 10}}}),
 
-    # ═══════════════════ PATIENT ROOM (named) ═══════════════════
-    (["patient room"],
-     [("patient_bed", 1), ("bedside_table", 1), ("wardrobe", 1),
-      ("visitor_chair", 2), ("nurse_call", 1), ("gas_outlet", 1), ("cabinet", 1),
-      ("monitor", 1), ("hand_sanitizer", 1), ("waste_bin", 1)],
-     {"min_area": 10}),
+    # ═══════════════════ KITCHENETTE / PANTRY ═══════════════════
+    (["kitchenette", "pantry", "tea point", "break room"],
+     [("countertop", 1), ("sink", 1), ("microwave", 1), ("refrigerator", 1),
+      ("coffee_machine", 1), ("waste_bin", 1), ("recycling_bin", 1),
+      ("water_cooler", 1)],
+     {"min_area": 3}),
 
-    # ═══════════════════ WAITING ROOM (before Patient Care) ═══════════════════
-    (["waiting room", "waiting", "day room", "lounge", "play room"],
-     [("waiting_bench", 2), ("visitor_chair", 3), ("water_fountain", 1),
-      ("hand_sanitizer", 1), ("waste_bin", 1), ("display_screen", 1),
-      ("wheelchair_bay", 1)],
+    # ═══════════════════ PRAYER / WORSHIP ROOM ═══════════════════
+    (["prayer", "worship", "musalla", "meditation"],
+     [("prayer_mat", 6), ("shelving", 1), ("ablution_fixture", 2),
+      ("waste_bin", 1)],
+     {"min_area": 6,
+      "scale": {"prayer_mat": {"per_m2": 2, "min": 4, "max": 40},
+                "ablution_fixture": {"per_m2": 15, "min": 1, "max": 8}}}),
+
+    # ═══════════════════ WAITING / LOUNGE ═══════════════════
+    (["waiting room", "waiting", "lounge", "day room", "break area"],
+     [("waiting_bench", 2), ("visitor_chair", 3), ("sofa", 1),
+      ("water_fountain", 1), ("hand_sanitizer", 1), ("waste_bin", 1),
+      ("display_screen", 1), ("coffee_machine", 1)],
      {"min_area": 8,
       "scale": {"waiting_bench": {"per_m2": 8, "min": 2, "max": 12},
                 "visitor_chair": {"per_m2": 6, "min": 2, "max": 20},
-                "wheelchair_bay": {"per_m2": 30, "min": 1, "max": 4}}}),
+                "sofa": {"per_m2": 20, "min": 1, "max": 4}}}),
 
-    # ═══════════════════ MAIN HALL (public spaces) ═══════════════════
-    (["main hall"],
-     [("waiting_bench", 6), ("visitor_chair", 10), ("wheelchair_bay", 3),
+    # ═══════════════════ MAIN HALL / LOBBY ═══════════════════
+    (["main hall", "foyer"],
+     [("waiting_bench", 6), ("visitor_chair", 10), ("sofa", 2),
       ("water_fountain", 2), ("hand_sanitizer", 3), ("waste_bin", 4),
       ("display_screen", 2), ("sign_board", 2), ("aed", 1),
       ("fire_extinguisher", 2), ("vending_machine", 2), ("notice_board", 1)],
      {"min_area": 100,
       "scale": {"waiting_bench": {"per_m2": 40, "min": 4, "max": 40},
                 "visitor_chair": {"per_m2": 25, "min": 6, "max": 60},
-                "wheelchair_bay": {"per_m2": 80, "min": 2, "max": 10},
                 "waste_bin": {"per_m2": 100, "min": 2, "max": 15},
                 "hand_sanitizer": {"per_m2": 150, "min": 2, "max": 10}}}),
 
-    # ═══════════════════ PATIENT CARE (generic) ═══════════════════
-    (["patient care", "patient room"],
-     [("patient_bed", 1), ("bedside_table", 1), ("visitor_chair", 1),
-      ("nurse_call", 1), ("cabinet", 1), ("hand_sanitizer", 1), ("waste_bin", 1)],
-     {"min_area": 10,
-      "scale": {"patient_bed": {"per_m2": 25, "min": 1, "max": 2},
-                "bedside_table": {"per_m2": 25, "min": 1, "max": 2},
-                "visitor_chair": {"per_m2": 15, "min": 1, "max": 3},
-                "curtain_divider": {"per_m2": 30, "min": 0, "max": 1}}}),
-
-    # ═══════════════════ OFFICE / WORKROOM (before ICU) ═══════════════════
-    (["office", "bureau", "workroom"],
-     [("desk", 1), ("desk_chair", 1), ("cabinet", 1), ("shelving", 1),
-      ("computer", 1), ("telephone", 1), ("waste_bin", 1)],
-     {"min_area": 5,
-      "scale": {"desk": {"per_m2": 8, "min": 1, "max": 8},
-                "desk_chair": {"per_m2": 8, "min": 1, "max": 8},
-                "computer": {"per_m2": 8, "min": 1, "max": 8}}}),
-
-    # ═══════════════════ ICU ═══════════════════
-    (["intensive-care", "intensive care", "icu"],
-     [("icu_bed", 1), ("ventilator", 1), ("monitor", 2), ("infusion_pump", 2),
-      ("bedside_table", 1), ("nurse_call", 1), ("gas_outlet", 2),
-      ("defibrillator", 1), ("crash_cart", 1), ("suction_unit", 1),
-      ("pulse_oximeter", 1), ("iv_stand", 1), ("hand_sanitizer", 1),
-      ("waste_bin", 1), ("biohazard_bin", 1)],
-     {"min_area": 12}),
-
-    # ═══════════════════ CONTROL ROOM ═══════════════════
-    (["control room", "control"],
-     [("desk", 2), ("desk_chair", 2), ("monitor", 2), ("computer", 2),
-      ("telephone", 1), ("display_screen", 1)],
-     {"min_area": 5}),
-
-    # ═══════════════════ SERVER ROOM ═══════════════════
-    (["server room", "server"],
-     [("server_rack", 2), ("ups_unit", 1), ("fire_extinguisher", 1),
-      ("cctv_camera", 1), ("electrical_panel", 1)],
-     {"min_area": 5,
-      "scale": {"server_rack": {"per_m2": 6, "min": 1, "max": 10}}}),
-
-    # ═══════════════════ OPERATING ROOMS / SURGERY ═══════════════════
-    (["operating room", "operating-theatre", "operating theatre",
-      "surgical room", "surgery room", "coded op5", "coded op7",
-      "caesarean", "obstetric procedure"],
-     [("surgical_table", 1), ("anaesthesia_unit", 1), ("monitor", 2),
-      ("infusion_pump", 1), ("defibrillator", 1), ("scrub_station", 1),
-      ("gas_outlet", 4), ("supply_cart", 1), ("surgical_light", 2),
-      ("crash_cart", 1), ("instrument_trolley", 1),
-      ("waste_bin", 1), ("biohazard_bin", 1), ("sharps_container", 1),
-      ("hand_sanitizer", 1), ("iv_stand", 1)],
-     {"min_area": 20}),
-
-    # ═══════════════════ SCRUB / SURGICAL PREPARATION ═══════════════════
-    (["scrub / surgical", "scrub station", "surgical preparation"],
-     [("scrub_station", 2), ("sink", 1), ("supply_cart", 1), ("shelving", 1),
-      ("hand_sanitizer", 1), ("mirror", 1)],
-     {"min_area": 6}),
-
-    # ═══════════════════ RECOVERY / POST-ANAESTHESIA ═══════════════════
-    (["recovery", "post-operative", "post operative", "pacu",
-      "post-anaesthesia"],
-     [("recovery_bed", 1), ("monitor", 1), ("infusion_pump", 1),
-      ("nurse_call", 1), ("gas_outlet", 1), ("pulse_oximeter", 1),
-      ("blood_pressure_unit", 1), ("iv_stand", 1),
-      ("waste_bin", 1), ("hand_sanitizer", 1)],
-     {"min_area": 8}),
-
-    # ═══════════════════ NEONATAL ═══════════════════
-    (["neonatal", "nicu", "resuscitation"],
-     [("incubator", 1), ("monitor", 1), ("infusion_pump", 1),
-      ("nurse_call", 1), ("gas_outlet", 2), ("baby_warmer", 1),
-      ("phototherapy_unit", 1), ("pulse_oximeter", 1),
-      ("hand_sanitizer", 1), ("waste_bin", 1)],
-     {"min_area": 6}),
-
-    # ═══════════════════ BIRTHING / DELIVERY ═══════════════════
-    (["birthing", "delivery room"],
-     [("birthing_bed", 1), ("monitor", 2), ("infusion_pump", 1),
-      ("nurse_call", 1), ("gas_outlet", 2), ("supply_cart", 1),
-      ("visitor_chair", 1), ("baby_warmer", 1), ("crash_cart", 1),
-      ("bassinet", 1), ("iv_stand", 1),
-      ("waste_bin", 1), ("hand_sanitizer", 1)],
-     {"min_area": 15}),
-
-    # ═══════════════════ DIALYSIS ═══════════════════
-    (["dialysis"],
-     [("dialysis_chair", 1), ("dialysis_machine", 1), ("monitor", 1),
-      ("infusion_pump", 1), ("visitor_chair", 1), ("nurse_call", 1),
-      ("iv_stand", 1), ("waste_bin", 1), ("hand_sanitizer", 1)],
-     {"min_area": 6}),
-
-    # ═══════════════════ DENTAL CHECK-UP ═══════════════════
-    (["dental check-up", "dental"],
-     [("dental_chair", 1), ("desk", 1), ("desk_chair", 1),
-      ("cabinet", 1), ("sink", 1), ("surgical_light", 1),
-      ("hand_sanitizer", 1), ("waste_bin", 1), ("instrument_trolley", 1),
-      ("computer", 1)],
-     {"min_area": 8}),
-
-    # ═══════════════════ CONSULTATION / EXAMINATION / CHECK-UP ═══════════════════
-    (["consultation", "examination", "endoscopy procedure",
-      "triage room", "triage area", "check-up", "check up", "checkup"],
-     [("examination_table", 1), ("desk", 1), ("desk_chair", 1),
-      ("visitor_chair", 2), ("cabinet", 1), ("sink", 1),
-      ("hand_sanitizer", 1), ("waste_bin", 1), ("computer", 1),
-      ("blood_pressure_unit", 1)],
-     {"min_area": 8}),
-
-    # ═══════════════════ PHYSIOTHERAPY / REHABILITATION ═══════════════════
-    (["physiotherapy", "kinesiotherapy", "occupational therapy", "ergotherapy"],
-     [("examination_table", 1), ("desk", 1), ("desk_chair", 1),
-      ("visitor_chair", 1), ("cabinet", 1), ("hand_sanitizer", 1),
-      ("waste_bin", 1)],
-     {"min_area": 10}),
-
-    # ═══════════════════ IMAGING / RADIOLOGY ═══════════════════
-    (["diagnostic-imaging", "radiography", "x-ray", "mri room", "mri suite",
-      "scanner", "radiology", "nuclear-medicine", "nuclear medicine",
-      "radiotherapy bunker"],
-     [("imaging_unit", 1), ("monitor", 1), ("desk", 1), ("desk_chair", 1),
-      ("computer", 1), ("fire_extinguisher", 1)],
-     {"min_area": 10}),
-
-    # ═══════════════════ NURSING STATION ═══════════════════
-    (["nursing station", "staff base", "staff work base", "nurse's offices"],
-     [("desk", 2), ("desk_chair", 2), ("monitor", 1), ("cabinet", 1),
-      ("shelving", 1), ("computer", 2), ("telephone", 1), ("printer", 1),
-      ("medication_cart", 1), ("hand_sanitizer", 1), ("waste_bin", 1)],
-     {"min_area": 6,
-      "scale": {"desk": {"per_m2": 6, "min": 2, "max": 6},
-                "desk_chair": {"per_m2": 6, "min": 2, "max": 6},
-                "computer": {"per_m2": 6, "min": 2, "max": 6}}}),
-
     # ═══════════════════ RECEPTION ═══════════════════
-    (["reception", "intake"],
-     [("reception_desk", 1), ("desk_chair", 2), ("visitor_chair", 4), ("cabinet", 1),
-      ("computer", 1), ("telephone", 1), ("printer", 1), ("display_screen", 1),
-      ("hand_sanitizer", 1), ("waste_bin", 1)],
+    (["reception", "intake", "front desk"],
+     [("reception_desk", 1), ("desk_chair", 2), ("visitor_chair", 4),
+      ("cabinet", 1), ("computer", 1), ("telephone", 1), ("printer", 1),
+      ("display_screen", 1), ("hand_sanitizer", 1), ("waste_bin", 1)],
      {"min_area": 6,
       "scale": {"visitor_chair": {"per_m2": 8, "min": 2, "max": 12},
                 "desk_chair": {"per_m2": 15, "min": 1, "max": 4}}}),
-
-    # ═══════════════════ MEETING / CONFERENCE / DEBRIEF ═══════════════════
-    (["meeting", "conference", "debrief", "gathering"],
-     [("conference_table", 1), ("desk_chair", 6), ("projector", 1),
-      ("whiteboard", 1), ("display_screen", 1), ("waste_bin", 1)],
-     {"min_area": 10,
-      "scale": {"desk_chair": {"per_m2": 4, "min": 4, "max": 24}}}),
-
-    # ═══════════════════ ASSEMBLY ROOM ═══════════════════
-    (["assembly"],
-     [("conference_table", 1), ("desk_chair", 8), ("projector", 1),
-      ("display_screen", 1), ("podium", 1), ("waste_bin", 1)],
-     {"min_area": 12,
-      "scale": {"desk_chair": {"per_m2": 4, "min": 6, "max": 30}}}),
-
-    # ═══════════════════ RESTAURANT / CAFETERIA ═══════════════════
-    (["restaurant", "cafeteria"],
-     [("dining_table", 4), ("visitor_chair", 16), ("countertop", 2),
-      ("refrigerator", 1), ("microwave", 1), ("coffee_machine", 1),
-      ("food_trolley", 1), ("waste_bin", 3), ("hand_sanitizer", 1),
-      ("high_chair", 2), ("water_cooler", 1), ("vending_machine", 1)],
-     {"min_area": 30,
-      "scale": {"dining_table": {"per_m2": 12, "min": 2, "max": 20},
-                "visitor_chair": {"per_m2": 3, "min": 8, "max": 80},
-                "waste_bin": {"per_m2": 50, "min": 2, "max": 10},
-                "high_chair": {"per_m2": 60, "min": 1, "max": 6}}}),
-
-    # ═══════════════════ PHARMACY ═══════════════════
-    (["pharmacy"],
-     [("countertop", 1), ("shelving", 3), ("desk", 1), ("desk_chair", 1),
-      ("cabinet", 1), ("computer", 1), ("refrigerator", 1),
-      ("medication_cart", 1), ("hand_sanitizer", 1), ("waste_bin", 1)],
-     {"min_area": 8,
-      "scale": {"shelving": {"per_m2": 8, "min": 2, "max": 20}}}),
-
-    # ═══════════════════ RETAIL / COMMERCIAL ═══════════════════
-    (["convenience store", "supermarket", "store", "commercial"],
-     [("countertop", 1), ("shelving", 3), ("display_screen", 1),
-      ("waste_bin", 1)],
-     {"min_area": 5,
-      "scale": {"shelving": {"per_m2": 6, "min": 2, "max": 25}}}),
-
-    # ═══════════════════ LABORATORY ═══════════════════
-    (["laboratory", "lab "],
-     [("countertop", 2), ("stool", 2), ("cabinet", 2), ("sink", 1),
-      ("shelving", 2), ("microscope", 1), ("centrifuge", 1),
-      ("eyewash_station", 1), ("biohazard_bin", 1), ("sharps_container", 1),
-      ("hand_sanitizer", 1), ("waste_bin", 1), ("fire_extinguisher", 1)],
-     {"min_area": 6}),
-
-    # ═══════════════════ STERILISATION ═══════════════════
-    (["sterilisation", "sterilization", "sterile"],
-     [("autoclave", 1), ("sterilizer", 1), ("countertop", 2), ("shelving", 2),
-      ("sink", 1), ("hand_sanitizer", 1), ("waste_bin", 1)],
-     {"min_area": 6,
-      "scale": {"autoclave": {"per_m2": 50, "min": 1, "max": 10},
-                "countertop": {"per_m2": 25, "min": 2, "max": 16},
-                "shelving": {"per_m2": 20, "min": 2, "max": 20},
-                "sink": {"per_m2": 60, "min": 1, "max": 8}}}),
-
-    # ═══════════════════ DIRTY UTILITY ═══════════════════
-    (["dirty utility"],
-     [("sink", 1), ("countertop", 1), ("shelving", 1), ("cabinet", 1),
-      ("waste_bin", 1), ("biohazard_bin", 1), ("laundry_cart", 1),
-      ("hand_sanitizer", 1)],
-     {"min_area": 4}),
-
-    # ═══════════════════ CLEAN UTILITY ═══════════════════
-    (["clean utility"],
-     [("countertop", 1), ("shelving", 2), ("cabinet", 1), ("medication_cart", 1),
-      ("supply_cart", 1), ("hand_sanitizer", 1), ("linen_cart", 1)],
-     {"min_area": 4}),
-
-    # ═══════════════════ PREPARATION ROOM ═══════════════════
-    (["preparation room", "processing"],
-     [("countertop", 1), ("cabinet", 2), ("sink", 1), ("supply_cart", 1),
-      ("hand_sanitizer", 1), ("waste_bin", 1)],
-     {"min_area": 5}),
-
-    # ═══════════════════ PANTRY ═══════════════════
-    (["pantry"],
-     [("countertop", 1), ("sink", 1), ("shelving", 1), ("cabinet", 1),
-      ("refrigerator", 1), ("microwave", 1), ("coffee_machine", 1),
-      ("waste_bin", 1)],
-     {"min_area": 3}),
-
-    # ═══════════════════ HOUSEKEEPING / CLEANING ═══════════════════
-    (["housekeeping", "cleaning room", "janitor", "laundry"],
-     [("sink", 1), ("shelving", 2), ("cabinet", 1), ("laundry_cart", 1),
-      ("waste_bin", 1), ("supply_cart", 1)],
-     {"min_area": 3}),
-
-    # ═══════════════════ COLD STORAGE ═══════════════════
-    (["cold storage"],
-     [("refrigerator", 2), ("shelving", 2), ("fire_extinguisher", 1)],
-     {"min_area": 3,
-      "scale": {"refrigerator": {"per_m2": 6, "min": 1, "max": 8},
-                "shelving": {"per_m2": 8, "min": 1, "max": 10}}}),
 
     # ═══════════════════ STORAGE ═══════════════════
     (["storage", "store room", "archive", "reserve"],
@@ -537,28 +304,51 @@ FUNCTION_FURNISHING_RULES = [
       "scale": {"shelving": {"per_m2": 6, "min": 1, "max": 30},
                 "cabinet": {"per_m2": 20, "min": 1, "max": 10}}}),
 
-    # ═══════════════════ BODY STORE / MORGUE ═══════════════════
-    (["body store", "morgue", "incinerator"],
-     [("countertop", 2), ("sink", 1), ("cabinet", 2), ("shelving", 2),
-      ("refrigerator", 2), ("hand_sanitizer", 1), ("waste_bin", 1),
-      ("biohazard_bin", 1)],
-     {"min_area": 10,
-      "scale": {"countertop": {"per_m2": 30, "min": 2, "max": 12},
-                "refrigerator": {"per_m2": 20, "min": 1, "max": 8},
-                "cabinet": {"per_m2": 30, "min": 2, "max": 10},
-                "shelving": {"per_m2": 20, "min": 2, "max": 15},
-                "sink": {"per_m2": 60, "min": 1, "max": 6}}}),
-
-    # ═══════════════════ LOCKER / CHANGING ═══════════════════
-    (["locker", "changing"],
-     [("locker", 6), ("bench", 2), ("mirror", 1), ("waste_bin", 1)],
+    # ═══════════════════ LOCKER ROOM / CHANGING ═══════════════════
+    (["locker", "changing", "kleedkamer"],
+     [("locker", 6), ("waiting_bench", 2), ("mirror", 1), ("waste_bin", 1)],
      {"min_area": 4,
       "scale": {"locker": {"per_m2": 2, "min": 4, "max": 30},
-                "bench": {"per_m2": 8, "min": 1, "max": 6}}}),
+                "waiting_bench": {"per_m2": 8, "min": 1, "max": 6}}}),
+
+    # ═══════════════════ WORKSHOP / ATELIER ═══════════════════
+    (["workshop", "atelier", "makerspace", "maker space", "fab lab"],
+     [("workbench", 2), ("stool", 2), ("shelving", 2), ("tool_cabinet", 1),
+      ("fire_extinguisher", 1), ("first_aid_kit", 1), ("waste_bin", 1)],
+     {"min_area": 8,
+      "scale": {"workbench": {"per_m2": 15, "min": 1, "max": 8},
+                "stool": {"per_m2": 8, "min": 1, "max": 10},
+                "shelving": {"per_m2": 10, "min": 1, "max": 10}}}),
+
+    # ═══════════════════ CONTROL CENTRE ═══════════════════
+    (["control centre", "control center", "control room", "control"],
+     [("desk", 3), ("desk_chair", 3), ("monitor_screen", 6),
+      ("display_screen", 2), ("computer", 3), ("telephone", 1)],
+     {"min_area": 8,
+      "scale": {"desk": {"per_m2": 8, "min": 2, "max": 10},
+                "desk_chair": {"per_m2": 8, "min": 2, "max": 10},
+                "monitor_screen": {"per_m2": 4, "min": 4, "max": 20},
+                "display_screen": {"per_m2": 15, "min": 1, "max": 6}}}),
+
+    # ═══════════════════ FIRST AID / EHBO ═══════════════════
+    (["first aid", "ehbo", "medical room", "sick bay", "infirmary"],
+     [("examination_table", 1), ("first_aid_kit", 1), ("sink", 1),
+      ("cabinet", 1), ("desk", 1), ("desk_chair", 1), ("visitor_chair", 1),
+      ("waste_bin", 1), ("hand_sanitizer", 1)],
+     {"min_area": 6}),
+
+    # ═══════════════════ SURVEILLANCE / SECURITY ═══════════════════
+    (["surveillance", "security", "bewaking"],
+     [("desk", 2), ("desk_chair", 2), ("monitor_screen", 4),
+      ("display_screen", 2), ("computer", 2), ("telephone", 1),
+      ("cctv_camera", 1), ("access_control", 1)],
+     {"min_area": 6,
+      "scale": {"monitor_screen": {"per_m2": 4, "min": 2, "max": 12},
+                "display_screen": {"per_m2": 10, "min": 1, "max": 6}}}),
 
     # ═══════════════════ SANITARY / WC ═══════════════════
     (["toilet", "wc", "washroom", "sanitary", "sanitation", "ensuite",
-      "shower / wash", "assisted bathroom", "bathing room"],
+      "shower / wash", "assisted bathroom", "bathing room", "restroom"],
      [("toilet", 1), ("sink", 1), ("hand_sanitizer", 1), ("soap_dispenser", 1),
       ("paper_towel_dispenser", 1), ("mirror", 1), ("waste_bin", 1)],
      {"min_area": 2.0,
@@ -569,7 +359,7 @@ FUNCTION_FURNISHING_RULES = [
     (["accessibility toilet", "accessible toilet", "adapted toilet"],
      [("toilet", 1), ("sink", 1), ("grab_bar", 3), ("hand_sanitizer", 1),
       ("soap_dispenser", 1), ("paper_towel_dispenser", 1), ("mirror", 1),
-      ("waste_bin", 1), ("nurse_call", 1), ("baby_changing_station", 1)],
+      ("waste_bin", 1)],
      {"min_area": 3}),
 
     (["shower"],
@@ -577,7 +367,43 @@ FUNCTION_FURNISHING_RULES = [
       ("soap_dispenser", 1), ("waste_bin", 1)],
      {"min_area": 2}),
 
-    # ═══════════════════ STAFF (generic catchall) ═══════════════════
+    # ═══════════════════ ABLUTION ═══════════════════
+    (["ablution", "wudu"],
+     [("ablution_fixture", 4), ("sink", 2), ("soap_dispenser", 2),
+      ("waste_bin", 1)],
+     {"min_area": 4,
+      "scale": {"ablution_fixture": {"per_m2": 3, "min": 2, "max": 12},
+                "sink": {"per_m2": 6, "min": 1, "max": 8}}}),
+
+    # ═══════════════════ SERVER ROOM ═══════════════════
+    (["server room", "server", "data room", "comms room"],
+     [("server_rack", 2), ("ups_unit", 1), ("fire_extinguisher", 1),
+      ("cctv_camera", 1), ("electrical_panel", 1)],
+     {"min_area": 5,
+      "scale": {"server_rack": {"per_m2": 6, "min": 1, "max": 10}}}),
+
+    # ═══════════════════ RETAIL / COMMERCIAL ═══════════════════
+    (["convenience store", "supermarket", "store", "commercial", "retail",
+      "shop"],
+     [("countertop", 1), ("shelving", 3), ("display_screen", 1),
+      ("waste_bin", 1)],
+     {"min_area": 5,
+      "scale": {"shelving": {"per_m2": 6, "min": 2, "max": 25}}}),
+
+    # ═══════════════════ COLD STORAGE ═══════════════════
+    (["cold storage"],
+     [("refrigerator", 2), ("shelving", 2), ("fire_extinguisher", 1)],
+     {"min_area": 3,
+      "scale": {"refrigerator": {"per_m2": 6, "min": 1, "max": 8},
+                "shelving": {"per_m2": 8, "min": 1, "max": 10}}}),
+
+    # ═══════════════════ HOUSEKEEPING / CLEANING ═══════════════════
+    (["housekeeping", "cleaning room", "janitor", "laundry"],
+     [("sink", 1), ("shelving", 2), ("cabinet", 1), ("supply_cart", 1),
+      ("waste_bin", 1)],
+     {"min_area": 3}),
+
+    # ═══════════════════ STAFF ROOM ═══════════════════
     (["staff room", "staff access", "staff"],
      [("desk", 1), ("desk_chair", 2), ("visitor_chair", 2), ("cabinet", 1),
       ("countertop", 1), ("sink", 1), ("coffee_machine", 1), ("microwave", 1),
@@ -588,60 +414,15 @@ FUNCTION_FURNISHING_RULES = [
                 "visitor_chair": {"per_m2": 10, "min": 1, "max": 6},
                 "locker": {"per_m2": 5, "min": 2, "max": 12}}}),
 
-    # ═══════════════════ RESIDENCY / ON-CALL ═══════════════════
-    (["residency", "on-call", "patient care + residency"],
-     [("patient_bed", 1), ("desk", 1), ("desk_chair", 1), ("wardrobe", 1),
-      ("bedside_table", 1), ("telephone", 1), ("waste_bin", 1)],
-     {"min_area": 8}),
-
-    # ═══════════════════ EMERGENCY CLINICAL ROOMS ═══════════════════
-    (["emergency-department clinical", "emergency"],
-     [("examination_table", 1), ("monitor", 1), ("desk", 1), ("desk_chair", 1),
-      ("cabinet", 1), ("sink", 1), ("defibrillator", 1), ("crash_cart", 1),
-      ("iv_stand", 1), ("hand_sanitizer", 1), ("waste_bin", 1),
-      ("biohazard_bin", 1), ("sharps_container", 1)],
-     {"min_area": 8,
-      "scale": {"examination_table": {"per_m2": 25, "min": 1, "max": 30},
-                "monitor": {"per_m2": 30, "min": 1, "max": 25},
-                "desk": {"per_m2": 60, "min": 1, "max": 10},
-                "desk_chair": {"per_m2": 60, "min": 1, "max": 10},
-                "cabinet": {"per_m2": 40, "min": 1, "max": 15},
-                "sink": {"per_m2": 80, "min": 1, "max": 10}}}),
-
-    # ═══════════════════ DEPARTMENT-SPECIFIC (unresolved) ═══════════════════
-    (["department-specific", "existing department"],
-     [("desk", 1), ("desk_chair", 1), ("cabinet", 1), ("shelving", 1),
-      ("computer", 1), ("waste_bin", 1)],
-     {"min_area": 5}),
-
-    # ═══════════════════ RADIOTHERAPY ═══════════════════
-    (["radiotherapy", "dosimetry", "medical physics"],
-     [("imaging_unit", 1), ("monitor", 1), ("desk", 1), ("desk_chair", 1),
-      ("computer", 1), ("fire_extinguisher", 1)],
-     {"min_area": 8}),
-
-    # ═══════════════════ RADIOTHERAPY SIMULATION ═══════════════════
-    (["radiotherapy simulation"],
-     [("examination_table", 1), ("imaging_unit", 1), ("monitor", 1),
-      ("desk", 1), ("desk_chair", 1), ("computer", 1)],
-     {"min_area": 10}),
-
-    # ═══════════════════ WORKSHOP ═══════════════════
-    (["workshop", "carpentry", "woodwork", "mechanical workshop"],
-     [("countertop", 2), ("stool", 2), ("shelving", 2), ("cabinet", 1),
-      ("fire_extinguisher", 1), ("first_aid_kit", 1), ("waste_bin", 1)],
-     {"min_area": 8,
-      "scale": {"shelving": {"per_m2": 10, "min": 1, "max": 10}}}),
-
     # ═══════════════════ ENTRANCE ═══════════════════
     (["entrance"],
      [("reception_desk", 1), ("desk_chair", 1), ("visitor_chair", 2),
       ("display_screen", 1), ("cctv_camera", 1), ("aed", 1),
-      ("wheelchair_bay", 1), ("hand_sanitizer", 1), ("waste_bin", 1)],
+      ("hand_sanitizer", 1), ("waste_bin", 1)],
      {"min_area": 10}),
 
-    # ═══════════════════ DEPARTMENT SUPPORT (generic small rooms) ═══════════════════
-    (["support/service space", "department support"],
+    # ═══════════════════ SUPPORT / SERVICE SPACE ═══════════════════
+    (["support/service space", "department support", "support"],
      [("countertop", 1), ("cabinet", 1), ("shelving", 1), ("waste_bin", 1)],
      {"min_area": 3}),
 
@@ -876,17 +657,20 @@ def seed_space_furnishings(db: Session, polygons: list[dict]) -> dict:
 
 
 # ── Station-based occupancy classification ──
-# Beds are independent stations - each generates occupancy on its own.
+# Beds/examination tables are independent stations - each generates occupancy.
 _BED_TYPES = {
-    "patient_bed", "patient_bed_double", "icu_bed", "recovery_bed",
-    "crib", "examination_table", "surgical_table",
+    "single_bed", "examination_table",
 }
 # Desks need chairs to generate occupancy (paired workstations).
-_DESK_TYPE = "desk"
+_DESK_TYPES = {
+    "desk", "standing_desk", "sit_stand_desk", "hot_desk_station",
+}
 _DESK_CHAIR_TYPE = "desk_chair"
 # Independent seating - generates occupancy without needing a desk/bed.
 _INDEPENDENT_SEATING = {
-    "visitor_chair", "waiting_bench", "stool", "wheelchair_bay",
+    "visitor_chair", "waiting_bench", "stool",
+    "lounge_chair", "bar_stool", "ergonomic_chair",
+    "prayer_mat", "phone_booth",
 }
 # Everything else (table, countertop, equipment, storage, fixtures) = 0 occupancy.
 # They still consume floor area, which reduces absolute occupancy.
@@ -902,13 +686,15 @@ def compute_furnishing_occupancy(
     using station-based pairing logic.
 
     Station rules:
-      1. Beds - independent stations, use catalog normal/max occ per item.
+      1. Beds/examination tables - independent stations, use catalog
+         normal/max occ per item.
       2. Desks + desk chairs - paired workstations.  Occupied stations =
          min(desks, desk_chairs).  Each station = 1 normal, 1 max.
          Surplus desk chairs (beyond desk count) spill into independent
          seating (1 normal, 1 max each).
-      3. Independent seating (visitor chairs, benches, stools, wheelchair
-         bays) - each generates its catalog normal/max occ.
+      3. Independent seating (visitor chairs, benches, stools, lounge chairs,
+         bar stools, prayer mats, phone booths) - each generates its catalog
+         normal/max occ.
       4. Everything else (tables, countertops, equipment, storage, fixtures)
          - 0 occupancy, but footprint still reduces absolute capacity.
 
@@ -936,8 +722,8 @@ def compute_furnishing_occupancy(
             normal_occ += ft.normal_occ * f.quantity
             max_occ += ft.max_occ * f.quantity
 
-        elif f.item_type == _DESK_TYPE:
-            # Desks tallied for pairing - no occupancy on their own
+        elif f.item_type in _DESK_TYPES:
+            # All desk variants tallied for pairing - no occupancy on their own
             desk_qty += f.quantity
 
         elif f.item_type == _DESK_CHAIR_TYPE:
@@ -949,7 +735,7 @@ def compute_furnishing_occupancy(
             normal_occ += ft.normal_occ * f.quantity
             max_occ += ft.max_occ * f.quantity
 
-        # else: tables, countertops, equipment, storage, fixtures → 0 occ
+        # else: tables, countertops, equipment, storage, fixtures -> 0 occ
 
     # ── Desk-chair pairing ──
     # Each paired workstation (1 desk + 1 desk chair) = 1 person
